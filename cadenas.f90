@@ -4,13 +4,22 @@
 !                                                           | 
 ! ----------------------------------------------------------|
 
+module cadenas_linear
 
-subroutine cadenas(chains,nchains,maxnchains,nseg,lseg)
+    implicit none
+    
+    private
+    public :: make_linear_chains
+    
+contains
+
+subroutine make_linear_chains(chains,nchains,maxnchains,nseg,lseg)
   
     use mathconst
     use random
     use matrices
-    
+    use chain_rotation, only : rotation
+
     implicit none
   
     !     .. scalar arguments
@@ -33,7 +42,7 @@ subroutine cadenas(chains,nchains,maxnchains,nseg,lseg)
     double precision, dimension(3,nseg+5) :: xend, xendr
     integer :: maxattempts
     logical :: is_selfavoid,is_positive_z
-    logical :: selfavoidance
+    !logical :: selfavoidance
     character(len=1) :: test
 
     ! .. executable statements 
@@ -108,8 +117,7 @@ subroutine cadenas(chains,nchains,maxnchains,nseg,lseg)
 
         do while((i.le.maxattempts).and.(nchains.lt.maxnchains)) 
         
- 
-            call rotation(xend,xendr,nseg,is_positive_z,lseg)
+            is_positive_z=rotation(xend,xendr,nseg)
             if (is_positive_z) then 
                 nchains=nchains+1
                 do j=1,nseg
@@ -124,7 +132,7 @@ subroutine cadenas(chains,nchains,maxnchains,nseg,lseg)
     
     enddo
 
-end subroutine cadenas
+end subroutine make_linear_chains
 
 
 ! check self avoidance 
@@ -193,3 +201,6 @@ subroutine mrrrr(a,b,c)
     enddo
 
 end subroutine mrrrr
+
+
+end module cadenas_linear

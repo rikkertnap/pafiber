@@ -1,8 +1,8 @@
 #Unix makefile for fortran-file	
 
 # put the name of the target program here
-TARGET = brush.weak.mixture.planar # the list of source files
-SRC =  precision.f90  mathconst.f90 physconst.f90 globals.f90 myutils.f90 molecule.f90 chains.f90 volume.f90 L2norm.f90 rands.f90 parameter.f90  field.f90 VdW.f90 surface.f90 fenergy.f90 initcha.f90  myio.f90 cadenas.f90 fcnCa.f90  rota.f90  init.f90 chaingenerator.f90 kinsolsolver.f90  solver.f90  brush.weak.nzrange.f90
+TARGET = brush.weak.mixture.planar.pH # the list of source files
+SRC =  precision.f90  mathconst.f90 physconst.f90 globals.f90 myutils.f90 molecule.f90 loop.f90 chains.f90 volume.f90 L2norm.f90 rands.f90 parameter.f90  field.f90 VdW.f90 surface.f90 fenergy.f90 initcha.f90  myio.f90 rota.f90 cadenas.f90 cadenas-sequence.f90 fcnCa.f90  init.f90 chaingenerator.f90 kinsolsolver.f90  solver.f90  brush.weak.pHrange.f90
 # some definitions
 SHELL = /bin/bash
 
@@ -65,21 +65,27 @@ LFFLAGS=$(LDFLAGS)
 
 FF= gfortran
 
-else ifeq ($(shell hostname),quser)
 
-FFLAGS= -O3 -cpp -DVERSION=\"$(GIT_VERSION)\"
+else ifeq ($(shell hostname),quser13)
 
-LDFLAGS=  -L/home/rna878/kinsol/lib -lsundials_fkinsol -lsundials_kinsol -lsundials_fnvecserial -lsundials_nvecserial -lm -L/opt/intel/composerxe-2011.3.174/tbb/lib/intel64/cc4.1.0_libc2.4_kernel2.6.16.21 -L/opt/intel/composerxe-2011.3.174/mkl/lib/intel64 -L/opt/intel/composerxe-2011.3.174/ipp/lib/intel64 -L/opt/intel/composerxe-2011.3.174/compiler/lib/intel64 -L/hpc/opt/intel/composerxe-2011.3.174/compiler/lib/intel64 -L/usr/lib/gcc/x86_64-redhat-linux/4.4.7 -L/usr/lib/gcc/x86_64-redhat-linux/4.4.7/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/usr/lib/gcc/x86_64-redhat-linux/4.4.7/../../.. -L/lib64 -L/lib -L/usr/lib64 -L/usr/lib -limf -lm -lifport -lifcore -lsvml -lipgo -lirc -lpthread -lirc_s -ldl
+	is_quest = yes
 
+else ifeq ($(shell hostname),quser12)
 
-LFFLAGS=$(LDFLAGS)
+        is_quest = yes
 
-FF= ifort
+else ifeq ($(shell hostname),quser11)
+
+	is_quest = yes
+
+else ifeq ($(shell hostname),quser10)
+
+	is_quest = yes
 
 else 
 
 
-FFLAGS= -std=f2008 -cpp -DVERSION=\"$(GIT_VERSION)\" -fbounds-check -Warray-bounds 
+FFLAGS= -std=f2008 -cpp -DVERSION=\"$(GIT_VERSION)\" -fbounds-check -Warray-bounds #-Wall
 
 
 LDFLAGS=-lm -L/opt/local/kinsol-2.8.2-stat/lib -lsundials_fkinsol -lsundials_kinsol -lsundials_fnvecserial -lsundials_nvecserial     -Wl,-rpath,/opt/local/kinsol-2.8.2-stat/lib
@@ -93,6 +99,18 @@ FF= gfortran
 endif
 
 
+
+ifdef is_quest 
+
+FFLAGS= -O3 -cpp -DVERSION=\"$(GIT_VERSION)\" -no-wrap-margin
+
+LDFLAGS= -lm /usr/lib64/librt.so -L/home/rna878/sundials-2.6.1-openmpi/lib -lsundials_fkinsol -lsundials_kinsol -lsundials_fnvecserial -lsundials_nvecserial     -Wl,-rpath,/home/rna878/sundials-2.6.1-openmpi/lib
+
+LFFLAGS=$(LDFLAGS)
+
+FF= ifort
+
+endif
 
 all:	$(TARGET)
 

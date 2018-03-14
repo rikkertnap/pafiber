@@ -35,7 +35,8 @@ program brushweakpolyelectrolyte
     logical :: use_xstored       
     logical :: isfirstguess   
     character(len=lenText) :: text
-
+    character(len=20) :: rstr
+    
     ! .. executable statements 
     ! .. init 
 
@@ -66,16 +67,64 @@ program brushweakpolyelectrolyte
     nz=nzmax                    
     neqmax = neq    
     allocate(xstored(neq))
+
     isfirstguess = .true.    
     use_xstored = .false.             
     iter = 0
 
+    if(runflag=="rangepH") then 
+
+        allocate(x(neq))
+        allocate(xguess(neq))   
+        call chain_filter()   
+        
+        !  .. first increase pH value
+
+        do while (pH%min<=pH%val.and.pH%val<=pH%max.and.(abs(pH%stepsize)>=pH%delta)) 
+               
+            call init_expmu()
+            ! call make_guess(x,xguess,loop%val,loopbegin)
+            call make_guess(x, xguess, isfirstguess) 
+            call solver(x, xguess, error, fnorm) 
+            if(isNaN(fnorm)) then  
+                text="no solution: backstep"
+                call print_to_log(LogUnit,text)
+                pH%stepsize=pH%stepsize/2.0_dp ! smaller 
+                pH%val=pH%val-pH%stepsize ! step back
+                do i=1,neq
+                    x(i)=xguess(i)
+                enddo       
+            else 
+                write(rstr,'(F7.3)')pH%val
+                text="solution pH="//trim(adjustl(rstr))
+                pH%val=pH%val+pH%stepsize
+            endif 
+            isfirstguess= .false.
+            iter  = 0              ! reset of iteration counter 
+
+        enddo 
+
+    endif
+
+
+    if(runflag=="rangepH") then 
+        isfirstguess = .false.
+    else 
+        isfirstguess = .true.    
+    endif
+        
+    use_xstored = .false.   
+
+    ! with both flags set false make_guess will set xguess equal to x           
+
+    iter = 0
+        
     do while (nz>=nzmin)        ! loop distances
 
         call set_size_neq()  
         
-        allocate(x(neq))
-        allocate(xguess(neq))
+        if(.not. allocated(x) ) allocate(x(neq))
+        if(.not. allocated(xguess) ) allocate(xguess(neq))
 
         call chain_filter()    
         call make_guess(x, xguess, isfirstguess, use_xstored, xstored)
