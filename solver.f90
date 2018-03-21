@@ -20,10 +20,9 @@ subroutine solver(x, xguess, accuracy, residual)
 !    call set_size_neq()
 !    call check_value_sysflag(fcnname)
     
-
     call set_size_neq  
     call set_fcn
-
+    
     if(method.eq."kinsol") then
      
         call kinsol_gmres_solver(x, xguess, neq, accuracy, residual)

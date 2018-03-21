@@ -72,7 +72,7 @@ subroutine make_chains_mc()
         call make_lsegseq(lsegseq,nsegAB)
     endif    
 
-    do while (conf.le.max_conforAB)
+    do while (conf.le.cuantasAB)
         nchains= 0      ! init zero 
         if(isHomopolymer) then 
             call make_linear_chains(chain,nchains,maxnchains,nsegAB,lsegAB) ! chain generator f90
@@ -84,7 +84,7 @@ subroutine make_chains_mc()
             conf=conf +1
             do s=1,nsegAB         !     transforming form real- to lattice coordinates
                 z = chain(1,s,j)
-                indexchainAB_init(conf,s)= int(z/delta)+1
+                indexchainAB(conf,s)= int(z/delta)+1
 !                print*,"indexchain(",conf,",",s,")=",indexchainAB_init(conf,s)  
             enddo
          enddo                  ! end j loop
@@ -99,14 +99,14 @@ subroutine make_chains_mc()
     seed=43567                ! seed for random number generator 
     maxnchains=12
 
-    do while (conf.le.max_conforC)
+    do while (conf.le.cuantasC)
         nchains= 0      ! init zero 
         call make_linear_chains(chain,nchains,maxnchains,nsegC,lsegC) ! chain generator                                                               
         do j=1,nchains
             conf=conf +1
             do s=1,nsegC         !     transforming form real- to lattice coordinates                                            
                 z = chain(1,s,j)
-                indexchainC_init(conf,s)= int(z/delta)+1
+                indexchainC(conf,s)= int(z/delta)+1
             enddo
         enddo                  ! end j loop  
     enddo                     ! end while loop  
@@ -270,54 +270,6 @@ subroutine make_sequence_chain(freq,chaintype)
   
 end subroutine make_sequence_chain
 
-
-
-subroutine chain_filter()
-    
-    use  globals
-    use  chains
-    use  random
-    use  parameters
-    use  volume
-
-    implicit none
-
-    integer :: conf,s,allowed_confAB,allowed_confC
-    integer :: flag
-    integer(2) :: ind  ! temporary index of chain
-
-
-    allowed_confAB=1            ! counts allowed conformations 
-    do conf=1,max_conforAB  ! loop of all polymer conformations to filter out allowed ones 
-        flag=0
-        do s=1,nsegAB
-            ind=indexchainAB_init(conf,s)
-            if(ind<=nz) then   ! nz is in between plates  
-                indexchainAB(allowed_confAB,s)=ind
-                flag=flag+1
-            endif
-        enddo
-        if (flag.eq.nsegAB) allowed_confAB= allowed_confAB+1 ! conformation  is allowed  
-    enddo
-
-    cuantasAB=allowed_confAB-1    ! the number of allowed conformations
-
-    allowed_confC=1            ! counts allowed conformations 
-    do conf=1,max_conforC  ! loop of all polymer conformations to filter out allowed ones 
-        flag=0
-        do s=1,nsegC
-            ind=indexchainC_init(conf,s)
-            if(ind<=nz) then   ! nz is in between plates  
-                indexchainC(allowed_confC,s)=ind
-                flag=flag+1
-            endif
-        enddo
-        if (flag.eq.nsegC) allowed_confC= allowed_confC+1 ! conformation  is allowed  
-    enddo
-
-    cuantasC=allowed_confC-1    ! the number of allowed conformations
-
-end subroutine  chain_filter
 
 
 

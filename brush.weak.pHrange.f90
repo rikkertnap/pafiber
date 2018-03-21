@@ -1,7 +1,14 @@
 ! ---------------------------------------------------------------|
-! Solves the SCMFT eqs for WEAK polyelectrolytes polymers        |
-! coated onto a planar surface,                                  | 
-! input/output: see myio.f90                                     | 
+! Solves the SCMFT eqs planar/spherical/(inv)cylidrical surface, |
+! coated with weak poyelectrolytes and or have a surface charge  |
+! Different surface charge (bcflags)                             |
+! 	 1) "qu" = quartz                                            |
+!    2) "cl" = clay                                              |
+!    3) "ca" = calcite                                           |
+!    4) "ta" = taurine                                           | 
+!    5) "cc" = constant charge                                   | 
+!    6) "pp" = phoshonatepropionate                              |  
+!    input/output: see myio.f90                                  | 
 ! ---------------------------------------------------------------|
       
 program brushweakpolyelectrolyte 
@@ -45,6 +52,7 @@ program brushweakpolyelectrolyte
     text='program begins'
     call print_to_log(LogUnit,text)
 
+
     call read_inputfile()
     call init_constants()
     call init_matrices()            ! init matrices for chain generation
@@ -52,6 +60,8 @@ program brushweakpolyelectrolyte
     call make_sequence_chain(period,chaintype)
     call set_properties_chain(period,chaintype)  
     call make_chains(chainmethod)   ! generate polymer configurations 
+   
+
     call allocate_geometry(nsize)
     call make_geometry()            ! generate volume elements lattice 
     call allocate_field(nsize) 
@@ -64,28 +74,29 @@ program brushweakpolyelectrolyte
 
     !  .. computation starts
     
-    nz=nzmax                    
-    neqmax = neq    
+    ! nr=nrmax                        
     allocate(xstored(neq))
-
+    allocate(x(neq))
+    allocate(xguess(neq))   
+    
     isfirstguess = .true.    
     use_xstored = .false.             
     iter = 0
+    
+    pH%val=pH%min
 
     if(runflag=="rangepH") then 
 
-        allocate(x(neq))
-        allocate(xguess(neq))   
-        call chain_filter()   
-        
         !  .. first increase pH value
 
         do while (pH%min<=pH%val.and.pH%val<=pH%max.and.(abs(pH%stepsize)>=pH%delta)) 
-               
+           
             call init_expmu()
             ! call make_guess(x,xguess,loop%val,loopbegin)
             call make_guess(x, xguess, isfirstguess) 
             call solver(x, xguess, error, fnorm) 
+        
+
             if(isNaN(fnorm)) then  
                 text="no solution: backstep"
                 call print_to_log(LogUnit,text)
@@ -95,6 +106,12 @@ program brushweakpolyelectrolyte
                     x(i)=xguess(i)
                 enddo       
             else 
+                ! call fcnenergy()        
+                ! call average_height()      
+                ! call charge_polymer()
+                ! call average_charge_polymer()
+                call output()           ! writing of output
+
                 write(rstr,'(F7.3)')pH%val
                 text="solution pH="//trim(adjustl(rstr))
                 pH%val=pH%val+pH%stepsize
@@ -107,45 +124,6 @@ program brushweakpolyelectrolyte
     endif
 
 
-    if(runflag=="rangepH") then 
-        isfirstguess = .false.
-    else 
-        isfirstguess = .true.    
-    endif
-        
-    use_xstored = .false.   
-
-    ! with both flags set false make_guess will set xguess equal to x           
-
-    iter = 0
-        
-    do while (nz>=nzmin)        ! loop distances
-
-        call set_size_neq()  
-        
-        if(.not. allocated(x) ) allocate(x(neq))
-        if(.not. allocated(xguess) ) allocate(xguess(neq))
-
-        call chain_filter()    
-        call make_guess(x, xguess, isfirstguess, use_xstored, xstored)
-        call solver(x, xguess, error, fnorm)
-        call fcnenergy()        
-        call average_height()      
-        call charge_polymer()
-        call average_charge_polymer()
-        call output()           ! writing of output
-
-        isfirstguess =.false.    
-        use_xstored = .true.
-        iter = 0                ! reset of iteration counter 
-        nz = nz-nzstep          ! reduce distance 
-        do i=1,neq
-            xstored(i)=x(i)
-        enddo
-
-        deallocate(x)   
-        deallocate(xguess)
-    enddo   
 
     deallocate(xstored)
     call deallocate_field()

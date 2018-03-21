@@ -14,10 +14,11 @@ module field
     real(dp), dimension(:), allocatable :: psi     ! electrostatic potential 
     real(dp), dimension(:), allocatable :: xNa     ! volume fraction of positive Na+ ion
     real(dp), dimension(:), allocatable :: xK      ! volume fraction of positive K+ ion
+    real(dp), dimension(:), allocatable :: xTB     ! volume fraction of psitive TB (tetra butyl) ion
     real(dp), dimension(:), allocatable :: xCa     ! volume fraction of positive Ca2+ ion
     real(dp), dimension(:), allocatable :: xNaCl   ! volume fraction of NaCl ion pair
     real(dp), dimension(:), allocatable :: xKCl    ! volume fraction of KCl  ion pair
-    real(dp), dimension(:), allocatable :: xCl     ! volume fraction of negative ion
+    real(dp), dimension(:), allocatable :: xCl     ! volume fraction of Cl- ion
     real(dp), dimension(:), allocatable :: xHplus  ! volume fraction of Hplus
     real(dp), dimension(:), allocatable :: xOHmin  ! volume fraction of OHmin 
     real(dp), dimension(:), allocatable :: rhoq    ! total charge density in units of vsol
@@ -52,6 +53,7 @@ contains
         allocate(psi(N+1))
         allocate(xNa(N))
         allocate(xK(N))
+        allocate(xTB(N))
         allocate(xCa(N))
         allocate(xNaCl(N)) 
         allocate(xKCl(N)) 
@@ -83,6 +85,7 @@ contains
         deallocate(psi)
         deallocate(xNa)
         deallocate(xK)
+        deallocate(xTB)
         deallocate(xCa)
         deallocate(xNaCl) 
         deallocate(xKCl) 
@@ -119,9 +122,9 @@ contains
 
         firstm=0.0_dp               ! first moment 
         zerom=0.0_dp                ! zero moment  
-        do i=1,nz
+        do i=1,nr
             zerom=zerom+xpolAB(i)*deltaG(i)
-            firstm=firstm+xpolAB(i)*zc(i)*deltaG(i)
+            firstm=firstm+xpolAB(i)*rc(i)*deltaG(i)
         enddo
 
         if(zerom>0.0_dp) then 
@@ -132,9 +135,9 @@ contains
 
         firstm=0.0_dp               ! first moment 
         zerom=0.0_dp                ! zero moment  
-        do i=1,nz
+        do i=1,nr
             zerom=zerom+xpolC(i)*deltaG(i)
-            firstm=firstm+xpolC(i)*zc(i)*deltaG(i)
+            firstm=firstm+xpolC(i)*rc(i)*deltaG(i)
         enddo
 
         if(zerom>0.0_dp)then 
@@ -161,7 +164,7 @@ contains
         qpolA=0.0_dp
         qpolB=0.0_dp
 
-        do i=1,nz
+        do i=1,nr
             qpolA=qpolA+(zpolA(1)*fdisA(1,i)*rhopolA(i)+&
                 zpolA(4)*fdisA(4,i)*rhopolA(i))*deltaG(i) 
             qpolB=qpolB+(zpolB(1)*fdisB(1,i)*rhopolB(i)+&
@@ -177,7 +180,7 @@ contains
   ! .. post : return average charge of state of 
   !   of polymers
 
-  subroutine average_charge_polymer()
+subroutine average_charge_polymer()
         
     use globals
     use volume
@@ -193,55 +196,53 @@ contains
     ! .. number of A and B monomors 
     npolA=0
     do s=1,nsegAB
-       if(isAmonomer(s).eqv..true.) then
-          npolA=npolA+1
-       endif
+        if(isAmonomer(s).eqv..true.) then
+            npolA=npolA+1
+        endif
     enddo
     npolB=nsegAB-npolA
-      
-    sigmaLR=sigmaABL+sigmaABR
-
+    
     if(npolA/=0 .and. sigmaLR/=0 ) then
-       do k=1,5
-          avfdisA(k)=0.0_dp
-          do i=1,nz
-             avfdisA(k)=avfdisA(k)+fdisA(k,i)*rhopolA(i)*deltaG(i) 
-          enddo
-          avfdisA(k)=avfdisA(k)*delta/(sigmaLR*delta*npolA)
-       enddo
+        do k=1,5
+            avfdisA(k)=0.0_dp
+            do i=1,nr
+                avfdisA(k)=avfdisA(k)+fdisA(k,i)*rhopolA(i)*deltaG(i) 
+            enddo
+            avfdisA(k)=avfdisA(k)*delta/(sigmaAB*delta*npolA)
+        enddo
     else
-       do k=1,5
-          avfdisA(k)=0.0_dp
-       enddo
+        do k=1,5
+            avfdisA(k)=0.0_dp
+        enddo
     endif
     
     if(npolB/=0 .and. sigmaLR/=0) then
-       do k=1,5
-          avfdisB(k)=0.0_dp
-          do i=1,nz
-             avfdisB(k)=avfdisB(k)+fdisB(k,i)*rhopolB(i)*deltaG(i) 
-          enddo
-          avfdisB(k)=avfdisB(k)*delta/(sigmaLR*delta*npolB)
-       enddo
+        do k=1,5
+            avfdisB(k)=0.0_dp
+            do i=1,nr
+                avfdisB(k)=avfdisB(k)+fdisB(k,i)*rhopolB(i)*deltaG(i) 
+            enddo
+            avfdisB(k)=avfdisB(k)*delta/(sigmaAB*delta*npolB)
+        enddo
     else
-       do k=1,5
-          avfdisB(k)=0.0_dp
-       enddo
+        do k=1,5
+            avfdisB(k)=0.0_dp
+        enddo
     endif
     
-  end subroutine average_charge_polymer
+end subroutine average_charge_polymer
   
 
-  logical function isNaN(x)
+logical function isNaN(x)
     implicit none
     real(dp) :: x
     if (x /= x) then
         isNaN=.true.
     else
-      isNaN=.false.
+        isNaN=.false.
     endif 
 
-  end function isNaN 
+end function isNaN 
   
 end module field
 

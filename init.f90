@@ -11,74 +11,6 @@ module initxvector
 contains
 
 
-subroutine init_guess_electdouble(x, xguess)
-      
-    implicit none
-  
-    real(dp) :: x(neq)       ! volume fraction solvent iteration vector 
-    real(dp) :: xguess(neq)  ! guess fraction  solvent 
-  
-    !     ..local variables 
-    integer :: n, i
-    character(len=8) :: fname(4)
-    integer :: ios,nfile(4)
-  
-  
-    ! .. init guess all xbulk     
-
-    do i=1,nz
-        x(i)=xbulk%sol
-        x(i+nz)=0.000_dp
-        x(i+2*nz)=0.000001_dp
-        x(i+3*nz)=0.00001_dp
-    enddo
-  
-    if (infile.eq.1) then   ! infile is read in from file/stdio  
-    
-        write(fname(1),'(A7)')'xsol.in'
-        write(fname(2),'(A6)')'psi.in'
-        write(fname(3),'(A5)')'xpolA.in'
-        write(fname(4),'(A5)')'xpolB.in'
-     
-        nfile(1)=100
-        nfile(2)=200
-        nfile(3)=300
-        nfile(4)=400
-     
-        do i=1,4 ! loop files
-            open(unit=nfile(i),file=fname(i),iostat=ios,status='old')
-            if(ios >0 ) then    
-                print*, 'file num ber =',nfile(i),' file name =',fname(i)
-                print*, 'Error opening file : iostat =', ios
-                stop
-            endif
-        enddo
-     
-        if(bcflag(LEFT)/="cc") read(200,*)psisurfL     ! degree of complexation A
-        do i=1,nz
-            read(100,*)xsol(i)    ! solvent
-            read(200,*)psi(i)     ! degree of complexation A
-            read(300,*)fdisA(5,i) ! degree of complexation A
-            read(400,*)xpolC(i)   ! degree of complexation A
-            x(i)      = xsol(i)    ! placing xsol  in vector x
-            x(i+nz)   = psi(i)     ! placing xsol  in vector x
-            x(i+2*nz) = fdisA(5,i) ! placing xsol  in vector x
-            x(i+3*nz) = xpolC(i)   ! placing xsol  in vector x
-        enddo
-        if(bcflag(RIGHT)/="cc") read(200,*)psisurfR     ! degree of complexation A 
-       
-         do i=1,4
-            close(nfile(i))
-        enddo
-
-    endif
-    !     .. end init from file 
-  
-    do i=1,neq
-        xguess(i)=x(i)
-    enddo
-
-end subroutine init_guess_electdouble
 
 subroutine init_guess_electnopoly(x, xguess)
       
@@ -96,20 +28,16 @@ subroutine init_guess_electnopoly(x, xguess)
   
     ! .. init guess all xbulk     
 
-    do i=1,nz
+    do i=1,nr
         x(i)=xbulk%sol
-        x(i+nz)=0.000_dp
+        x(i+nr)=0.000_dp
     enddo
 
     neq_bc=0
-    if(bcflag(LEFT)/="cc") then
-        neq_bc=neq_bc+1 
-        x(2*nz+neq_bc)=0.00_dp
-    endif      
-    if(bcflag(RIGHT)/="cc") then 
-        neq_bc=neq_bc+1 
-        x(2*nz+neq_bc)=0.00_dp
-    endif     
+    if(bcflag/="cc") then
+        neq_bc=1 
+        x(2*nr+neq_bc)=0.00_dp
+    endif        
 
     if (infile.eq.1) then   ! infile is read in from file/stdio  
     
@@ -128,15 +56,14 @@ subroutine init_guess_electnopoly(x, xguess)
             endif
         enddo
      
-        if(bcflag(LEFT)/="cc") read(200,*)psisurfL     ! degree of complexation A
-        do i=1,nz
+        if(bcflag/="cc") read(200,*)psisurf     ! degree of complexation A
+        do i=1,nr
             read(100,*)xsol(i)    ! solvent
             read(200,*)psi(i)     ! degree of complexation A
             x(i)      = xsol(i)    ! placing xsol  in vector x
-            x(i+nz)   = psi(i)     ! placing xsol  in vector x
+            x(i+nr)   = psi(i)     ! placing xsol  in vector x
         enddo
-        if(bcflag(RIGHT)/="cc") read(200,*)psisurfR     ! degree of complexation A 
-       
+
         do i=1,2
             close(nfile(i))
         enddo
@@ -166,12 +93,12 @@ subroutine init_guess_elect(x, xguess)
   
     ! .. init guess all xbulk     
 
-    do i=1,nz
+    do i=1,nr
         x(i)=xbulk%sol
-        x(i+nz)=0.000_dp
-        x(i+2*nz)=0.000001_dp
-        x(i+3*nz)=0.00001_dp
-!        x(i+4*nz)=0.00_dp
+        x(i+nr)=0.000_dp
+        x(i+2*nr)=0.000001_dp
+        x(i+3*nr)=0.00001_dp
+!        x(i+4*nr)=0.00_dp
     enddo
   
     if (infile.eq.1) then   ! infile is read in from file/stdio  
@@ -194,19 +121,18 @@ subroutine init_guess_elect(x, xguess)
                 stop
             endif
         enddo
-        if(bcflag(LEFT)/="cc") read(200,*)psisurfL    
-        do i=1,nz
+        if(bcflag/="cc") read(200,*)psisurf    
+        do i=1,nr
             read(100,*)xsol(i)    ! solvent
             read(200,*)psi(i)     ! degree of complexation A
             read(300,*)fdisA(5,i) ! degree of complexation A
             read(400,*)xpolC(i)   ! degree of complexation A
             x(i)      = xsol(i)    ! placing xsol  in vector x
-            x(i+nz)   = psi(i)     ! placing xsol  in vector x
-            x(i+2*nz) = fdisA(5,i) ! placing xsol  in vector x
-            x(i+3*nz) = xpolC(i)   ! placing xsol  in vector x
+            x(i+nr)   = psi(i)     ! placing xsol  in vector x
+            x(i+2*nr) = fdisA(5,i) ! placing xsol  in vector x
+            x(i+3*nr) = xpolC(i)   ! placing xsol  in vector x
         enddo
-    
-        if(bcflag(RIGHT)/="cc") read(200,*)psisurfR    
+            x(4*nr+1)=psisurf
        
          do i=1,4
             close(nfile(i))
@@ -236,9 +162,9 @@ subroutine init_guess_neutral(x, xguess)
   
     !     .. init guess all xbulk      
 
-    do i=1,nz
+    do i=1,nr
         x(i)=xbulk%sol
-        x(i+nz)=0.000_dp
+        x(i+nr)=0.000_dp
     enddo
   
   
@@ -258,11 +184,11 @@ subroutine init_guess_neutral(x, xguess)
             endif
         enddo
      
-        do i=1,nz
+        do i=1,nr
             read(100,*)xsol(i)       ! solvent
             read(200,*)rhopolB(i)    ! density polymer B
             x(i)      = xsol(i)       ! placing xsol  in vector x
-            x(i+nz)   = rhopolB(i)    ! placing rhopolB  in vector x
+            x(i+nr)   = rhopolB(i)    ! placing rhopolB  in vector x
         enddo
         
         close(100)
@@ -297,38 +223,37 @@ subroutine make_guess_from_xstored(xguess,xstored)
     integer :: i,neq_bc
 
     neq_bc=0    
-    if(bcflag(RIGHT)/="cc") neq_bc=neq_bc+1
-    if(bcflag(LEFT)/="cc") neq_bc=neq_bc+1 
-
+    if(bcflag/="cc") neq_bc=neq_bc+1
+    
     if(sysflag=="elect".or.sysflag=="electdouble") then 
-        do i=1,nz/2
+        do i=1,nr/2
             xguess(i)=xstored(i)                    ! volume fraction solvent 
-            xguess(i+nz)=xstored(i+nz+nzstep)       ! potential
-            xguess(i+2*nz)=xstored(i+2*(nz+nzstep))  
-            xguess(i+3*nz)=xstored(i+3*(nz+nzstep))  
+            xguess(i+nr)=xstored(i+nr+nrstep)       ! potential
+            xguess(i+2*nr)=xstored(i+2*(nr+nrstep))  
+            xguess(i+3*nr)=xstored(i+3*(nr+nrstep))  
         enddo
-        do i=nz/2+1,nz  ! shift by nzstep
-            xguess(i)=xstored(i+nzstep)    
-            xguess(i+nz)=xstored(i+nz+2*nzstep)      
-            xguess(i+2*nz)=xstored(i+2*nz+3*nzstep)  
-            xguess(i+3*nz)=xstored(i+3*nz+4*nzstep)  
+        do i=nr/2+1,nr  ! shift by nrstep
+            xguess(i)=xstored(i+nrstep)    
+            xguess(i+nr)=xstored(i+nr+2*nrstep)      
+            xguess(i+2*nr)=xstored(i+2*nr+3*nrstep)  
+            xguess(i+3*nr)=xstored(i+3*nr+4*nrstep)  
         enddo       
 
         do i=1,neq_bc
-            xguess(4*nz+i)=xstored(4*(nz+nzstep)+i) 
+            xguess(4*nr+i)=xstored(4*(nr+nrstep)+i) 
         enddo   
     elseif (sysflag=="electnopoly") then 
-        do i=1,nz/2
+        do i=1,nr/2
             xguess(i)=xstored(i)                    ! volume fraction solvent 
-            xguess(i+nz)=xstored(i+nz+nzstep)       ! potential
+            xguess(i+nr)=xstored(i+nr+nrstep)       ! potential
         enddo
-        do i=nz/2+1,nz  ! shift by nzstep
-            xguess(i)=xstored(i+nzstep)    
-            xguess(i+nz)=xstored(i+nz+2*nzstep)      
+        do i=nr/2+1,nr  ! shift by nrstep
+            xguess(i)=xstored(i+nrstep)    
+            xguess(i+nr)=xstored(i+nr+2*nrstep)      
         enddo       
 
         do i=1,neq_bc
-            xguess(2*nz+i)=xstored(2*(nz+nzstep)+i) 
+            xguess(2*nr+i)=xstored(2*(nr+nrstep)+i) 
         enddo   
     else
         print*,"Error : make_guess_from_xstored wrong sysflag"
@@ -358,8 +283,7 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
 !    print*,"value isfirstguess=",isfirstguess    
   
     neq_bc=0    
-    if(bcflag(RIGHT)/="cc") neq_bc=neq_bc+1
-    if(bcflag(LEFT)/="cc") neq_bc=neq_bc+1 
+    if(bcflag/="cc") neq_bc=neq_bc+1 
 
 
     if(present(flagstored)) then
@@ -373,8 +297,6 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
 
                 if(sysflag=="elect") then 
                     call init_guess_elect(x,xguess)
-                else if(sysflag=="electdouble") then 
-                    call init_guess_electdouble(x,xguess)  
                 else if(sysflag=="electnopoly") then 
                     call init_guess_neutral(x,xguess)
                 else if(sysflag=="neutral") then 
@@ -395,8 +317,6 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
     else if(isfirstguess) then       ! first guess
         if(sysflag=="elect") then 
             call init_guess_elect(x,xguess)
-        else if(sysflag=="electdouble") then 
-            call init_guess_electdouble(x,xguess) 
         else if(sysflag=="neutral") then 
             call init_guess_neutral(x,xguess)
         else if(sysflag=="electnopoly") then 

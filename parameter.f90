@@ -25,6 +25,7 @@ module parameters
   
     real(dp) :: vNa                ! volume positive ion in units of vsol
     real(dp) :: vK                 ! volume positive ion in units of vsol
+    real(dp) :: vTB                ! volume positive ion in units of vsol
     real(dp) :: vCl                ! volume negative ion in units of vsol   
     real(dp) :: vCa                ! volume positive divalent ion in units of vsol
     real(dp) :: vNaCl
@@ -34,6 +35,7 @@ module parameters
   
     real(dp) :: RNa
     real(dp) :: RK
+    real(dp) :: RTB 
     real(dp) :: RCl
     real(dp) :: RCa
     real(dp) :: RNaCl
@@ -71,10 +73,7 @@ module parameters
     real(dp) :: lb                 ! Bjerrum length	   
     real(dp) :: constqW            ! constant in Poisson eq dielectric constant of water 
 
-    real(dp) :: sigmaAB            ! sigma AB polymer coated on planar surface
-    real(dp) :: sigmaABL           ! sigma AB polymer coated on planar surface
-    real(dp) :: sigmaABR           ! sigma AB polymer coated on planar surface
-    
+    real(dp) :: sigmaAB            ! sigma AB polymer coated on surface
     real(dp) :: sigmaC             ! sigma C polymer coated on planar surface
   
     integer :: itmax             ! maximum number of iterations
@@ -126,12 +125,14 @@ module parameters
     real(dp) :: xNaClsalt          ! volume fraction of salt in bulk
     real(dp) :: xKClsalt           ! volume fraction of salt in bulk
     real(dp) :: xCaCl2salt         ! volume fraction of divalent salt in bulk
-  
+    real(dp) :: xTBClsalt          ! volume fraction of salt in bulk
+
     real(dp) :: cHplus             ! concentration of H+ in bulk in mol/liter
     real(dp) :: cOHmin             ! concentration of OH- in bulk in mol/liter
-    real(dp) :: cNaCl              ! concentration of salt in bulk in mol/liter
-    real(dp) :: cKCl               ! concentration of salt in bulk in mol/liter
-    real(dp) :: cCaCl2             ! concentration of divalent salt in bulk in mol/liter
+    real(dp) :: cNaCl              ! concentration of NaCl in bulk in mol/liter
+    real(dp) :: cKCl               ! concentration of KCl in bulk in mol/liter
+    real(dp) :: cCaCl2             ! concentration of CaCl2 in bulk in mol/liter
+    real(dp) :: cTBCl              ! concentration of TBCl in  bulk in mol/liter 
     real(dp) :: pHbulk             ! pH of bulk pH = -log([H+])
     real(dp) :: pOHbulk            ! p0H of bulk p0H = -log([0H-])
   
@@ -144,27 +145,26 @@ contains
     subroutine set_size_neq()
 
         use globals
-        use volume, only : nz
+        use volume, only : nr
 
         implicit none
 
         integer(8) :: neq_bc
 
         neq_bc=0 
-        if(bcflag(LEFT)/="cc") neq_bc=neq_bc+1
-        if(bcflag(RIGHT)/="cc") neq_bc=neq_bc+1
+        if(bcflag/="cc") neq_bc=neq_bc+1
 
         select case (sysflag)
             case ("elect") 
-                neq = 4 * nz + neq_bc
+                neq = 4 * nr + neq_bc
             case ("electdouble")  
-                neq = 4 * nz 
+                neq = 4 * nr
             case ("electnopoly") 
-                neq = 2 * nz + neq_bc
+                neq = 2 * nr + neq_bc
             case ("electHC") 
-                neq = 5 * nz +neq_bc
+                neq = 5 * nr +neq_bc
             case ("neutral") 
-                neq = 2 * nz
+                neq = 2 * nr
             case ("bulk water") 
                 neq = 5 
             case default
@@ -172,6 +172,7 @@ contains
                 stop
         end select  
          
+
     end subroutine set_size_neq
 
     
@@ -209,7 +210,7 @@ contains
  
         pi=acos(-1.0_dp)          ! pi = arccos(-1)
         itmax=2000                ! maximum number of iterations
-        nz=nsize                  ! size of lattice in z-direction 
+        nr=nsize                  ! size of lattice in z-direction 
         
         !     .. charges
         
@@ -237,6 +238,8 @@ contains
         RK  = 0.138_dp             ! radius of K+ in nm
         RCl = 0.181_dp             ! radius of Cl- in nm
         RCa = 0.106_dp             ! radius of Ca2+ in nm
+        RTB = 0.50_dp              ! radius of TB+ in nm  
+
         RNaCl = 0.26_dp            ! radius of ion pair: this value is strange  and not used !!
         RKCl = 0.26_dp             ! radius of ion pair
         
@@ -255,6 +258,8 @@ contains
         vK   = ((4.0_dp/3.0_dp)*pi*(RK)**3)/vsol 
         vCl  = ((4.0_dp/3.0_dp)*pi*(RCl)**3)/vsol 
         vCa  = ((4.0_dp/3.0_dp)*pi*(RCa)**3)/vsol 
+        vTB  = ((4.0_dp/3.0_dp)*pi*(RTB)**3)/vsol 
+
         vNaCl= (vNa+vCl)          ! contact ion pair
         vKCl = (vK+vCl)           ! contact ion pair
         
@@ -318,9 +323,7 @@ contains
         
         !  .. initializations of input dependent variables 
         
-        sigmaABL = sigmaABL * (1.0_dp/(delta)) ! dimensionless sigma no vpol*vsol !!!!!!!!!!!! 
-        sigmaABR = sigmaABR * (1.0_dp/(delta)) 
-        sigmaAB = sigmaAB * (1.0_dp/(delta))  
+        sigmaAB = sigmaAB * (1.0_dp/(delta))  ! dimensionless sigma no vpol*vsol !!!!!!!!!!!! 
         sigmaC   = sigmaC * (1.0_dp/(delta)) ! dimensionless sigma no vpol*vsol !!!!!!!!!!!!
         
         ! VdWepsC  = VdWepsC/(vpolC*vsol) ! VdW eps scaled 
@@ -398,7 +401,8 @@ contains
         !     Kion  = 0.246_dp ! unit 1/M= liter per mol !!!
         K0ionK  = KionK /(vsol*Na/1.0e24_dp) ! intrinstic equilibruim constant 
         K0ionNa = KionNa/(vsol*Na/1.0e24_dp) ! intrinstic equilibruim constant 
-        
+       
+
         if((KionNa.ne.0.0_dp).or.(KionK.ne.0.0_dp)) then  
             sysflag_old=sysflag 
             sysflag="bulk water"        ! set solver to fcnbulk
@@ -434,7 +438,7 @@ contains
             xbulk%sol=1.0_dp-xbulk%Hplus-xbulk%OHmin - xbulk%Cl -xbulk%Na -xbulk%K-xbulk%NaCl-xbulk%KCl-xbulk%Ca 
             
         endif
-         
+
         !     .. intrinstic equilibruim constants      
         do i=1,4
              Ka(i)  = 10.0_dp**(-pKa(i)) ! experimental equilibruim constant acid 
@@ -448,10 +452,11 @@ contains
         K0b(4) = (Kb(4)*vsol)*(Na/1.0e24_dp)
          
 
-        pibulk = -dlog(xbulk%sol)  ! pressure (pi) of bulk
+        pibulk = -log(xbulk%sol)  ! pressure (pi) of bulk
         ! exp(beta mu_i) = (rhobulk_i v_i) / exp(- beta pibulk v_i) 
         expmu%Na    = xbulk%Na   /(xbulk%sol**vNa) 
         expmu%K     = xbulk%K    /(xbulk%sol**vK)
+
         expmu%Ca    = xbulk%Ca   /(xbulk%sol**vCa) 
         expmu%Cl    = xbulk%Cl   /(xbulk%sol**vCl)
         expmu%NaCl  = xbulk%NaCl /(xbulk%sol**vNaCl)
@@ -470,6 +475,111 @@ contains
     end subroutine init_expmu_elect
 
 
+    subroutine init_expmu_elect_qdot()
+ 
+        use globals
+        use physconst
+        
+        implicit none 
+        
+        !     .. local variable
+        
+        integer :: i
+
+
+        !     .. initializations of input dependent variables, electrostatic part 
+        
+        pHbulk=pH%val ! transfer pH value 
+
+        cHplus = (10.0_dp)**(-pHbulk) ! concentration H+ in bulk
+        pOHbulk = pKw -pHbulk       
+        cOHmin  = (10.0_dp)**(-pOHbulk) ! concentration OH- in bulk
+        
+        xbulk%Hplus = (cHplus*Na/(1.0e24_dp))*(vsol) ! volume fraction H+ in bulk vH+=vsol
+        xbulk%OHmin = (cOHmin*Na/(1.0e24_dp))*(vsol) ! volume fraction OH- in bulk vOH-=vsol
+        
+        ! NaCl in solution 
+        xNaClsalt = (cNaCl*Na/(1.0d24))*((vNa+vCl)*vsol) ! volume fraction NaCl salt in mol/l
+        xbulk%Na=xNaClsalt*vNa/(vNa+vCl)
+        xbulk%Cl=xNaClsalt*vCl/(vNa+vCl)
+
+        ! adjust pH
+        if(pHbulk.le.7) then      ! pH<= 7 add HCl 
+            xbulk%Cl=xNaClsalt*vCl/(vNa+vCl) +(xbulk%Hplus -xbulk%OHmin)*vCl  ! NaCl+ HCl
+        else                      ! pH >7
+            xbulk%K= +(xbulk%OHmin -xbulk%Hplus)*vK ! NaCl+ KOH  
+        endif
+        
+        ! KCl in solution 
+        xKClsalt = (cKCl*Na/(1.0e24_dp))*((vK+vCl)*vsol) ! volume fraction KCl salt in mol/l
+        xbulk%K  = xbulk%K  +  xKClsalt*vK/(vK+vCl)  
+        xbulk%Cl = xbulk%Cl + xKClsalt*vCl/(vK+vCl)  
+        
+        ! CaCl2 in solution 
+        xCaCl2salt = (cCaCl2*Na/(1.0e24_dp))*((vCa+2.0_dp*vCl)*vsol) ! volume fraction CaCl2 in mol/l
+        xbulk%Ca=xCaCl2salt*vCa/(vCa+2.0_dp*vCl)
+        xbulk%Cl=xbulk%Cl+ xCaCl2salt*2.0_dp*vCl/(vCa+2.0_dp*vCl)
+        
+        ! TBCl in solution TBCl=tetrabutyl 
+        xTBClsalt = (cTBCl*Na/(1.0e24_dp))*((vTB+vCl)*vsol) ! volume fraction KCl salt in mol/l
+        xbulk%TB = xTBClsalt*vTB/(vTB+vCl)  
+        xbulk%Cl = xbulk%Cl + xTBClsalt*vCl/(vTB+vCl)  
+        ! no ionparing 
+
+        xbulk%NaCl=0.0_dp  
+        xbulk%KCl=0.0_dp   
+        
+        xbulk%sol=1.0_dp -xbulk%Hplus -xbulk%OHmin -xbulk%Cl -xbulk%Na -xbulk%K-xbulk%NaCl-xbulk%KCl-xbulk%Ca-xbulk%TB   
+        
+
+        !     .. if Kion neq 0 ion pairing !
+        !     .. intrinstic equilibruim constant acid        
+        !     Kion  = 0.246_dp ! unit 1/M= liter per mol !!!
+        K0ionK  = KionK /(vsol*Na/1.0e24_dp) ! intrinstic equilibruim constant 
+        K0ionNa = KionNa/(vsol*Na/1.0e24_dp) ! intrinstic equilibruim constant 
+       
+        if((KionNa.ne.0.0_dp).or.(KionK.ne.0.0_dp)) then  
+           print*,"Input errror KionNa and KionK should be zero"
+           stop
+        endif
+
+        !     .. intrinstic equilibruim constants      
+        do i=1,4
+             Ka(i)  = 10.0_dp**(-pKa(i)) ! experimental equilibruim constant acid 
+             Kb(i)  = 10.0_dp**(-pKb(i)) ! experimental equilibruim constant acid
+             K0a(i) = (Ka(i)*vsol)*(Na/1.0e24_dp) ! intrinstic equilibruim constant 
+             K0b(i) = (Kb(i)*vsol)*(Na/1.0e24_dp) ! intrinstic equilibruim constant 
+        enddo
+        !     .. rescale for i=4 2A- Ca <=> A2Ca
+          
+        K0a(4) = (Ka(4)*vsol)*(Na/1.0e24_dp)
+        K0b(4) = (Kb(4)*vsol)*(Na/1.0e24_dp)
+         
+
+        pibulk = -log(xbulk%sol)  ! pressure (pi) of bulk
+        ! exp(beta mu_i) = (rhobulk_i v_i) / exp(- beta pibulk v_i) 
+        expmu%Na    = xbulk%Na   /(xbulk%sol**vNa) 
+        expmu%K     = xbulk%K    /(xbulk%sol**vK)
+        expmu%TB    = xbulk%TB   /(xbulk%sol**vTB)
+        expmu%Ca    = xbulk%Ca   /(xbulk%sol**vCa) 
+        expmu%Cl    = xbulk%Cl   /(xbulk%sol**vCl)
+        expmu%NaCl  = xbulk%NaCl /(xbulk%sol**vNaCl)
+        expmu%KCl   = xbulk%KCl  /(xbulk%sol**vKCl)
+        expmu%Hplus = xbulk%Hplus/xbulk%sol ! vsol = vHplus 
+        expmu%OHmin = xbulk%OHmin/xbulk%sol ! vsol = vOHmin 
+          
+        !     .. end init electrostatic part 
+            
+        VdWepsC  = VdWepsC/(vpolC*vsol) ! VdW eps scaled 
+        VdWepsB  = VdWepsB/(vpolB(3)*vsol) ! VdW eps scaled 
+
+        
+        
+    end subroutine init_expmu_elect_qdot
+
+
+
+
     subroutine init_expmu_neutral
 
         implicit none
@@ -483,7 +593,7 @@ contains
 
     subroutine init_expmu
 
-        use globals, only : sysflag
+        use globals, only : sysflag, bcflag
         implicit none
 
 
@@ -491,8 +601,12 @@ contains
             call init_expmu_elect()
         elseif(sysflag=="electdouble") then 
             call init_expmu_elect()
-        elseif(sysflag=="electnopoly") then 
-            call init_expmu_elect()
+        elseif(sysflag=="electnopoly") then
+            if(bcflag=="pp") then 
+                call init_expmu_elect_qdot()
+            else
+                call init_expmu_elect()
+            endif    
         elseif(sysflag=="neutral") then
             call init_expmu_neutral()
         else

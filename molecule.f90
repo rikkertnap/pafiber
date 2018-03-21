@@ -2,7 +2,7 @@ module molecules
 
   use precision_definition
   implicit none
-	
+
   type moleclist
      real(dp) :: sol
      real(dp) :: Na
@@ -13,6 +13,7 @@ module molecules
      real(dp) :: KCl
      real(dp) :: Hplus
      real(dp) :: OHmin
+     real(dp) :: TB
   end type moleclist
   
-end module 
+end module molecules
