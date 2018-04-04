@@ -297,10 +297,10 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
 
                 if(sysflag=="elect") then 
                     call init_guess_elect(x,xguess)
-                else if(sysflag=="electnopoly") then 
-                    call init_guess_neutral(x,xguess)
-                else if(sysflag=="neutral") then 
+                else if(sysflag=="electnopoly".or.sysflag=="electligand") then 
                     call init_guess_electnopoly(x,xguess)
+                else if(sysflag=="neutral") then 
+                    call init_guess_neutral(x,xguess)
                 else     
                     print*,"Wrong value sysflag : ", sysflag
                 endif
@@ -319,7 +319,7 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
             call init_guess_elect(x,xguess)
         else if(sysflag=="neutral") then 
             call init_guess_neutral(x,xguess)
-        else if(sysflag=="electnopoly") then 
+        else if(sysflag=="electnopoly".or.sysflag=="electligand") then 
             call init_guess_electnopoly(x,xguess)  
         else
             print*,"Wrong value sysflag : ", sysflag

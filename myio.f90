@@ -2,6 +2,7 @@
 module myio
 
     use precision_definition
+
     implicit none
 
     ! return error values
@@ -18,7 +19,7 @@ module myio
 
     ! unit number 
     integer :: un_sys,un_xpolAB,un_xpolC,un_xsol,un_xNa,un_xCl,un_xK,un_xCa,un_xNaCl,un_xKCl
-    integer :: un_xOHmin,un_xHplus,un_fdisA,un_fdisB,un_psi,un_charge, un_xpair, un_rhopolAB, un_xTB 
+    integer :: un_xOHmin,un_xHplus,un_fdisA,un_fdisB,un_psi,un_charge, un_xpair, un_rhopolAB, un_xTB, un_xpp, un_cpp
    
     ! format specifiers 
     character(len=80), parameter  :: fmt = "(A9,I1,A5,ES25.16)"
@@ -33,10 +34,6 @@ module myio
     public :: read_inputfile
     public :: output
 
-
- !   private ::  un_sys,un_xpolAB,un_xpolC,un_xsol,un_xNa,un_xCl,un_xK,un_xCa,un_xNaCl,un_xKCl
- !   private :: un_xOHmin,un_xHplus,un_fdisA,un_fdisB,un_psi,un_charge, un_xpair, un_xTB  
- !   private :: fmt,fmt2reals,fmt3reals,fmt4reals,fmt5reals,fmt6reals  
       
 contains
 
@@ -47,8 +44,6 @@ subroutine read_inputfile(info)
     use parameters
     use surface 
     use myutils, only : newunit
-
-    implicit none
 
     integer, intent(out), optional :: info
 
@@ -94,7 +89,13 @@ subroutine read_inputfile(info)
     read(un_input,*)cNaCl
     read(un_input,*)cKCl
     read(un_input,*)cCaCl2
-    if(bcflag=="pp") read(un_input,*)cTBCl            !   TB=tertraButyl
+    if(bcflag=="pp") then 
+        read(un_input,*)cTBCl            !   TB=tertraButyl
+        if(sysflag=="electligand") then 
+            read(un_input,*)deltaGads
+            read(un_input,*)cpp
+        endif
+    endif   
     read(un_input,*)pKa(1)           !   AH   <=> A- + H+ 
     read(un_input,*)pKa(2)           !   ANa  <=> A- + Na+  
     read(un_input,*)pKa(3)           !   ACa+ <=> A- + Ca2+ 
@@ -112,20 +113,14 @@ subroutine read_inputfile(info)
     read(un_input,*)VdWepsC
     read(un_input,*)VdWepsB    
     read(un_input,*)VdWcutoff
-    ! read(un_input,*)nrmax            ! max distance
-    ! read(un_input,*)nrmin            ! min distance
-    ! read(un_input,*)nrstep           ! step distance  
     read(un_input,*)verboseflag  
     read(un_input,*)geometry
     read(un_input,*)delta   
 
     close(un_input)
 
-
     write(fcnname,'(A14)')'read_inputfile'
-    
-      
-    
+          
     ! .. check error flag
 
     call check_value_sysflag(sysflag,info_sys) 
@@ -170,12 +165,10 @@ end subroutine read_inputfile
 
 subroutine check_value_sysflag(sysflag,info)
 
-    implicit none
-
     character(len=15), intent(in) :: sysflag
     integer, intent(out),optional :: info
 
-    character(len=15) :: sysflagstr(5)
+    character(len=15) :: sysflagstr(6)
     integer :: i
     logical :: flag
 
@@ -186,10 +179,11 @@ subroutine check_value_sysflag(sysflag,info)
     sysflagstr(3)="neutral"
     sysflagstr(4)="electnopoly"
     sysflagstr(5)="electHC"
+    sysflagstr(6)="electligand"
 
     flag=.FALSE.
 
-    do i=1,5
+    do i=1,6
         if(sysflag==sysflagstr(i)) flag=.TRUE.
     enddo
 
@@ -206,8 +200,6 @@ end subroutine check_value_sysflag
 
 
 subroutine check_value_runflag(runflag,info)
-
-    implicit none
 
     character(len=15), intent(in) :: runflag
     integer, intent(out),optional :: info
@@ -240,10 +232,6 @@ end subroutine check_value_runflag
 
 subroutine check_value_bcflag(bcflag,info)
 
-    use globals, only : LEFT, RIGHT
-
-    implicit none
-
     character(len=2), intent(in) :: bcflag
     integer, intent(out), optional :: info
 
@@ -259,7 +247,6 @@ subroutine check_value_bcflag(bcflag,info)
     bcvalues(4)="ta"
     bcvalues(5)="cc"
     bcvalues(6)="pp"
-   
 
     flag=.FALSE.
             
@@ -276,10 +263,8 @@ subroutine check_value_bcflag(bcflag,info)
 end subroutine check_value_bcflag
 
 
-
 subroutine check_value_geometry(geometry,info)
         
-    implicit none
 
     character(len=11), intent(in) :: geometry
     integer, intent(out),optional :: info
@@ -316,8 +301,6 @@ end subroutine check_value_geometry
 
 subroutine check_value_chaintype(chaintype,info)
 
-    implicit none
-
     character(len=8), intent(in) :: chaintype
     integer, intent(out),optional :: info
 
@@ -349,8 +332,6 @@ subroutine check_value_chaintype(chaintype,info)
 end subroutine check_value_chaintype
 
 subroutine check_value_method(method,info)
-
-    implicit none
 
     character(len=8), intent(in) :: method
     integer, intent(out),optional :: info
@@ -390,12 +371,6 @@ subroutine output_elect
     use surface 
     use myutils, only : newunit
   
-    implicit none
-      
-    !     .. scalar argument
-    
-    !     .. local arguments
-
     !     .. output file names       
     
     character(len=90) :: sysfilename     
@@ -406,6 +381,8 @@ subroutine output_elect
     character(len=90) :: xNafilename
     character(len=90) :: xKfilename
     character(len=90) :: xTBfilename
+    character(len=90) :: xppfilename
+    character(len=90) :: xppfdisfilename
     character(len=90) :: xCafilename
     character(len=90) :: xNaClfilename
     character(len=90) :: xKClfilename
@@ -417,16 +394,21 @@ subroutine output_elect
     character(len=90) :: densfracAfilename
     character(len=90) :: densfracBfilename
     character(len=90) :: densfracionpairfilename
-    integer :: i,j,k          ! dummy indexes
+
+    integer :: i,j,k,t     ! dummy indexes
     character(len=100) :: fnamelabel
     character(len=20) :: rstr
     logical :: isopen
+    real(dp) :: xppfdis(5),cppfdis(5)
+    real(dp) :: cppbulk
+
 
     ! .. executable statements 
 
-    !     .. make label filenames 
+    ! .. make label filenames 
 
     if(sysflag/="electnopoly".and.bcflag/="pp") then 
+
         write(rstr,'(F5.3)')sigmaAB*delta 
         fnamelabel="sg"//trim(adjustl(rstr)) 
         write(rstr,'(F5.3)')cNaCl
@@ -435,6 +417,7 @@ subroutine output_elect
         fnamelabel=trim(fnamelabel)//"cCaCl2"//trim(adjustl(rstr))
         write(rstr,'(F7.3)')pHbulk
         fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))//".dat"
+
     else  ! filelabel for qdot only
                           
         write(rstr,'(F5.3)')sigmaSurf/(4.0_dp*pi*lb*delta)
@@ -447,8 +430,13 @@ subroutine output_elect
             write(rstr,'(F5.3)')cCaCl2
             fnamelabel=trim(fnamelabel)//"cCaCl2"//trim(adjustl(rstr))
         endif    
+        if(cpp/=0.0_dp) then      
+            write(rstr,'(F5.3)')cpp
+            fnamelabel=trim(fnamelabel)//"cpp"//trim(adjustl(rstr))
+        endif   
         write(rstr,'(F7.3)')pHbulk
         fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))//".dat"
+
     endif    
 
     sysfilename='system.'//trim(fnamelabel)
@@ -469,18 +457,23 @@ subroutine output_elect
     densfracAfilename='densityAfrac.'//trim(fnamelabel)
     densfracBfilename='densityBfrac.'//trim(fnamelabel)
     densfracionpairfilename='densityfracionpair.'//trim(fnamelabel)
+    xppfilename='xppions.'//trim(fnamelabel)
 
     !     .. opening files        
     
     open(unit=newunit(un_sys),file=sysfilename)       
     open(unit=newunit(un_xsol),file=xsolfilename)
     open(unit=newunit(un_psi),file=potentialfilename)
+
     if(sysflag/="electnopoly") then          
         open(unit=newunit(un_xpolAB),file=xpolABfilename)
         open(unit=newunit(un_xpolC),file=xpolCfilename)
         open(unit=newunit(un_fdisA),file=densfracAfilename) 
         open(unit=newunit(un_fdisB),file=densfracBfilename) 
-    endif       
+    endif   
+
+    if(sysflag=="electligand") open(unit=newunit(un_xpp),file=xppfilename)
+      
     if(verboseflag=="yes") then    
         open(unit=newunit(un_xNa),file=xNafilename)
         open(unit=newunit(un_xK),file=xKfilename)
@@ -495,7 +488,6 @@ subroutine output_elect
         open(unit=newunit(un_xOHmin),file=xOHminfilename)
     endif
     
-
     !   .. writting files   
 
     select case (geometry)
@@ -524,6 +516,15 @@ subroutine output_elect
             write(un_fdisB,fmt6reals)rc(i),fdisB(1,i),fdisB(2,i),fdisB(3,i),fdisB(4,i),fdisB(5,i)
         enddo
     endif   
+
+    if(sysflag=="electligand") then 
+        do i=1,nr
+            write(un_xpp,fmt6reals)rc(i),xpp(i,AH2BH),xpp(i,AHBH),xpp(i,AHB),xpp(i,ABH),xpp(i,AB)
+            do t=1,5    
+                cppfdis(t)=(xbulk%pp(t)/(vpp(t)*vsol))/cppbulk
+            enddo    
+        enddo
+    endif   
     
     if(verboseflag=="yes") then 
         do i=1,nr
@@ -538,11 +539,8 @@ subroutine output_elect
             write(un_charge,*)rc(i),rhoq(i)
             write(un_xHplus,*)rc(i),xHplus(i)
             write(un_xOHmin,*)rc(i),xOHmin(i)    
-
         enddo    
     endif
-
- 
 
     write(un_sys,*)'system      = planar weakpolyelectrolyte brush'
     write(un_sys,*)'version     = ',VERSION
@@ -604,12 +602,29 @@ subroutine output_elect
     write(un_sys,*)'xCabulk     = ',xbulk%Ca
     write(un_sys,*)'xHplusbulk  = ',xbulk%Hplus
     write(un_sys,*)'xOHminbulk  = ',xbulk%OHmin
-    if(bcflag=="pp") write(un_sys,*)'xTB         = ',xbulk%TB
+    if(bcflag=="pp") write(un_sys,*)'xTBbulk     = ',xbulk%TB
+    if(sysflag=="electligand") then
+        cppbulk = (cpp*Na/(1.0e24_dp))
+        write(un_sys,*)'xppbulk%pp(AH2BH) = ',xbulk%pp(AH2BH)
+        write(un_sys,*)'xppbulk%pp(AHBH)  = ',xbulk%pp(AHBH)
+        write(un_sys,*)'xppbulk%pp(AHB)   = ',xbulk%pp(AHB)
+        write(un_sys,*)'xppbulk%pp(ABH)   = ',xbulk%pp(ABH)
+        write(un_sys,*)'xppbulk%pp(AB)    = ',xbulk%pp(AB)
+        cppbulk = (cpp*Na/(1.0e24_dp))
+        do t=1,5       
+            cppfdis(t)=(xbulk%pp(t)/(vpp(t)*vsol))/cppbulk
+        enddo    
+        write(un_sys,*)'cppfdis(AH2BH) = ',cppfdis(AH2BH)
+        write(un_sys,*)'cppfdis(AHBH)  = ',cppfdis(AHBH)
+        write(un_sys,*)'cppfdis(AHB)   = ',cppfdis(AHB)
+        write(un_sys,*)'cppfdis(ABH)   = ',cppfdis(ABH)
+        write(un_sys,*)'cppfdis(AB)    = ',cppfdis(AB)
+    endif    
     write(un_sys,*)'sigmaAB     = ',sigmaAB*delta
     write(un_sys,*)'sigmaC      = ',sigmaC*delta
     write(un_sys,*)'dielectW    = ',dielectW
     write(un_sys,*)'lb          = ',lb
-    write(un_sys,*)'T           = ',T
+    write(un_sys,*)'T           = ',Temp
     write(un_sys,*)'VdWepsC     = ',VdWepsC*vpolC*vsol 
     write(un_sys,*)'VdWepsB     = ',VdWepsB*vpolB(3)*vsol
     write(un_sys,*)'zpolA(1)    = ',zpolA(1)
@@ -682,13 +697,14 @@ subroutine output_elect
             write(un_sys,fmt)' fdisSu(',i,')  = ',fdisS(i)
         enddo  
     endif
+
+
     write(un_sys,*)'nsize       = ',nsize  
     write(un_sys,*)'cuantasAB   = ',cuantasAB
     write(un_sys,*)'cuantasC    = ',cuantasC
     write(un_sys,*)'iterations  = ',iter
    
     ! .. closing files
-
 
     close(un_sys)
     close(un_xsol)
@@ -699,6 +715,7 @@ subroutine output_elect
         close(un_fdisA)
         close(un_fdisB)
     endif
+    if(sysflag=="electligand") close(un_xpp)
     if(verboseflag=="yes") then 
         close(un_xNa)   
         close(un_xK)
@@ -727,9 +744,6 @@ subroutine output_neutral
     use field
     use energy
     use myutils, only : newunit
-    !     use endpoint
-  
-    implicit none
 
     !     .. output file names         
     character(len=90) :: sysfilename     
@@ -773,7 +787,6 @@ subroutine output_neutral
     open(unit=newunit(un_xsol),file=xsolfilename)
 
     
-
     do i=1,nr    
        write(un_xpolAB,fmt4reals)rc(i),xpolAB(i),rhopolA(i),rhopolB(i)
        write(un_xpolC,fmt2reals)rc(i),xpolC(i)
@@ -811,7 +824,7 @@ subroutine output_neutral
     write(un_sys,*)'vpolB(4)    = ',vpolB(4)*vsol
     write(un_sys,*)'vpolB(5)    = ',vpolB(5)*vsol
     write(un_sys,*)'vpolC       = ',vpolC*vsol
-    write(un_sys,*)'T           = ',T
+    write(un_sys,*)'T           = ',Temp
     write(un_sys,*)'VdWepsC     = ',VdWepsC*vpolC*vsol
     write(un_sys,*)'VdWepsB     = ',VdWepsB*vpolB(3)*vsol
     write(un_sys,*)'cuantasAB   = ',cuantasAB
@@ -868,6 +881,8 @@ subroutine output()
     elseif(sysflag=="electnopoly") then
         call output_elect
         call output_individualcontr_fe
+    elseif(sysflag=="electligand") then
+        call output_elect
     else
         print*,"Error in output subroutine"
         print*,"Wrong value sysflag : ", sysflag
@@ -878,13 +893,11 @@ end subroutine output
 
 subroutine output_individualcontr_fe
 
-    use globals, only : LEFT,RIGHT, sysflag
+    use globals, only : sysflag
     use energy
     use myutils, only : newunit
     use parameters, only : sigmaAB,cNaCl,cCaCl2,pHbulk,VdWepsB
     use volume, only : delta,nr,nrmax,nrmin
-
-    implicit none 
 
     ! local arguments
 

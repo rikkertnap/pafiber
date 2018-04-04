@@ -31,12 +31,15 @@ program brushweakpolyelectrolyte
     use myio
     use myutils
     use chaingenerator
+    use fcnpointer
     
     implicit none  
     
     real(dp),  dimension(:), allocatable :: x         ! iteration vector 
     real(dp),  dimension(:), allocatable :: xguess    ! guess iteration vector
     real(dp),  dimension(:), allocatable :: xstored   ! stored iteration vector
+    real(dp),  dimension(:), allocatable :: fvec      ! stored iteration vector
+
 
     integer :: i             ! dummy indices       
     logical :: use_xstored       
@@ -70,6 +73,7 @@ program brushweakpolyelectrolyte
     
     call set_size_neq()             ! number of non-linear equation neq    
     call init_expmu()
+
     call init_surface(bcflag)
 
     !  .. computation starts
@@ -78,12 +82,17 @@ program brushweakpolyelectrolyte
     allocate(xstored(neq))
     allocate(x(neq))
     allocate(xguess(neq))   
+    allocate(fvec(neq))   
     
+
     isfirstguess = .true.    
     use_xstored = .false.             
     iter = 0
     
     pH%val=pH%min
+
+
+    ! print*,"-main->sysflag=",sysflag
 
     if(runflag=="rangepH") then 
 
@@ -94,7 +103,14 @@ program brushweakpolyelectrolyte
             call init_expmu()
             ! call make_guess(x,xguess,loop%val,loopbegin)
             call make_guess(x, xguess, isfirstguess) 
-            call solver(x, xguess, error, fnorm) 
+            !print*,"********************"
+            !print*,"sysflag=",sysflag
+
+            ! ßsscall set_fcn()
+            ! call fcnptr(x,fvec,neq)
+            !call output()  
+            ! stop 
+            !call solver(x, xguess, error, fnorm) 
         
 
             if(isNaN(fnorm)) then  

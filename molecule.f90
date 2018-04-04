@@ -14,6 +14,7 @@ module molecules
      real(dp) :: Hplus
      real(dp) :: OHmin
      real(dp) :: TB
+     real(dp), dimension(5) :: pp
   end type moleclist
   
 end module molecules

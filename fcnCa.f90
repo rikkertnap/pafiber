@@ -95,14 +95,14 @@ module listfcn
             rhopolB(i) = 0.0_dp
             rhopolC(i) = 0.0_dp
         
-            xNa(i)   = expmu%Na*(xsol(i)**vNa)*dexp(-psi(i)*zNa) ! ion plus volume fraction
-            xK(i)    = expmu%K*(xsol(i)**vK)*dexp(-psi(i)*zK)    ! ion plus volume fraction
-            xCa(i)   = expmu%Ca*(xsol(i)**vCa)*dexp(-psi(i)*zCa) ! ion divalent pos volume fraction
-            xNaCl(i) = expmu%NaCl*(xsol(i)**vNaCl)               ! ion pair  volume fraction
-            xKCl(i)  = expmu%KCl*(xsol(i)**vKCl)                 ! ion pair  volume fraction
-            xCl(i)   = expmu%Cl*(xsol(i)**vCl)*dexp(-psi(i)*zCl) ! ion neg volume fraction
-            xHplus(i) = expmu%Hplus*(xsol(i))*dexp(-psi(i))      ! H+  volume fraction
-            xOHmin(i) = expmu%OHmin*(xsol(i))*dexp(+psi(i))      ! OH-  volume fraction
+            xNa(i)    = expmu%Na   * (xsol(i)**vNa)*dexp(-psi(i)*zNa) ! ion plus volume fraction
+            xK(i)     = expmu%K    * (xsol(i)**vK) *dexp(-psi(i)*zK)    ! ion plus volume fraction
+            xCa(i)    = expmu%Ca   * (xsol(i)**vCa)*dexp(-psi(i)*zCa) ! ion divalent pos volume fraction
+            xNaCl(i)  = expmu%NaCl * (xsol(i)**vNaCl)               ! ion pair  volume fraction
+            xKCl(i)   = expmu%KCl  * (xsol(i)**vKCl)                 ! ion pair  volume fraction
+            xCl(i)    = expmu%Cl   * (xsol(i)**vCl)*dexp(-psi(i)*zCl) ! ion neg volume fraction
+            xHplus(i) = expmu%Hplus* (xsol(i))*dexp(-psi(i))      ! H+  volume fraction
+            xOHmin(i) = expmu%OHmin* (xsol(i))*dexp(+psi(i))      ! OH-  volume fraction
        
             xA(1)= xHplus(i)/(K0a(1)*(xsol(i)**deltavA(1)))     ! AH/A-
             xA(2)= (xNa(i)/vNa)/(K0a(2)*(xsol(i)**deltavA(2)))  ! ANa/A-
@@ -258,7 +258,7 @@ module listfcn
 
     subroutine fcnelectNoPoly(x,f,nn)
 
-    !     .. variables and constant declaractions 
+       !     .. variables and constant declaractions 
 
         use globals
         use volume
@@ -269,10 +269,7 @@ module listfcn
         use surface 
         use vectornorm
 
-        implicit none
-
-        !     .. scalar arguments
-        !     .. array arguments
+        !     .. arguments
 
         real(dp), intent(in) :: x(neq)
         real(dp), intent(out) :: f(neq)
@@ -281,11 +278,8 @@ module listfcn
 
         !     .. declare local variables
 
-        integer :: n                 ! half of n
+        integer :: n                 ! n=nr
         integer :: i,j,k,c,s         ! dummy indices
-        real(dp) :: norm
-        integer :: conf              ! counts number of conformations
-!
         integer :: neq_bc           
 
         !     .. executable statements 
@@ -355,6 +349,105 @@ module listfcn
         iter=iter+1 
 
     end subroutine fcnelectNoPoly
+
+
+    subroutine fcnelectligand(x,f,nn)
+
+        !     .. variables and constant declaractions 
+
+        use globals
+        use volume
+        use chains
+        use field
+        use parameters
+        use VdW
+        use surface 
+        use vectornorm
+
+        !     .. scalar arguments
+        !     .. array arguments
+
+        real(dp), intent(in) :: x(neq)
+        real(dp), intent(out) :: f(neq)
+        integer(8), intent(in) :: nn   ! nn=neq 
+
+        !     .. declare local variables
+
+        integer :: n                 ! n=nr 
+        integer :: i,t               ! dummy indices
+        integer :: neq_bc           
+
+        !     .. executable statements 
+ 
+        n=nr                       ! size vector neq=5*nz x=(pi,psi,rhopolA,rhopolB,xpolC)
+
+        do i=1,n                   ! init x 
+            xsol(i)= x(i)          ! solvent volume fraction 
+            psi(i) = x(i+n)        ! potential
+        enddo
+        
+
+        if(bcflag/="cc") then
+            neq_bc=1 
+            psiSurf =x(2*n+neq_bc) ! surface potential
+        endif 
+    
+        do i=1,n                  ! init volume fractions 
+            xNa(i)    = expmu%Na  *(xsol(i)**vNa)*dexp(-psi(i)*zNa)  ! ion plus volume fraction
+            xK(i)     = expmu%K   *(xsol(i)**vK) *dexp(-psi(i)*zK)   ! ion plus volume fraction
+            xCa(i)    = expmu%Ca  *(xsol(i)**vCa)*dexp(-psi(i)*zCa)  ! ion divalent pos volume fraction
+            xNaCl(i)  = expmu%NaCl*(xsol(i)**vNaCl)                  ! ion pair  volume fraction
+            xKCl(i)   = expmu%KCl *(xsol(i)**vKCl)                   ! ion pair  volume fraction
+            xCl(i)    = expmu%Cl  *(xsol(i)**vCl)*dexp(-psi(i)*zCl)  ! ion neg volume fraction
+            xHplus(i) = expmu%Hplus*(xsol(i))*dexp(-psi(i))          ! H+  volume fraction
+            xOHmin(i) = expmu%OHmin*(xsol(i))*dexp(+psi(i))          ! OH-  volume fraction
+            xTB(i)    = expmu%TB  *(xsol(i)**vTB) *dexp(-psi(i))   ! ion plus volume fraction
+        enddo
+            
+        do t=1,5 ! loop ligand types 
+            do i=1,n
+                xpp(i,t)  = expmu%pp(t)  *(xsol(i)**vpp(t)) *dexp(-psi(i)*zpp(t))   
+            end do   
+        enddo
+
+        !   .. construction of fcn 
+        do i=1,n
+            f(i) = 0.0_dp
+            rhoq(i) = 0.0_dp
+            do t=1,5
+                f(i) = f(i)+xpp(i,t)
+                rhoq(i) = rhoq(i) + zpp(t) * xpp(i,t)/vpp(t)
+            enddo   
+            f(i)=f(i)+xsol(i)+xNa(i)+xCl(i)+xNaCl(i)+xK(i)+xKCl(i)+xCa(i)+xHplus(i)+xOHmin(i)+xTB(i)-1.0_dp
+            rhoq(i)=rhoq(i)+zNa*xNa(i)/vNa+zCa*xCa(i)/vCa +zK*xK(i)/vK +zCl*xCl(i)/vCl+xHplus(i)-xOHmin(i)+xTB(i)/vTB
+            !   ..  total charge density in units of vsol
+        enddo 
+
+        ! .. electrostatics 
+
+        ! .. charge regulating surface charge 
+        sigmaqSurf=surface_charge(bcflag,psiSurf)
+        psi(n+1)= 0.0_dp
+       
+        ! .. Poisson Eq 
+  
+        f(n+1)= -0.5_dp*(Fplus(1)*(psi(2)-psi(1)) + Fmin(1)*sigmaqSurf +rhoq(1)*constqW)      !     boundary
+  
+        do i=2,n
+            f(n+i)= -0.5_dp*(Fplus(i)*psi(i+1)-2.0_dp*psi(i) + Fmin(i)*psi(i-1) +rhoq(i)*constqW)
+        enddo
+
+        ! self consistent boundary conditions
+
+        if(bcflag/='cc') then 
+            f(2*n+neq_bc)=psi(1)-psisurf+sigmaqSurf/2.0_dp
+        else    
+            psisurf=psi(1)+sigmaqSurf/2.0_dp
+        endif   
+       
+        iter=iter+1 
+
+    end subroutine fcnelectligand
 
 
     subroutine fcnelect(x,f,nn)
@@ -782,6 +875,258 @@ module listfcn
 
 
 
+    !     .. function solves for bulk volume fraction 
+
+    subroutine fcnbulkligand(x,f,nn)   
+
+        !     .. variables and constant declaractions 
+
+        use globals
+        use volume
+        use chains
+        use field
+        use parameters
+        use physconst
+        use vectornorm
+        use molecules
+        use vectornorm
+
+        implicit none
+
+        !     .. scalar arguments
+        integer(8), intent(in) :: nn
+
+        !     .. array arguments
+        real(dp), intent(in) :: x(neq)
+        real(dp), intent(out):: f(neq)
+
+        !     .. local variables
+
+        real(dp) :: fppin(5),fppout(5)
+        real(dp) :: cppbulk, psisol
+        real(dp) :: xppbulkin, rhoqppbulkin
+        real(dp) :: xppbulkout, rhoqppbulkout
+        real(dp) :: phisol,phiKin,phiClin,phiClout,phiKout
+        real(dp) :: xA,xB,xBprime,xE,xF
+        real(dp) :: sumx, sumfpp, deltacharge
+        integer :: t
+        real(dp) :: norm
+
+        !     .. executable statements 
+        !     .. input vector 
+
+        sumfpp=0.0_dp
+        do t=1,4
+            fppin(t)=x(t)
+            sumfpp=sumfpp+fppin(t)
+        enddo    
+        fppin(5)=1.0_dp-sumfpp
+        phiClin   = x(5)
+        phiKin    = x(6)
+
+
+        cppbulk=cpp*(Na/1.0e24_dp) !  .. bulk concentration  cpp in mol/liter cppbulk in ligands/nm^3
+        xppbulkin=0.0_dp             
+        rhoqppbulkin=0.0_dp
+        do t=1,5
+            xppbulkin=xppbulkin+fppin(t)*vpp(t)
+            rhoqppbulkin=rhoqppbulkin+fppin(t)*zpp(t)
+        enddo
+        xppbulkin = xppbulkin*cppbulk*vsol      !  .. bulk ligand volume fraction 
+        rhoqppbulkin = rhoqppbulkin*cppbulk    !  .. charge density ligand 
+
+        phisol=1.0_dp-phiClin-phiKin-xbulk%TB-xbulk%Hplus-xbulk%OHmin-xppbulkin
+       
+    !    print*,"phisol=",phisol
+
+
+        ! pKpp(1)  = 2.26_dp  ! POH2COOH <=> POHCOOH- + H+ : A<=> B
+        ! pKpp(2) =  4.6_dp   ! POHCOOH- <=> POHCOO2- + H+ : B<=> E
+        ! pKpp(3) =  5.4_dp   ! POHCOOH- <=> POCOOH2- + H+ : B<=> C
+        ! pKpp(4) =  6.9_dp   ! POCOOH2- <=> POCOO3- + H+  : C<=> F
+        ! pKpp(5) =  7.8_dp   ! POHCOO2- <=> POCOO3- + H+  : E<=> F
+
+        !  .. equilibrium eq AH2BH <=> AHBH^- +H^+  A<=> B
+
+        xA = K0pp(1)*(vpp(AHBH)/vpp(AH2BH))*(phisol)/xbulk%Hplus
+
+        !  .. equilibrium eq AHBH^- <=> ABH^2- +H^+    B<=>C 
+
+        xB = K0pp(3)*(vpp(ABH)/vpp(AHBH))*(phisol)/xbulk%Hplus
+       
+        !   .. equilibrium eq AHBH^- <=> AHB^2- +H^+    B<=>E 
+
+        xBprime = K0pp(2)*(vpp(AHB)/vpp(AHBH))*(phisol)/xbulk%Hplus
+
+        !   .. equilibrium eq AHB^2- <=> AB^3- +H^+    E<=>F
+
+        xE = K0pp(5)*(vpp(AB)/vpp(AHB))*(phisol)/xbulk%Hplus
+
+
+        sumx=xA + xA*xB + xA*xBprime + xA*xBprime*xE
+
+        fppout(AH2BH) = 1.0_dp/(1.0_dp+sumx)
+        fppout(AHBH)  = fppout(AH2BH) * xA
+        fppout(ABH)   = fppout(AHBH)  * xB
+        fppout(AHB)   = fppout(AHBH)  * xBprime 
+        fppout(AB)    = fppout(AHB)   * xE
+
+        rhoqppbulkout=0.0_dp
+        do t=1,5
+            rhoqppbulkout=rhoqppbulkout+fppout(t)*zpp(t)
+        enddo 
+
+        rhoqppbulkout= rhoqppbulkout*cppbulk 
+    
+        deltacharge = -xbulk%Hplus/vsol+xbulk%OHmin/vsol-rhoqppbulkout  ! number density   
+
+        if(deltacharge>0) then
+            ! delta [Cl^-]=0
+            phiClout = xbulk%Cl    ! NaCl and TBCl no extra Cl added
+            phiKout  = deltacharge*vK*vsol   ! added KOH  
+        else if(deltacharge<0) then 
+            ! delta [K^+]=0
+            phiClout = dabs(deltacharge)*vCl*vsol +xbulk%Cl  ! added HCl 
+            phiKout  = 0.0_dp     ! no added KCl   
+        else  !deltacharge==0
+            phiClout = xbulk%Cl   ! no HCL
+            phiKout  = 0.0_dp     ! no KOH 
+        endif    
+
+
+        do t=1,4
+            f(t)=fppout(t)-fppin(t)
+        enddo
+        f(5)=phiClout-phiClin
+        f(6)=phiKout -phiKin
+    
+       ! norm=l2norm(f,6)
+        iter=iter+1
+     
+       ! print*,'iter=', iter ,'norm=',norm
+
+    end subroutine fcnbulkligand
+
+    !     .. function solves for bulk volume fraction 
+
+    subroutine fcnbulkligandtmp(x,f,nn)   
+
+        !     .. variables and constant declaractions 
+
+        use globals
+        use volume
+        use chains
+        use field
+        use parameters
+        use physconst
+        use vectornorm
+        use molecules
+        use vectornorm
+
+        implicit none
+
+        !     .. scalar arguments
+
+        integer(8), intent(in) :: nn
+
+        !     .. array arguments
+
+        real(dp), intent(in) :: x(neq)
+        real(dp), intent(out):: f(neq)
+
+
+        !     .. local variables
+        
+        type(moleclist) :: phi
+        real(dp) :: phipptot, rhoqpptot, rhopptot
+        integer :: t, i
+        real(dp) :: norm
+
+        !     .. executable statements 
+
+
+        do t=1,5
+            phi%pp(t)=x(t)
+        enddo    
+        phi%Cl   = x(6)
+        phi%K    = x(7)
+
+
+
+        phipptot=0.0_dp
+        rhoqpptot=0.0_dp
+        rhopptot=0.0_dp
+
+        do t=1,5
+            phipptot=phipptot+phi%pp(t)
+            rhoqpptot=rhoqpptot+phi%pp(t)*zpp(t)/vpp(t)
+            rhopptot= rhopptot+phi%pp(t)/vpp(t)
+        
+            print*,t,zpp(t),vpp(t),phipptot,rhoqpptot,rhopptot,vsol*(Na/1.0e24_dp)*cpp
+        enddo
+
+    !    print*,"ABH=",ABH,"phi%pp(ABH)=",phi%pp(ABH),"neq=",neq
+
+        phi%sol=1.0_dp-phi%Cl-phi%K-xbulk%TB-xbulk%Hplus-xbulk%OHmin-phipptot
+        print*,"phi%sol=",phi%sol
+
+        ! phi%sol=phi%sol-xbulk%Ca-xbulk%Na
+
+        ! pKpp(1)  = 2.26_dp  ! POH2COOH <=> POHCOOH- + H+ : A<=> B
+        ! pKpp(2) =  4.6_dp   ! POHCOOH- <=> POHCOO2- + H+ : B<=> E
+        ! pKpp(3) =  5.4_dp   ! POHCOOH- <=> POCOOH2- + H+ : B<=> C
+        ! pKpp(4) =  6.9_dp   ! POCOOH2- <=> POCOO3- + H+  : C<=> F
+        ! pKpp(5) =  7.8_dp   ! POHCOO2- <=> POCOO3- + H+  : E<=> F
+
+        !  .. equilibrium eq AH2BH <=> AHBH^- +H^+  A<=> B
+
+        !f(1) = phi%pp(AHBH)*xbulk%Hplus-phi%pp(AH2BH)*K0pp(1)*(vpp(AHBH)/vpp(AH2BH))*(phi%sol**deltavpp(1))
+
+        f(1) = phi%pp(AHBH)*xbulk%Hplus/phi%pp(AH2BH) -K0pp(1)*(vpp(AHBH)/vpp(AH2BH))*(phi%sol)
+
+        !  .. equilibrium eq AHBH^- <=> ABH^2- +H^+    B<=>C 
+
+        !f(2) = phi%pp(ABH)*xbulk%Hplus-phi%pp(AHBH)*K0pp(3)*(vpp(ABH)/vpp(AHBH))*(phi%sol**deltavpp(2))
+        f(2) = phi%pp(ABH)*xbulk%Hplus/phi%pp(AHBH)-K0pp(3)*(vpp(ABH)/vpp(AHBH))*(phi%sol)
+        !print*,phi%pp(ABH), xbulk%Hplus, phi%pp(AHBH), K0pp(2), phi%sol, deltavpp(2)
+
+        !   .. equilibrium eq AHBH^- <=> AHB^2- +H^+    B<=>E 
+
+        !f(3) = phi%pp(AHB)*xbulk%Hplus-phi%pp(AHBH)*K0pp(2)*(vpp(AHB)/vpp(AHBH))*(phi%sol**deltavpp(3))
+
+        f(3) = phi%pp(AHB)*xbulk%Hplus/phi%pp(AHBH)-K0pp(2)*(vpp(AHB)/vpp(AHBH))*(phi%sol)
+
+        !   .. equilibrium eq AHB^2- <=> AB^3- +H^+    E<=>F
+
+        !f(4) = phi%pp(AB)*xbulk%Hplus-phi%pp(AHB)*K0pp()*(vpp(AB)/vpp(AHB))*(phi%sol**deltavpp(4))
+        f(4) = phi%pp(AB)*xbulk%Hplus/phi%pp(AHB)-K0pp(5)*(vpp(AB)/vpp(AHB))*(phi%sol)
+
+        !  .. charge neutrality  
+        f(5) = xbulk%TB/vTB+xbulk%Hplus-xbulk%OHmin+rhoqpptot-phi%Cl/vCl+phi%K/vK
+
+
+        !     .. conservation of ligand
+        f(6) = rhopptot-vsol*(Na/1.0e24_dp)*cpp
+
+
+        !   .. conservation of number ions
+        f(7)= phi%Cl/vCl+phi%K/vK-abs(xbulk%Hplus-xbulk%OHmin) -vsol*(Na/1.0e24_dp)*cTBCl
+
+        
+
+
+    !    do i=1,7
+    !        print*,"f(",i,")=",f(i)
+    !    enddo
+
+        norm=l2norm(f,7)
+        iter=iter+1
+     
+    !    print*,'iter=', iter ,'norm=',norm
+
+    end subroutine fcnbulkligandtmp
+
+
  ! selects correct fcn function 
 
     subroutine set_fcn
@@ -796,12 +1141,16 @@ module listfcn
                 fcnptr => fcnelect
             case ("electnopoly") 
                 fcnptr => fcnelectNoPoly 
+            case ("electligand") 
+                fcnptr => fcnelectligand 
             case ("electHC") 
                 fcnptr => fcnelectHC
             case ("neutral") 
                 fcnptr => fcnneutral
             case ("bulk water") 
                  fcnptr => fcnbulk
+            case ("bulk ligand") 
+                 fcnptr => fcnbulkligand     
             case default
                 print*,"Error in call to solver subroutine"    
                 print*,"Wrong value sysflag : ", sysflag

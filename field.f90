@@ -25,7 +25,8 @@ module field
     real(dp), dimension(:), allocatable :: qpol    ! charge density of polymer
     real(dp), dimension(:,:), allocatable :: fdisA   ! degree of dissociation 
     real(dp), dimension(:,:), allocatable :: fdisB   ! degree of dissociation
-  
+    real(dp), dimension(:,:), allocatable :: xpp   ! volume fraction pp ligand
+
     real(dp) :: qAB             ! normalization partion fnc polymer 
     real(dp) :: qC              ! normalization partion fnc polymer 
 
@@ -68,6 +69,7 @@ contains
         allocate(rhopolAR(N))
         allocate(rhopolBL(N))
         allocate(rhopolBR(N))
+        allocate(xpp(N,6))
         
     end subroutine allocate_field
 
@@ -100,6 +102,7 @@ contains
         deallocate(rhopolAR)
         deallocate(rhopolBL)
         deallocate(rhopolBR)
+        deallocate(xpp)
         
     end subroutine deallocate_field
 

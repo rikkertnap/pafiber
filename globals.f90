@@ -23,8 +23,12 @@ module globals
     character(len=15) :: runflag   ! runflag
     character(len=2)  :: bcflag    ! bcflag selects bc surface 
 
-    integer, parameter :: LEFT = 1
-    integer, parameter :: RIGHT = 2
+    integer, parameter :: AH2BH = 5
+    integer, parameter :: AHBH  = 1
+    integer, parameter :: AHB   = 2
+    integer, parameter :: ABH   = 3
+    integer, parameter :: AB    = 4
+
 
 end module globals
 

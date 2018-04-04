@@ -1,6 +1,6 @@
 module surface 
    
-     use globals, only : LEFT, RIGHT
+     use globals, only :    AH2BH, AHBH, AHB, ABH, AB
      use mathconst
    
     implicit none
@@ -255,10 +255,10 @@ contains
         enddo
 
         ! charges surface states
-        qS(1)=0.0_dp    !>SPOHCOOH
-        qS(2)=-1.0_dp   !>SPOHCOO-
-        qS(3)=-1.0_dp   !>SPOCOOH-
-        qS(4)=-2.0_dp   !>SPOCOO2-
+        qS(AHBH)=0.0_dp    !>SPOHCOOH
+        qS(AHB) =-1.0_dp   !>SPOHCOO-
+        qS(ABH) =-1.0_dp   !>SPOCOOH-
+        qS(AB)  =-2.0_dp   !>SPOCOO2-
        
     
         ! sites density
@@ -458,13 +458,15 @@ contains
      
         A = xS(1)+xS(2)+xS(3)
      
-        fdisS(1)  = 1.0_dp/(1.0_dp + A) ! SAHBH
-        fdisS(2)  = fdisS(1)*xS(1)      ! SAHB-                                                                                 
-        fdisS(3)  = fdisS(1)*xS(2)      ! SABH- 
-        fdisS(4)  = fdisS(1)*xS(3)      ! SAB2-                                                                                 
+        fdisS(AHBH) = 1.0_dp/(1.0_dp + A)   ! SAHBH
+        fdisS(AHB)  = fdisS(AHBH)*xS(1)      ! SAHB-                                                                                 
+        fdisS(ABH)  = fdisS(AHBH)*xS(2)      ! SABH- 
+        fdisS(AB)   = fdisS(AHBH)*xS(3)      ! SAB2-                                                                                 
+        fdisS(AH2BH) = 0.0_dp
+
 
         avfdis=0.0_dp
-        do i=1,4
+        do i=1,5
             avfdis=avfdis +qS(i)*fdisS(i)   
         enddo
         

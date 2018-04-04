@@ -122,7 +122,7 @@ subroutine kinsol_gmres_solver(x, xguess, n, error, fnorm)
 
 
     do i = 1, neq             
-        constr(i) = 0.0_dp      ! constraint vector  
+        constr(i) = 1.0_dp      ! constraint vector  
         fscale(i) = 1.0_dp      ! scaling vector  
         x(i) = xguess(i)        ! initial guess
     enddo
