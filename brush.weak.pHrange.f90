@@ -101,18 +101,9 @@ program brushweakpolyelectrolyte
         do while (pH%min<=pH%val.and.pH%val<=pH%max.and.(abs(pH%stepsize)>=pH%delta)) 
            
             call init_expmu()
-            ! call make_guess(x,xguess,loop%val,loopbegin)
             call make_guess(x, xguess, isfirstguess) 
-            !print*,"********************"
-            !print*,"sysflag=",sysflag
-
-            ! ßsscall set_fcn()
-            ! call fcnptr(x,fvec,neq)
-            !call output()  
-            ! stop 
-            !call solver(x, xguess, error, fnorm) 
-        
-
+            call solver(x, xguess, error, fnorm) 
+            
             if(isNaN(fnorm)) then  
                 text="no solution: backstep"
                 call print_to_log(LogUnit,text)

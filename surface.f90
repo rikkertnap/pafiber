@@ -1,7 +1,7 @@
 module surface 
    
-     use globals, only :    AH2BH, AHBH, AHB, ABH, AB
-     use mathconst
+    use globals, only :    AH2BH, AHBH, AHB, ABH, AB
+    use mathconst
    
     implicit none
     
@@ -11,12 +11,13 @@ module surface
     real(dp) :: KS(5)               ! experimemtal equilibruim constant 
     real(dp) :: pKS(5)              ! experimental equilibruim constant pKS= -log[KS]   
     real(dp) :: K0S(5)              ! intrinsic equilibruim constant
-    real(dp) :: qS(6)               ! charge 
+    real(dp) :: qS(6)               ! charge  real because possitbilito offractional charge 
     real(dp) :: cap                 ! capacitance
  
     real(dp) :: sigmaSurf           ! surface density of acid on surface in nm^2
     real(dp) :: sigmaqSurf          ! surface charge density on surface in nm^2
-    
+    real(dp) :: fdisR               ! fraction of surface ligand density sites not boudn 
+
     real(dp) :: psiSurf             ! surface potential     
     
    ! taurine
@@ -44,9 +45,11 @@ contains
             case ("cc")
                 call init_surface_constcharge()
             case ("pp")
-                call init_surface_phoshonatepropionate(sigmaSurf)   
+                call init_surface_pp(sigmaSurf)  ! pp == phoshonatepropionate
+            case ("pd")
+                call init_surface_pp_dynamic(sigmaSurf)       
             case default
-                print*,"bc does not match qu, cl, ca, ta, cc, or pp"
+                print*,"bc does not match qu, cl, ca, ta, cc, pp, or pd"
         end select 
             
     end subroutine init_surface
@@ -70,9 +73,11 @@ contains
             case ("cc")
                 sigma_surface_charge = sigmaSurf
             case ("pp")
-                sigma_surface_charge = surface_charge_phoshonatepropionate(psisurf)
+                sigma_surface_charge = surface_charge_pp(psisurf)
+            case ("pd")
+                sigma_surface_charge = surface_charge_pp_dynamic(psiSurf)     
             case default
-                print*,"bc does not match qu, cl, ca, ta, cc, or pp"    
+                print*,"bc does not match qu, cl, ca, ta, cc, pp, or pd"    
                 sigma_surface_charge = 0.0_dp
         end select
 
@@ -230,7 +235,15 @@ contains
     end subroutine init_surface_taurine
 
    
-    subroutine init_surface_phoshonatepropionate(sigmaSurf)
+    subroutine init_surface_pp_dynamic(sigmaSurf)
+
+        real(dp) ,intent(inout) :: sigmaSurf 
+        call init_surface_pp(sigmaSurf)
+
+    end subroutine init_surface_pp_dynamic
+
+
+    subroutine init_surface_pp(sigmaSurf)
    
         use mathconst 
         use physconst, only : Na
@@ -259,12 +272,13 @@ contains
         qS(AHB) =-1.0_dp   !>SPOHCOO-
         qS(ABH) =-1.0_dp   !>SPOCOOH-
         qS(AB)  =-2.0_dp   !>SPOCOO2-
+        qS(AH2BH)= 0
        
     
         ! sites density
         sigmaSurf = sigmaSurf * (4.0_dp*pi*lb)*delta ! dimensionless surface charge     
 
-    end subroutine init_surface_phoshonatepropionate
+    end subroutine init_surface_pp
 
 
     subroutine init_surface_constcharge()
@@ -434,9 +448,7 @@ contains
     end function surface_charge_taurine
 
 
-
-
-    function surface_charge_phoshonatepropionate(psiS) result(surface_charge)
+    function surface_charge_pp(psiS) result(surface_charge)
 
         use physconst
         use mathconst
@@ -458,10 +470,10 @@ contains
      
         A = xS(1)+xS(2)+xS(3)
      
-        fdisS(AHBH) = 1.0_dp/(1.0_dp + A)   ! SAHBH
-        fdisS(AHB)  = fdisS(AHBH)*xS(1)      ! SAHB-                                                                                 
-        fdisS(ABH)  = fdisS(AHBH)*xS(2)      ! SABH- 
-        fdisS(AB)   = fdisS(AHBH)*xS(3)      ! SAB2-                                                                                 
+        fdisS(AHBH) = 1.0_dp/(1.0_dp + A)    ! >SAHBH
+        fdisS(AHB)  = fdisS(AHBH)*xS(1)      ! >SAHB-                                                                                 
+        fdisS(ABH)  = fdisS(AHBH)*xS(2)      ! >SABH- 
+        fdisS(AB)   = fdisS(AHBH)*xS(3)      ! >SAB2-                                                                                 
         fdisS(AH2BH) = 0.0_dp
 
 
@@ -472,9 +484,59 @@ contains
         
         surface_charge=sigmaSurf*avfdis
         
-        
     
-    end function surface_charge_phoshonatepropionate
+    end function surface_charge_pp
 
+
+    function surface_charge_pp_dynamic(psiS) result(surface_charge)
+
+        use physconst
+        use mathconst
+        use parameters, only : deltaGads,expmu,vpp,zpp,xbulk
+
+        real(dp), intent(in) :: psiS
+        real(dp) :: surface_charge
+    
+        ! .. local variables                                                                                                  
+
+        real(dp) :: xS(5),Kads
+        real(dp) :: sum_xS,avfdis
+        integer :: t
+
+        Kads=exp(-deltaGads)
+
+       ! exmpu%i := [exp(-beta(mu0_i-mu_i))v_i/v_w]exp(- beta pibulk v_i) 
+
+
+        do t=1,5
+            xS(t) = Kads*exp(-qS(t)*psiS)*expmu%pp(t)/(vpp(t)*xbulk%sol**vpp(t))
+        enddo    
+    
+        sum_xS = xS(AHBH)+xS(AHB)+xS(ABH)+xs(AB) ! do not include AB2BH assumed to not be adsorbed
+
+        fdisS(AHBH)  = xS(AHBH)/sum_xS     ! >SAHBH
+        fdisS(AHB)   = xS(AHB)/sum_xS      ! >SAHB-                                                                                 
+        fdisS(ABH)   = xS(ABH)/sum_xS      ! >SABH- 
+        fdisS(AB)    = xS(AB)/sum_xS       ! >SAB2-                                                                                 
+        fdisS(AH2BH) = 0.0_dp
+
+        fdisR= 1.0_dp/(1.0_dp+sum_xS)
+
+        avfdis=0.0_dp
+        do t=1,5
+            avfdis=avfdis +qS(t)*fdisS(t)   
+        enddo
+        
+        surface_charge=sigmaSurf*(1.0_dp-fdisR)*avfdis
+
+        ! print*,"fdisS(AH2BH) =",fdisS(AH2BH)  
+        ! print*,"fdisS(AHBH)  =",fdisS(AHBH)
+        ! print*,"fdisS(AHB)   =",fdisS(AHB)
+        ! print*,"fdisS(ABH)   =",fdisS(ABH)
+        ! print*,"fdisS(AB)    =",fdisS(AB)
+        ! print*,"fdisR        =",fdisR
+        ! print*,"surface_charge        =",surface_charge
+
+    end function surface_charge_pp_dynamic
 
 end module surface

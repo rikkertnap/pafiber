@@ -22,7 +22,7 @@ module myio
     integer :: un_xOHmin,un_xHplus,un_fdisA,un_fdisB,un_psi,un_charge, un_xpair, un_rhopolAB, un_xTB, un_xpp, un_cpp
    
     ! format specifiers 
-    character(len=80), parameter  :: fmt = "(A9,I1,A5,ES25.16)"
+    character(len=80), parameter  :: fmt = "(A8,I1,A5,ES25.16)"
     character(len=80), parameter  :: fmt2reals = "(2ES25.16E3)"   
     character(len=80), parameter  :: fmt3reals = "(3ES25.16E3)"  
     character(len=80), parameter  :: fmt4reals = "(4ES25.16E3)" 
@@ -33,10 +33,8 @@ module myio
 
     public :: read_inputfile
     public :: output
-
-      
+     
 contains
-
 
 subroutine read_inputfile(info)
 
@@ -52,9 +50,6 @@ subroutine read_inputfile(info)
     integer :: info_sys, info_bc, info_run, info_geo, info_meth, info_chaintype, info_combi
     character(len=8) :: fname
     integer :: ios,un_input  ! un = unit number    
-    character(len=80) :: fcnname
-
-    if (present(info)) info = 0
     
     !     .. reading in of variables from file
     write(fname,'(A8)')'input.in'
@@ -89,7 +84,7 @@ subroutine read_inputfile(info)
     read(un_input,*)cNaCl
     read(un_input,*)cKCl
     read(un_input,*)cCaCl2
-    if(bcflag=="pp") then 
+    if(bcflag=="pp".or.bcflag=="pd") then 
         read(un_input,*)cTBCl            !   TB=tertraButyl
         if(sysflag=="electligand") then 
             read(un_input,*)deltaGads
@@ -118,8 +113,6 @@ subroutine read_inputfile(info)
     read(un_input,*)delta   
 
     close(un_input)
-
-    write(fcnname,'(A14)')'read_inputfile'
           
     ! .. check error flag
 
@@ -159,6 +152,8 @@ subroutine read_inputfile(info)
         if (present(info)) info = info_chaintype
         return
     endif
+
+    if (present(info)) info = 0
 
 end subroutine read_inputfile
  
@@ -235,7 +230,7 @@ subroutine check_value_bcflag(bcflag,info)
     character(len=2), intent(in) :: bcflag
     integer, intent(out), optional :: info
 
-    character(len=2) :: bcvalues(6)
+    character(len=2) :: bcvalues(7)
     integer :: i
     logical :: flag
 
@@ -247,10 +242,11 @@ subroutine check_value_bcflag(bcflag,info)
     bcvalues(4)="ta"
     bcvalues(5)="cc"
     bcvalues(6)="pp"
+    bcvalues(7)="pd"
 
     flag=.FALSE.
             
-    do i=1,6
+    do i=1,7
         if(bcflag==bcvalues(i)) flag=.TRUE.
     enddo
     if (flag.eqv. .FALSE.) then
@@ -407,19 +403,10 @@ subroutine output_elect
 
     ! .. make label filenames 
 
-    if(sysflag/="electnopoly".and.bcflag/="pp") then 
+    if((sysflag=="electnopoly".or.sysflag=="electligand").and.(bcflag=="pp".or.bcflag=="pd")) then 
 
-        write(rstr,'(F5.3)')sigmaAB*delta 
-        fnamelabel="sg"//trim(adjustl(rstr)) 
-        write(rstr,'(F5.3)')cNaCl
-        fnamelabel=trim(fnamelabel)//"cNaCl"//trim(adjustl(rstr))
-        write(rstr,'(F5.3)')cCaCl2
-        fnamelabel=trim(fnamelabel)//"cCaCl2"//trim(adjustl(rstr))
-        write(rstr,'(F7.3)')pHbulk
-        fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))//".dat"
-
-    else  ! filelabel for qdot only
-                          
+         ! filelabel for qdot only                     
+        
         write(rstr,'(F5.3)')sigmaSurf/(4.0_dp*pi*lb*delta)
         fnamelabel="sg"//trim(adjustl(rstr))
         write(rstr,'(F5.3)')cTBCl
@@ -431,13 +418,27 @@ subroutine output_elect
             fnamelabel=trim(fnamelabel)//"cCaCl2"//trim(adjustl(rstr))
         endif    
         if(cpp/=0.0_dp) then      
-            write(rstr,'(F5.3)')cpp
+            if(cpp>=0.001) then 
+                write(rstr,'(F5.3)')cpp
+            else
+                write(rstr,'(ES8.2E2)')cpp
+            endif       
             fnamelabel=trim(fnamelabel)//"cpp"//trim(adjustl(rstr))
         endif   
         write(rstr,'(F7.3)')pHbulk
         fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))//".dat"
 
-    endif    
+    else
+
+        write(rstr,'(F5.3)')sigmaAB*delta 
+        fnamelabel="sg"//trim(adjustl(rstr)) 
+        write(rstr,'(F5.3)')cNaCl
+        fnamelabel=trim(fnamelabel)//"cNaCl"//trim(adjustl(rstr))
+        write(rstr,'(F5.3)')cCaCl2
+        fnamelabel=trim(fnamelabel)//"cCaCl2"//trim(adjustl(rstr))
+        write(rstr,'(F7.3)')pHbulk
+        fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))//".dat"
+    endif
 
     sysfilename='system.'//trim(fnamelabel)
     xpolABfilename='xpolAB.'//trim(fnamelabel)
@@ -506,7 +507,6 @@ subroutine output_elect
     enddo    
    
     if(geometry=="invcylindrical") write(un_psi,*)radius,psiSurf
-    
 
     if(sysflag/="electnopoly") then 
         do i=1,nr
@@ -574,13 +574,23 @@ subroutine output_elect
     write(un_sys,*)'vCl         = ',vCl*vsol
     write(un_sys,*)'vCa         = ',vCa*vsol
     write(un_sys,*)'vK          = ',vK*vsol
-    if(bcflag=="pp") write(un_sys,*)'vTB         = ',vTB*vsol
+    if(bcflag=="pd")then 
+        write(un_sys,*)'vpp(AH2BH)  = ',vpp(AH2BH)*vsol
+        write(un_sys,*)'vpp(AHBH)   = ',vpp(AHBH)*vsol
+        write(un_sys,*)'vpp(AHB)    = ',vpp(AHB)*vsol
+        write(un_sys,*)'vpp(ABH)    = ',vpp(ABH)*vsol
+        write(un_sys,*)'vpp(AB)     = ',vpp(AB)*vsol
+    endif    
+    if(bcflag=="pp".or.bcflag=="pd") write(un_sys,*)'vTB         = ',vTB*vsol
     write(un_sys,*)'vNaCl       = ',vNaCl*vsol
     write(un_sys,*)'vKCl        = ',vKCl*vsol
     write(un_sys,*)'cNaCl       = ',cNaCl
     write(un_sys,*)'cKCl        = ',cKCl
     write(un_sys,*)'cCaCl2      = ',cCaCl2
-    if(bcflag=="pp") write(un_sys,*)'cTBCl      = ',cTBCl
+    if(bcflag=="pp".or.bcflag=="pd") then 
+        write(un_sys,*)'cTBCl       = ',cTBCl
+        write(un_sys,*)'cpp         = ',cpp
+    endif    
     write(un_sys,*)'pHbulk      = ',pHbulk
     write(un_sys,*)'pKa         = ',pKa(1)      
     write(un_sys,*)'pKaNa       = ',pKa(2)
@@ -594,31 +604,32 @@ subroutine output_elect
     write(un_sys,*)'KionK       = ',KionK
     write(un_sys,*)'K0ionNa     = ',K0ionNa
     write(un_sys,*)'K0ionK      = ',K0ionK
-    write(un_sys,*)'xNabulk     = ',xbulk%Na
-    write(un_sys,*)'xClbulk     = ',xbulk%Cl
-    write(un_sys,*)'xKbulk      = ',xbulk%K
-    write(un_sys,*)'xNaClbulk   = ',xbulk%NaCl
-    write(un_sys,*)'xKClbulk    = ',xbulk%KCl
-    write(un_sys,*)'xCabulk     = ',xbulk%Ca
-    write(un_sys,*)'xHplusbulk  = ',xbulk%Hplus
-    write(un_sys,*)'xOHminbulk  = ',xbulk%OHmin
-    if(bcflag=="pp") write(un_sys,*)'xTBbulk     = ',xbulk%TB
+    write(un_sys,*)'xbulk%sol   = ',xbulk%sol
+    write(un_sys,*)'xbulk%Na    = ',xbulk%Na
+    write(un_sys,*)'xbulk%Cl    = ',xbulk%Cl
+    write(un_sys,*)'xbulk%K     = ',xbulk%K
+    write(un_sys,*)'xbulk%NaCl  = ',xbulk%NaCl
+    write(un_sys,*)'xbulk%KCl   = ',xbulk%KCl
+    write(un_sys,*)'xbulk%Ca    = ',xbulk%Ca
+    write(un_sys,*)'xbulk%Hplus = ',xbulk%Hplus
+    write(un_sys,*)'xbulk%OHmin = ',xbulk%OHmin
+    if(bcflag=="pp".or.bcflag=="pd") write(un_sys,*)'xbulk%TB    = ',xbulk%TB
     if(sysflag=="electligand") then
         cppbulk = (cpp*Na/(1.0e24_dp))
-        write(un_sys,*)'xppbulk%pp(AH2BH) = ',xbulk%pp(AH2BH)
-        write(un_sys,*)'xppbulk%pp(AHBH)  = ',xbulk%pp(AHBH)
-        write(un_sys,*)'xppbulk%pp(AHB)   = ',xbulk%pp(AHB)
-        write(un_sys,*)'xppbulk%pp(ABH)   = ',xbulk%pp(ABH)
-        write(un_sys,*)'xppbulk%pp(AB)    = ',xbulk%pp(AB)
+        write(un_sys,*)'xbulk%pp(AH2BH) = ',xbulk%pp(AH2BH)
+        write(un_sys,*)'xbulk%pp(AHBH)  = ',xbulk%pp(AHBH)
+        write(un_sys,*)'xbulk%pp(AHB)   = ',xbulk%pp(AHB)
+        write(un_sys,*)'xbulk%pp(ABH)   = ',xbulk%pp(ABH)
+        write(un_sys,*)'xbulk%pp(AB)    = ',xbulk%pp(AB)
         cppbulk = (cpp*Na/(1.0e24_dp))
         do t=1,5       
             cppfdis(t)=(xbulk%pp(t)/(vpp(t)*vsol))/cppbulk
         enddo    
-        write(un_sys,*)'cppfdis(AH2BH) = ',cppfdis(AH2BH)
-        write(un_sys,*)'cppfdis(AHBH)  = ',cppfdis(AHBH)
-        write(un_sys,*)'cppfdis(AHB)   = ',cppfdis(AHB)
-        write(un_sys,*)'cppfdis(ABH)   = ',cppfdis(ABH)
-        write(un_sys,*)'cppfdis(AB)    = ',cppfdis(AB)
+        write(un_sys,*)'fdis(AH2BH) = ',cppfdis(AH2BH)
+        write(un_sys,*)'fdis(AHBH)  = ',cppfdis(AHBH)
+        write(un_sys,*)'fdis(AHB)   = ',cppfdis(AHB)
+        write(un_sys,*)'fdis(ABH)   = ',cppfdis(ABH)
+        write(un_sys,*)'fdis(AB)    = ',cppfdis(AB)
     endif    
     write(un_sys,*)'sigmaAB     = ',sigmaAB*delta
     write(un_sys,*)'sigmaC      = ',sigmaC*delta
@@ -640,7 +651,13 @@ subroutine output_elect
     write(un_sys,*)'zCa         = ',zCa
     write(un_sys,*)'zK          = ',zK
     write(un_sys,*)'zCl         = ',zCl
-
+    if(bcflag=="pd")then 
+        write(un_sys,*)'zpp(AH2BH)  = ',zpp(AH2BH)
+        write(un_sys,*)'zpp(AHBH)   = ',zpp(AHBH)
+        write(un_sys,*)'zpp(AHB)    = ',zpp(AHB)
+        write(un_sys,*)'zpp(ABH)    = ',zpp(ABH)
+        write(un_sys,*)'zpp(AB)     = ',zpp(AB)
+    endif    
     write(un_sys,*)'nr          = ',nr
     write(un_sys,*)'free energy = ',FE
     write(un_sys,*)'energy bulk = ',FEbulk 
@@ -683,22 +700,26 @@ subroutine output_elect
     write(un_sys,*)'sigmaSurf   = ',sigmaSurf/(4.0_dp*pi*lb*delta)
     write(un_sys,*)'sigmaqSurf  = ',sigmaqSurf/(4.0_dp*pi*lb*delta)
     write(un_sys,*)'psiSurf     = ',psiSurf
-   
     if(bcflag=='ta') then
         do i=1,4   
-            write(un_sys,fmt)'fdisTa(',i,')  = ',fdisTaL(i)
+            write(un_sys,fmt)'fdisTa(',i,')   = ',fdisTaL(i)
         enddo  
     else if(bcflag=='pp') then   
         do i=1,4   
-            write(un_sys,fmt)' fdisSu(',i,')  = ',fdisS(i)
+            write(un_sys,fmt)'fdisSu(',i,')   = ',fdisS(i)
+        enddo
+    else if(bcflag=='pd') then   
+        do i=1,4   
+            write(un_sys,fmt)'fdisSu(',i,')   = ',fdisS(i)
         enddo  
+        write(un_sys,*)'fdisR      = ',fdisR
+        write(un_sys,*)'sigmaR     = ',fdisR*sigmaSurf/(4.0_dp*pi*lb*delta)
+        write(un_sys,*)'sigmaLR    = ',(1.0_dp-fdisR)*sigmaSurf/(4.0_dp*pi*lb*delta)
     else
         do i=1,6   
             write(un_sys,fmt)' fdisSu(',i,')  = ',fdisS(i)
         enddo  
     endif
-
-
     write(un_sys,*)'nsize       = ',nsize  
     write(un_sys,*)'cuantasAB   = ',cuantasAB
     write(un_sys,*)'cuantasC    = ',cuantasC

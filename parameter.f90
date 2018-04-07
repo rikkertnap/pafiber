@@ -75,6 +75,7 @@ module parameters
     integer :: zK                ! valence charge positive ion 
     integer :: zCa               ! valence charge divalent positive ion 
     integer :: zCl               ! valence charge negative ion 
+    integer :: zTB 
 !    integer :: zsurf             ! valence surface charge 
     integer :: zpp(5)            ! valence protonantion states        
 
@@ -233,7 +234,8 @@ contains
         zK    = 1                 ! valence positive charged ion
         zCa   = 2                 ! valence divalent positive charged ion
         zCl   =-1                 ! valence negative charged ion
-        
+        zTB   = 1 
+
         zpolA(1)=-1 ! A-
         zpolA(2)= 0 ! AH
         zpolA(3)= 0 ! ANa
@@ -350,7 +352,6 @@ contains
         pKpp(3) =  5.4_dp   ! POHCOOH- <=> POCOOH2- + H+ !
         pKpp(4) =  6.9_dp   ! POCOOH2- <=> POCOO3- + H+ 
         pKpp(5) =  7.8_dp   ! POHCOO2- <=> POCOO3- + H+ !
-
         
         pKw=14.0_dp                   ! water equilibruim constant
         Temp=298.0_dp                 ! temperature in Kelvin
@@ -373,7 +374,6 @@ contains
 
         max_conforAB=cuantasAB
         max_conforC=cuantasC
-
 
     end subroutine init_constants
    
@@ -656,12 +656,12 @@ contains
         fpp(AHB)   = fpp(AHBH)  * xBprime 
         fpp(AB)    = fpp(AHB)   * xE
 
-        ! print*,"pH = ",pH%val
-        ! print*,"fpp(AH2BH) = ", fpp(AH2BH)
-        ! print*,"fpp(AHBH)  = ", fpp(AHBH) 
-        ! print*,"fpp(ABH)   = ", fpp(ABH)  
-        ! print*,"fpp(AHB)   = ", fpp(AHB)   
-        ! print*,"fpp(AB)    = ", fpp(AB) 
+        !print*,"pH = ",pH%val
+        !print*,"fpp(AH2BH) = ", fpp(AH2BH)
+        !print*,"fpp(AHBH)  = ", fpp(AHBH) 
+        !print*,"fpp(ABH)   = ", fpp(ABH)  
+        !print*,"fpp(AHB)   = ", fpp(AHB)   
+        !print*,"fpp(AB)    = ", fpp(AB) 
 
 
     end function
@@ -682,7 +682,7 @@ contains
         integer :: i, t
         character(len=15) :: sysflag_old
         real(dp) :: Kpp(5), fppbulk(5)
-        real(dp) :: xppbulk, cppbulk, sumfpp 
+        real(dp) :: xppbulk, rhoqppbulk, cppbulk, sumfpp , rhoqbulk
         
         allocate(x(6))
         allocate(xguess(6))
@@ -765,14 +765,18 @@ contains
         
         cppbulk=cpp*(Na/1.0e24_dp) !  .. bulk concentration  cpp in mol/liter cppbulk in ligands/nm^3
         xppbulk=0.0_dp
+        rhoqppbulk=0.0_dp
         do t=1,5
             xbulk%pp(t) = cppbulk*fppbulk(t)*vpp(t)*vsol
             xppbulk = xppbulk +xbulk%pp(t) ! total ligand volume fraction
+            rhoqppbulk=rhoqppbulk +cppbulk*fppbulk(t)*zpp(t)
         enddo
         xbulk%Cl =x(5)
         xbulk%K  =x(6)
 
         xbulk%sol=1.0_dp-xbulk%Hplus-xbulk%OHmin - xbulk%Cl -xbulk%Na -xbulk%K-xbulk%TB-xbulk%Ca -xppbulk
+        rhoqbulk= xbulk%Hplus-xbulk%OHmin +xbulk%Cl*zCl/vCl +xbulk%Na*zNa/vNa +xbulk%K*zK/vK+xbulk%TB*zTB/vTB+xbulk%Ca*zCa/vCa
+        rhoqbulk=rhoqbulk+rhoqppbulk*vsol
 
         ! reset of flags
         iter=0
@@ -783,7 +787,8 @@ contains
 
         !  pibulk = -log(xbulk%sol)  ! pressure (pi) of bulk
        
-        ! exp(beta mu_i) = (rhobulk_i v_i) / exp(- beta pibulk v_i) 
+        ! expmu%i := (rhobulk_i v_i) / exp(- beta pibulk v_i) 
+        ! exmpu%i := [exp(-beta(mu0_i-mu_i))v_i/v_w]exp(- beta pibulk v_i) 
        
         expmu%Na    = xbulk%Na   /(xbulk%sol**vNa) 
         expmu%K     = xbulk%K    /(xbulk%sol**vK)

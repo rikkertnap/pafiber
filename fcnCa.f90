@@ -393,15 +393,15 @@ module listfcn
         endif 
     
         do i=1,n                  ! init volume fractions 
-            xNa(i)    = expmu%Na  *(xsol(i)**vNa)*dexp(-psi(i)*zNa)  ! ion plus volume fraction
-            xK(i)     = expmu%K   *(xsol(i)**vK) *dexp(-psi(i)*zK)   ! ion plus volume fraction
-            xCa(i)    = expmu%Ca  *(xsol(i)**vCa)*dexp(-psi(i)*zCa)  ! ion divalent pos volume fraction
+            xNa(i)    = expmu%Na  *(xsol(i)**vNa)*exp(-psi(i)*zNa)  ! ion plus volume fraction
+            xK(i)     = expmu%K   *(xsol(i)**vK) *exp(-psi(i)*zK)   ! ion plus volume fraction
+            xCa(i)    = expmu%Ca  *(xsol(i)**vCa)*exp(-psi(i)*zCa)  ! ion divalent pos volume fraction
             xNaCl(i)  = expmu%NaCl*(xsol(i)**vNaCl)                  ! ion pair  volume fraction
             xKCl(i)   = expmu%KCl *(xsol(i)**vKCl)                   ! ion pair  volume fraction
-            xCl(i)    = expmu%Cl  *(xsol(i)**vCl)*dexp(-psi(i)*zCl)  ! ion neg volume fraction
-            xHplus(i) = expmu%Hplus*(xsol(i))*dexp(-psi(i))          ! H+  volume fraction
-            xOHmin(i) = expmu%OHmin*(xsol(i))*dexp(+psi(i))          ! OH-  volume fraction
-            xTB(i)    = expmu%TB  *(xsol(i)**vTB) *dexp(-psi(i))   ! ion plus volume fraction
+            xCl(i)    = expmu%Cl  *(xsol(i)**vCl)*exp(-psi(i)*zCl)  ! ion neg volume fraction
+            xHplus(i) = expmu%Hplus*(xsol(i))*exp(-psi(i))          ! H+  volume fraction
+            xOHmin(i) = expmu%OHmin*(xsol(i))*exp(+psi(i))          ! OH-  volume fraction
+            xTB(i)    = expmu%TB  *(xsol(i)**vTB) *exp(-psi(i)*zTB)   ! ion plus volume fraction
         enddo
             
         do t=1,5 ! loop ligand types 
@@ -419,7 +419,7 @@ module listfcn
                 rhoq(i) = rhoq(i) + zpp(t) * xpp(i,t)/vpp(t)
             enddo   
             f(i)=f(i)+xsol(i)+xNa(i)+xCl(i)+xNaCl(i)+xK(i)+xKCl(i)+xCa(i)+xHplus(i)+xOHmin(i)+xTB(i)-1.0_dp
-            rhoq(i)=rhoq(i)+zNa*xNa(i)/vNa+zCa*xCa(i)/vCa +zK*xK(i)/vK +zCl*xCl(i)/vCl+xHplus(i)-xOHmin(i)+xTB(i)/vTB
+            rhoq(i)=rhoq(i)+zNa*xNa(i)/vNa+zCa*xCa(i)/vCa +zK*xK(i)/vK +zCl*xCl(i)/vCl+xHplus(i)-xOHmin(i)+zTB*xTB(i)/vTB
             !   ..  total charge density in units of vsol
         enddo 
 
@@ -978,15 +978,15 @@ module listfcn
 
         rhoqppbulkout= rhoqppbulkout*cppbulk 
     
-        deltacharge = -xbulk%Hplus/vsol+xbulk%OHmin/vsol-rhoqppbulkout  ! number density   
+        deltacharge = xbulk%Hplus/vsol-xbulk%OHmin/vsol+rhoqppbulkout  ! number density   
 
-        if(deltacharge>0) then
+        if(deltacharge<0) then
             ! delta [Cl^-]=0
             phiClout = xbulk%Cl    ! NaCl and TBCl no extra Cl added
-            phiKout  = deltacharge*vK*vsol   ! added KOH  
-        else if(deltacharge<0) then 
+            phiKout  = abs(deltacharge)*vK*vsol   ! added KOH  
+        else if(deltacharge>0) then 
             ! delta [K^+]=0
-            phiClout = dabs(deltacharge)*vCl*vsol +xbulk%Cl  ! added HCl 
+            phiClout = deltacharge*vCl*vsol +xbulk%Cl  ! added HCl 
             phiKout  = 0.0_dp     ! no added KCl   
         else  !deltacharge==0
             phiClout = xbulk%Cl   ! no HCL
