@@ -86,7 +86,8 @@ program main
     use_xstored = .false.             
     iter = 0
     
-    pH%val=pH%min
+    pH%val=pH%min     
+
 
     if(runflag=="rangepH") then 
 
