@@ -29,10 +29,14 @@ module myio
     character(len=80), parameter  :: fmt5reals = "(5ES25.16E3)"
     character(len=80), parameter  :: fmt6reals = "(6ES25.16E3)" 
   
+    integer :: num_concen      ! number of concentrations     
+    real(dp), dimension(:), allocatable, target :: concen_array   ! concentrations     
+
     private 
 
     public :: read_inputfile
     public :: output
+    public :: num_concen, concen_array, set_value_concen
      
 contains
 
@@ -72,12 +76,10 @@ subroutine read_inputfile(info)
     read(un_input,*)infile              ! guess  1==yes
     read(un_input,*)radius
     read(un_input,*)pH%val
-    if(runflag=="rangepH") then
-        read(un_input,*)pH%min
-        read(un_input,*)pH%max
-        read(un_input,*)pH%stepsize
-        read(un_input,*)pH%delta
-    endif 
+    read(un_input,*)pH%min
+    read(un_input,*)pH%max
+    read(un_input,*)pH%stepsize
+    read(un_input,*)pH%delta
     read(un_input,*)KionNa
     read(un_input,*)KionK
     read(un_input,*)sigmaSurf
@@ -199,18 +201,19 @@ subroutine check_value_runflag(runflag,info)
     character(len=15), intent(in) :: runflag
     integer, intent(out),optional :: info
 
-    character(len=15) :: runflagstr(2)
+    character(len=15) :: runflagstr(3)
     integer :: i
     logical :: flag
 
     ! permissible values of runflag
 
     runflagstr(1)="rangepH"
-    runflagstr(2)="norangepH"
+    runflagstr(2)="rangepHcpp"
+    runflagstr(3)="rangepHcNaCl"
 
     flag=.FALSE.
 
-    do i=1,2
+    do i=1,3
         if(runflag==runflagstr(i)) flag=.TRUE.
     enddo
 
@@ -354,6 +357,71 @@ subroutine check_value_method(method,info)
     endif
 
 end subroutine check_value_method
+
+
+
+subroutine set_value_concen(runflag,info)
+
+    use myutils, only : newunit
+
+    character(len=15), intent(in) :: runflag
+    integer, intent(out),optional :: info
+
+    character(len=9) :: fname
+    integer :: ios
+    integer :: i    
+    integer :: un_cs
+    
+    if (present(info)) info = 0
+
+    if(runflag=="rangepHcpp".or.runflag=="rangepHcNaCl") then
+
+       !     .. read concentrations of cpp or NaCl from file
+        write(fname,'(A9)')'concen.in'
+        open(unit=newunit(un_cs),file=fname,iostat=ios,status='old')
+        if(ios > 0 ) then
+            print*, 'Error opening file concen.in : iostat =', ios
+            if (present(info)) then
+                info = myio_err_inputfile
+                return 
+            else
+                stop  
+            endif        
+        endif
+
+        read(un_cs,*)num_concen ! read number of concentrations form file
+        allocate(concen_array(num_concen)) 
+            
+        do i=1,num_concen     ! read value salt concentration
+            read(un_cs,*)concen_array(i)
+        enddo    
+        close(un_cs)
+    endif    
+
+end subroutine  set_value_concen
+
+
+
+subroutine output()
+
+    use globals, only : sysflag
+    implicit none
+
+    if(sysflag=="elect") then 
+        call output_elect
+    elseif(sysflag=="neutral") then
+        call output_neutral
+    elseif(sysflag=="electnopoly") then
+        call output_elect_nopoly
+        call output_individualcontr_fe
+    elseif(sysflag=="electligand") then
+        call output_elect_nopoly
+    else
+        print*,"Error in output subroutine"
+        print*,"Wrong value sysflag : ", sysflag
+    endif     
+
+end subroutine output
 
 
 subroutine output_elect
@@ -890,26 +958,276 @@ subroutine output_neutral
   
 end subroutine output_neutral
 
-subroutine output()
 
-    use globals, only : sysflag
-    implicit none
 
-    if(sysflag=="elect") then 
-        call output_elect
-    elseif(sysflag=="neutral") then
-        call output_neutral
-    elseif(sysflag=="electnopoly") then
-        call output_elect
-        call output_individualcontr_fe
-    elseif(sysflag=="electligand") then
-        call output_elect
+subroutine output_elect_nopoly
+  
+    !     .. variables and constant declaractions
+    use globals 
+    use volume
+    use parameters
+    use field
+    use energy
+    use surface 
+    use myutils, only : newunit
+  
+    !     .. output file names       
+    
+    character(len=90) :: sysfilename  
+    character(len=90) :: xsolfilename   
+    character(len=90) :: xNafilename
+    character(len=90) :: xKfilename
+    character(len=90) :: xTBfilename
+    character(len=90) :: xppfilename
+    character(len=90) :: xppfdisfilename
+    character(len=90) :: xCafilename
+    character(len=90) :: xClfilename
+    character(len=90) :: potentialfilename
+    character(len=90) :: chargefilename
+    character(len=90) :: xHplusfilename
+    character(len=90) :: xOHminfilename
+
+    integer :: i,j,k,t     ! dummy indexes
+    character(len=100) :: fnamelabel
+    character(len=20) :: rstr
+    logical :: isopen
+    real(dp) :: xppfdis(5),cppfdis(5)
+    real(dp) :: cppbulk
+
+
+    ! .. executable statements 
+
+    ! .. make label filenames 
+
+    
+    ! filelabel for qdot only                     
+        
+    write(rstr,'(F5.3)')sigmaSurf/(4.0_dp*pi*lb*delta)
+    fnamelabel="sg"//trim(adjustl(rstr))
+    write(rstr,'(F5.3)')cTBCl
+    fnamelabel=trim(fnamelabel)//"cTBCl"//trim(adjustl(rstr))
+    write(rstr,'(F5.3)')cNaCl
+    fnamelabel=trim(fnamelabel)//"cNaCl"//trim(adjustl(rstr))
+    if(cCaCl2/=0.0_dp) then      
+        write(rstr,'(F5.3)')cCaCl2
+        fnamelabel=trim(fnamelabel)//"cCaCl2"//trim(adjustl(rstr))
+    endif    
+    if(cpp/=0.0_dp) then      
+        if(cpp>=0.001) then 
+            write(rstr,'(F5.3)')cpp
+        else
+            write(rstr,'(ES8.2E2)')cpp
+        endif       
+        fnamelabel=trim(fnamelabel)//"cpp"//trim(adjustl(rstr))
+    endif   
+    write(rstr,'(F7.3)')pHbulk
+    fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))//".dat"
+
+
+    sysfilename='system.'//trim(fnamelabel)
+    xsolfilename='xsol.'//trim(fnamelabel)
+    xNafilename='xNaions.'//trim(fnamelabel)
+    xKfilename='xKions.'//trim(fnamelabel)
+    xTBfilename='xTBions.'//trim(fnamelabel)
+    xCafilename='xCaions.'//trim(fnamelabel)
+    xClfilename='xClions.'//trim(fnamelabel)
+    potentialfilename='potential.'//trim(fnamelabel)
+    chargefilename='charge.'//trim(fnamelabel)
+    xHplusfilename='xHplus.'//trim(fnamelabel)
+    xOHminfilename='xOHmin.'//trim(fnamelabel)
+    xppfilename='xppions.'//trim(fnamelabel)
+
+    !     .. opening files        
+    
+    open(unit=newunit(un_sys),file=sysfilename)
+    open(unit=newunit(un_psi),file=potentialfilename)      
+    
+    if(verboseflag=="yes") then  
+
+        open(unit=newunit(un_xsol),file=xsolfilename)
+        if(sysflag=="electligand") open(unit=newunit(un_xpp),file=xppfilename)
+        open(unit=newunit(un_xNa),file=xNafilename)
+        open(unit=newunit(un_xK),file=xKfilename)
+        open(unit=newunit(un_xCa),file=xCafilename)
+        open(unit=newunit(un_xTB),file=xTBfilename)
+        open(unit=newunit(un_xCl),file=xClfilename)
+        open(unit=newunit(un_charge),file=chargefilename)
+        open(unit=newunit(un_xHplus),file=xHplusfilename)
+        open(unit=newunit(un_xOHmin),file=xOHminfilename)
+    endif
+    
+    !   .. writting files   
+
+    select case (geometry)
+        case ("spherical")
+            write(un_psi,*)radius,psiSurf
+        case ("cylindrical")
+            write(un_psi,*)radius,psiSurf
+        case ("planar")
+                write(un_psi,*)0.0,psiSurf 
+        ! case invcylinder append at end file (un_psi) not begining
+    end select  
+
+    do i=1,nr
+        write(un_psi,*)rc(i),psi(i)
+    enddo    
+   
+    if(geometry=="invcylindrical") write(un_psi,*)radius,psiSurf
+
+    if(verboseflag=="yes") then 
+        if(sysflag=="electligand") then 
+            do i=1,nr
+                write(un_xpp,fmt6reals)rc(i),xpp(i,AH2BH),xpp(i,AHBH),xpp(i,AHB),xpp(i,ABH),xpp(i,AB)
+                do t=1,5    
+                    cppfdis(t)=(xbulk%pp(t)/(vpp(t)*vsol))/cppbulk
+                enddo    
+            enddo
+        endif
+
+        do i=1,nr
+            write(un_xsol,*)rc(i),xsol(i)
+            write(un_xNa,*)rc(i),xNa(i)
+            write(un_xK,*)rc(i),xK(i)
+            write(un_xCa,*)rc(i),xCa(i)
+            write(un_xTB,*)rc(i),xTB(i) 
+            write(un_xCl,*)rc(i),xCl(i)
+            write(un_charge,*)rc(i),rhoq(i)
+            write(un_xHplus,*)rc(i),xHplus(i)
+            write(un_xOHmin,*)rc(i),xOHmin(i)    
+        enddo    
+    endif
+
+    write(un_sys,*)'system      = electrolyte solition qdot/NP'
+    write(un_sys,*)'version     = ',VERSION
+    write(un_sys,*)'sysflag     = ',sysflag
+    write(un_sys,*)'bcflag      = ',bcflag
+    write(un_sys,*)'nr          = ',nr
+    write(un_sys,*)'delta       = ',delta   
+    write(un_sys,*)'vsol        = ',vsol
+    write(un_sys,*)'vNa         = ',vNa*vsol
+    write(un_sys,*)'vCl         = ',vCl*vsol
+    write(un_sys,*)'vCa         = ',vCa*vsol
+    write(un_sys,*)'vK          = ',vK*vsol
+    if(bcflag=="pd")then 
+        write(un_sys,*)'vpp(AH2BH)  = ',vpp(AH2BH)*vsol
+        write(un_sys,*)'vpp(AHBH)   = ',vpp(AHBH)*vsol
+        write(un_sys,*)'vpp(AHB)    = ',vpp(AHB)*vsol
+        write(un_sys,*)'vpp(ABH)    = ',vpp(ABH)*vsol
+        write(un_sys,*)'vpp(AB)     = ',vpp(AB)*vsol
+    endif    
+    if(bcflag=="pp".or.bcflag=="pd") write(un_sys,*)'vTB         = ',vTB*vsol
+    write(un_sys,*)'vNaCl       = ',vNaCl*vsol
+    write(un_sys,*)'vKCl        = ',vKCl*vsol
+    write(un_sys,*)'cNaCl       = ',cNaCl
+    write(un_sys,*)'cKCl        = ',cKCl
+    write(un_sys,*)'cCaCl2      = ',cCaCl2
+    if(bcflag=="pp".or.bcflag=="pd") then 
+        write(un_sys,*)'cTBCl       = ',cTBCl
+        write(un_sys,*)'cpp         = ',cpp
+        write(un_sys,*)'deltaGads   = ',deltaGads
+    endif    
+    write(un_sys,*)'pHbulk      = ',pHbulk
+    write(un_sys,*)'xbulk%sol   = ',xbulk%sol
+    write(un_sys,*)'xbulk%Na    = ',xbulk%Na
+    write(un_sys,*)'xbulk%Cl    = ',xbulk%Cl
+    write(un_sys,*)'xbulk%K     = ',xbulk%K
+    write(un_sys,*)'xbulk%NaCl  = ',xbulk%NaCl
+    write(un_sys,*)'xbulk%KCl   = ',xbulk%KCl
+    write(un_sys,*)'xbulk%Ca    = ',xbulk%Ca
+    write(un_sys,*)'xbulk%Hplus = ',xbulk%Hplus
+    write(un_sys,*)'xbulk%OHmin = ',xbulk%OHmin
+    if(bcflag=="pp".or.bcflag=="pd") write(un_sys,*)'xbulk%TB    = ',xbulk%TB
+    if(sysflag=="electligand") then
+        cppbulk = (cpp*Na/(1.0e24_dp))
+        write(un_sys,*)'xbulk%pp(AH2BH) = ',xbulk%pp(AH2BH)
+        write(un_sys,*)'xbulk%pp(AHBH)  = ',xbulk%pp(AHBH)
+        write(un_sys,*)'xbulk%pp(AHB)   = ',xbulk%pp(AHB)
+        write(un_sys,*)'xbulk%pp(ABH)   = ',xbulk%pp(ABH)
+        write(un_sys,*)'xbulk%pp(AB)    = ',xbulk%pp(AB)
+        cppbulk = (cpp*Na/(1.0e24_dp))
+        do t=1,5       
+            cppfdis(t)=(xbulk%pp(t)/(vpp(t)*vsol))/cppbulk
+        enddo    
+        write(un_sys,*)'fdis(AH2BH) = ',cppfdis(AH2BH)
+        write(un_sys,*)'fdis(AHBH)  = ',cppfdis(AHBH)
+        write(un_sys,*)'fdis(AHB)   = ',cppfdis(AHB)
+        write(un_sys,*)'fdis(ABH)   = ',cppfdis(ABH)
+        write(un_sys,*)'fdis(AB)    = ',cppfdis(AB)
+
+    endif    
+    write(un_sys,*)'dielectW    = ',dielectW
+    write(un_sys,*)'lb          = ',lb
+    write(un_sys,*)'T           = ',Temp
+    write(un_sys,*)'zNa         = ',zNa
+    write(un_sys,*)'zCa         = ',zCa
+    write(un_sys,*)'zK          = ',zK
+    write(un_sys,*)'zCl         = ',zCl
+    if(bcflag=="pd")then 
+        write(un_sys,*)'zpp(AH2BH)  = ',zpp(AH2BH)
+        write(un_sys,*)'zpp(AHBH)   = ',zpp(AHBH)
+        write(un_sys,*)'zpp(AHB)    = ',zpp(AHB)
+        write(un_sys,*)'zpp(ABH)    = ',zpp(ABH)
+        write(un_sys,*)'zpp(AB)     = ',zpp(AB)
+    endif    
+    write(un_sys,*)'nr          = ',nr
+    write(un_sys,*)'free energy = ',FE
+    write(un_sys,*)'energy bulk = ',FEbulk 
+    write(un_sys,*)'deltafenergy = ',deltaFE
+    write(un_sys,*)'fnorm       = ',fnorm
+    write(un_sys,*)'q residual  = ',qres
+    write(un_sys,*)'error       = ',error
+    write(un_sys,*)'FEpi        = ',FEpi
+    write(un_sys,*)'FErho       = ',FErho
+    write(un_sys,*)'FEel        = ',FEel
+    write(un_sys,*)'FEelsurf    = ',FEelsurf
+    write(un_sys,*)'FEbind      = ',FEbind
+    write(un_sys,*)'FEalt       = ',FEalt
+    write(un_sys,*)'sigmaSurf   = ',sigmaSurf/(4.0_dp*pi*lb*delta)
+    write(un_sys,*)'sigmaqSurf  = ',sigmaqSurf/(4.0_dp*pi*lb*delta)
+    write(un_sys,*)'psiSurf     = ',psiSurf
+    if(bcflag=='ta') then
+        do i=1,4   
+            write(un_sys,fmt)'fdisTa(',i,')   = ',fdisTaL(i)
+        enddo  
+    else if(bcflag=='pp') then   
+        do i=1,4   
+            write(un_sys,fmt)'fdisSu(',i,')   = ',fdisS(i)
+        enddo
+    else if(bcflag=='pd') then   
+        do i=1,4   
+            write(un_sys,fmt)'fdisSu(',i,')   = ',fdisS(i)
+        enddo  
+        write(un_sys,*)'fdisR      = ',fdisR
+        write(un_sys,*)'sigmaR     = ',fdisR*sigmaSurf/(4.0_dp*pi*lb*delta)
+        write(un_sys,*)'sigmaLR    = ',(1.0_dp-fdisR)*sigmaSurf/(4.0_dp*pi*lb*delta)
     else
-        print*,"Error in output subroutine"
-        print*,"Wrong value sysflag : ", sysflag
-    endif     
+        do i=1,6   
+            write(un_sys,fmt)' fdisSu(',i,')  = ',fdisS(i)
+        enddo  
+    endif
+    write(un_sys,*)'nsize       = ',nsize  
+    write(un_sys,*)'iterations  = ',iter
+   
+    ! .. closing files
 
-end subroutine output
+    close(un_sys)
+    close(un_psi)
+    
+    if(verboseflag=="yes") then 
+        if(sysflag=="electligand") close(un_xpp)
+        close(un_xsol)
+        close(un_xNa)   
+        close(un_xK)
+        close(un_xCa)
+        close(un_xCl)
+        close(un_charge)
+        close(un_xHplus)
+        close(un_xOHmin)
+        close(un_xTB)
+    endif
+        
+
+end subroutine output_elect_nopoly
 
 
 subroutine output_individualcontr_fe

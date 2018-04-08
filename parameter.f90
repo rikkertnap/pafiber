@@ -76,7 +76,6 @@ module parameters
     integer :: zCa               ! valence charge divalent positive ion 
     integer :: zCl               ! valence charge negative ion 
     integer :: zTB 
-!    integer :: zsurf             ! valence surface charge 
     integer :: zpp(5)            ! valence protonantion states        
 
     real(dp) :: Temp               ! temperature in K
@@ -141,13 +140,13 @@ module parameters
 
     real(dp) :: cHplus             ! concentration of H+ in bulk in mol/liter
     real(dp) :: cOHmin             ! concentration of OH- in bulk in mol/liter
-    real(dp) :: cNaCl              ! concentration of NaCl in bulk in mol/liter
+    real(dp), target :: cNaCl      ! concentration of NaCl in bulk in mol/liter
     real(dp) :: cKCl               ! concentration of KCl in bulk in mol/liter
     real(dp) :: cCaCl2             ! concentration of CaCl2 in bulk in mol/liter
     real(dp) :: cTBCl              ! concentration of TBCl in  bulk in mol/liter 
     real(dp) :: pHbulk             ! pH of bulk pH = -log([H+])
     real(dp) :: pOHbulk            ! p0H of bulk p0H = -log([0H-])
-    real(dp) :: cpp                ! concentration ligand in bulk in mol/liter  
+    real(dp), target :: cpp        ! concentration ligand in bulk in mol/liter  
   
     type (looplist), target :: pH
         
