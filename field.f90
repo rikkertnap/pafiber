@@ -14,7 +14,7 @@ module field
     real(dp), dimension(:), allocatable :: psi     ! electrostatic potential 
     real(dp), dimension(:), allocatable :: xNa     ! volume fraction of positive Na+ ion
     real(dp), dimension(:), allocatable :: xK      ! volume fraction of positive K+ ion
-    real(dp), dimension(:), allocatable :: xTB     ! volume fraction of psitive TB (tetra butyl) ion
+    real(dp), dimension(:), allocatable :: xTB     ! volume fraction of psitive TB (tetra butyl ammonium) ion
     real(dp), dimension(:), allocatable :: xCa     ! volume fraction of positive Ca2+ ion
     real(dp), dimension(:), allocatable :: xNaCl   ! volume fraction of NaCl ion pair
     real(dp), dimension(:), allocatable :: xKCl    ! volume fraction of KCl  ion pair
@@ -23,8 +23,8 @@ module field
     real(dp), dimension(:), allocatable :: xOHmin  ! volume fraction of OHmin 
     real(dp), dimension(:), allocatable :: rhoq    ! total charge density in units of vsol
     real(dp), dimension(:), allocatable :: qpol    ! charge density of polymer
-    real(dp), dimension(:,:), allocatable :: fdisA   ! degree of dissociation 
-    real(dp), dimension(:,:), allocatable :: fdisB   ! degree of dissociation
+    real(dp), dimension(:,:), allocatable :: fdisA ! degree of dissociation 
+    real(dp), dimension(:,:), allocatable :: fdisB ! degree of dissociation
     real(dp), dimension(:,:), allocatable :: xpp   ! volume fraction pp ligand
 
     real(dp) :: qAB             ! normalization partion fnc polymer 

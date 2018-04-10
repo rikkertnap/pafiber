@@ -14,15 +14,14 @@ module parameters
     type(moleclist) :: xbulk,expmu
 
     !  .. volume 
-  
     real(dp) :: vsol               ! volume of solvent  in nm^3       
+    !  .. volume monomers
     real(dp) :: vpolB(5)           ! volume of one polymer segment, vpol  in units of vsol
     real(dp) :: vpolA(5)           ! volume of one polymer segment, vpol  in units of vsol
     real(dp) :: vpolC              ! volume of one polymer segment hydrocarbon, vpol  in units of vsol
-  
     real(dp) :: deltavA(4)
     real(dp) :: deltavB(4)
-  
+    !  .. volume ions   
     real(dp) :: vNa                ! volume positive ion in units of vsol
     real(dp) :: vK                 ! volume positive ion in units of vsol
     real(dp) :: vTB                ! volume positive ion in units of vsol
@@ -32,8 +31,8 @@ module parameters
     real(dp) :: vKCl
     real(dp) :: vHplus
     real(dp) :: vOHmin 
-    real(dp) :: vpp(5)             ! volume ligand 5 protonation states 
-   
+    ! .. volume ligand
+    real(dp) :: vpp(5)             ! volume ligand 5 protonation states    
     real(dp) :: deltavpp(4)         
 
     !  .. radii
@@ -43,9 +42,6 @@ module parameters
     real(dp) :: RTB 
     real(dp) :: RCl
     real(dp) :: RCa
-    real(dp) :: RNaCl
-    real(dp) :: RKCl
-    real(dp) :: Rpp   
 
     ! .. segment length 
 
@@ -57,26 +53,26 @@ module parameters
     real(dp) :: lsegPAA   
     real(dp) :: lsegPAMPS
     
-    integer :: period            ! peridociy of repeat of A or B block 
+    integer :: period              ! chain peridociy of repeat of A or B block 
   
     real(dp) :: VdWepsB            ! strenght VdW interaction in units of kT
     real(dp) :: VdWepsC            ! strenght VdW interaction in units of kT
     real(dp) :: chibulk            ! value of chibulk 
     integer :: numlayers
-    integer :: VdWcutoff         ! cutoff VdW interaction in units of lseg 	
-    integer :: VdWcutoffdelta    ! cutoff VdW interaction in units of delta
+    integer :: VdWcutoff           ! cutoff VdW interaction in units of lseg 	
+    integer :: VdWcutoffdelta      ! cutoff VdW interaction in units of delta
     integer :: layeroffset
   
-    ! .. valent charge 
+    ! .. valence charge 
 
-    integer :: zpolA(5)          ! valence charge polymer
-    integer :: zpolB(5)          ! valence charge polymer
-    integer :: zNa               ! valence charge positive ion 
-    integer :: zK                ! valence charge positive ion 
-    integer :: zCa               ! valence charge divalent positive ion 
-    integer :: zCl               ! valence charge negative ion 
-    integer :: zTB 
-    integer :: zpp(5)            ! valence protonantion states        
+    integer :: zpolA(5)            ! valence charge polymer
+    integer :: zpolB(5)            ! valence charge polymer
+    integer :: zNa                 ! valence charge positive ion 
+    integer :: zK                  ! valence charge positive ion 
+    integer :: zCa                 ! valence charge divalent positive ion 
+    integer :: zCl                 ! valence charge negative ion 
+    integer :: zTB               
+    integer :: zpp(5)              ! valence protonantion states        
 
     real(dp) :: Temp               ! temperature in K
     real(dp) :: dielectW           ! dielectric constant of water 
@@ -96,7 +92,7 @@ module parameters
     character(len=8) :: chainmethod      ! method of generating chains ="MC" or "FILE" 
     character(len=8) :: chaintype        ! type of chain: diblock,alt
     integer :: readinchains              ! nunmber of used/readin chains
-    character(len=3) ::  verboseflag       ! select input flag 
+    character(len=3) ::  verboseflag     ! select input flag 
 
     real(dp) :: heightAB           ! average height of layer
     real(dp) :: heightC            ! average height of layer 
@@ -106,8 +102,7 @@ module parameters
     real(dp) :: avfdisA(5)         ! average degree of dissociation 
     real(dp) :: avfdisB(5)         ! average degree of dissociation
   
-  !     .. weak polyelectrolyte variables 
-  !     .. equibrium constant
+    !  .. equibrium constant
   
     real(dp) :: K0A(4)              ! intrinsic equilibruim constant
     real(dp) :: KA(4)               ! experimemtal equilibruim constant 
@@ -115,13 +110,10 @@ module parameters
     real(dp) :: K0B(4)              ! intrinsic equilibruim constant
     real(dp) :: KB(4)               ! experimemtal equilibruim constant 
     real(dp) :: pKB(4)              ! experimental equilibruim constant pKa= -log[Ka]
-  
     real(dp) :: pKw                 ! water equilibruim constant pKw= -log[Kw] ,Kw=[H+][OH-] 
-  
     real(dp) :: K0ionNa             ! intrinsic equilibruim constant
     real(dp) :: KionNa              ! experimemtal equilibruim constant 
     real(dp) :: pKionNa             ! experimental equilibruim constant pKion= -log[Kion]	 
-  
     real(dp) :: K0ionK              ! intrinsic equilibruim constant
     real(dp) :: KionK               ! experimemtal equilibruim constant 
     real(dp) :: pKionK              ! experimental equilibruim constant pKion= -log[Kion]	 
@@ -130,20 +122,14 @@ module parameters
     real(dp) :: K0pp(5)             ! intrinsic equilibruim constant ligand acid base equilbria  
     real(dp) :: pKpp(5)   
   
-    !     .. bulk volume fractions 
-  
-    real(dp) :: pibulk             ! -ln(xsolbulk)
-    real(dp) :: xNaClsalt          ! volume fraction of salt in bulk
-    real(dp) :: xKClsalt           ! volume fraction of salt in bulk
-    real(dp) :: xCaCl2salt         ! volume fraction of divalent salt in bulk
-    real(dp) :: xTBClsalt          ! volume fraction of salt in bulk
+    !     .. bulk volume fractions
 
-    real(dp) :: cHplus             ! concentration of H+ in bulk in mol/liter
-    real(dp) :: cOHmin             ! concentration of OH- in bulk in mol/liter
     real(dp), target :: cNaCl      ! concentration of NaCl in bulk in mol/liter
     real(dp) :: cKCl               ! concentration of KCl in bulk in mol/liter
     real(dp) :: cCaCl2             ! concentration of CaCl2 in bulk in mol/liter
     real(dp) :: cTBCl              ! concentration of TBCl in  bulk in mol/liter 
+    real(dp) :: cHplus             ! concentration of H+ in bulk in mol/liter
+    real(dp) :: cOHmin             ! concentration of OH- in bulk in mol/liter
     real(dp) :: pHbulk             ! pH of bulk pH = -log([H+])
     real(dp) :: pOHbulk            ! p0H of bulk p0H = -log([0H-])
     real(dp), target :: cpp        ! concentration ligand in bulk in mol/liter  
@@ -188,7 +174,6 @@ contains
                 stop
         end select  
          
-
     end subroutine set_size_neq
 
     
@@ -202,8 +187,7 @@ contains
 
         lb=(elemcharge**2)/(4.0_dp*pi*dielectW*dielect0*kBoltzmann*T) ! bjerrum length in water=solvent in m
         lb=lb/1.0e-9_dp              ! bjerrum length in water in nm
-    !    BjerrumLenght=lb
-
+    
     end function BjerrumLenght
         
     !     purpose: initialize all constants parameter 
@@ -218,7 +202,7 @@ contains
         
         implicit none      
         
-        real(dp) :: vA,vB, vAA, vAMPS, vlig, Rlig
+        real(dp) :: vA,vB, vAA, vAMPS, v3pp
         
         !  .. initializations of variables
  
@@ -227,8 +211,6 @@ contains
         nr=nsize                  ! size of lattice in z-direction 
         
         !     .. charges
-        
-        ! zsurf =-1                 ! valence surface charge 
         zNa   = 1                 ! valence positive charged ion
         zK    = 1                 ! valence positive charged ion
         zCa   = 2                 ! valence divalent positive charged ion
@@ -259,11 +241,7 @@ contains
         RK  = 0.138_dp             ! radius of K+ in nm
         RCl = 0.181_dp             ! radius of Cl- in nm
         RCa = 0.106_dp             ! radius of Ca2+ in nm
-        RTB = 0.50_dp              ! radius of TB+ in nm  
-        RNaCl = 0.26_dp            ! radius of ion pair: this value is strange  and not used !!
-        RKCl = 0.26_dp             ! radius of ion pair
-        Rpp = 0.55_dp              ! radius of ligand this is guess 
-        Rlig = Rpp 
+        RTB = 0.50_dp              ! radius of TBA+ in nm 
 
         !     .. volume
 
@@ -287,14 +265,14 @@ contains
 
         vNaCl= (vNa+vCl)          ! contact ion pair
         vKCl = (vK+vCl)           ! contact ion pair
+         
+        v3pp = 0.0792_dp/vsol 
 
-        vlig =((4.0_dp/3.0_dp)*pi*(Rlig)**3)/vsol 
-
-        vpp(AH2BH) = vlig
-        vpp(AHBH)  = vlig
-        vpp(AHB)   = vlig
-        vpp(ABH)   = vlig
-        vpp(AB)    = vlig
+        vpp(AH2BH) = v3pp
+        vpp(AHBH)  = v3pp
+        vpp(AHB)   = v3pp
+        vpp(ABH)   = v3pp
+        vpp(AB)    = v3pp
 
         deltavpp(1)=vpp(AHBH)+vHplus-vpp(AH2BH) 
         deltavpp(2)=vpp(ABH)+vHplus-vpp(AHBH)    
@@ -332,27 +310,30 @@ contains
         deltavB(3)=vpolB(1)+vCa-vpolB(4)    ! vB- +vCa2+ -vBCa+
         deltavB(4)=2.0_dp*vpolB(1)+vCa-vpolB(5) ! 2vB- + vCa2+ -vB2Ca+
         
-        vpolC  = 0.0270_dp/vsol     ! volume CH2
+        vpolC  = 0.0270_dp/vsol    ! volume CH2
        
-        !     .. other physical varaibles
-        lsegPAA   = 0.36287_dp       ! segment length in nm
-        lsegPAMPS = 0.545_dp        ! segment length in nm
-        lsegCH2   =  0.153_dp         ! segment length in nm od CH2 check  
+        !  .. polymer segment lenght 
+        lsegPAA   = 0.36287_dp     ! segment length in nm
+        lsegPAMPS = 0.545_dp       ! segment length in nm
+        lsegCH2   = 0.153_dp       ! segment length in nm od CH2 check  
+        lsegAB = lsegPAMPS          
+        lsegA  = lsegPAA            
+        lsegB  = lsegPAMPS          
+        lsegC  = lsegCH2            
 
-        lsegAB=lsegPAMPS          
-        lsegA =lsegPAA            
-        lsegB =lsegPAMPS          
-        lsegC =lsegCH2            
+        ! .. see also subroutine set_chain_properties 
 
-        ! see also subroutine set_chain_properties 
+        ! .. chemical equilbrium constants
 
-        pKpp(1)  = 2.26_dp  ! POH2COOH <=> POHCOOH- + H+ 
-        pKpp(2) =  4.6_dp   ! POHCOOH- <=> POHCOO2- + H+ 
-        pKpp(3) =  5.4_dp   ! POHCOOH- <=> POCOOH2- + H+ !
-        pKpp(4) =  6.9_dp   ! POCOOH2- <=> POCOO3- + H+ 
-        pKpp(5) =  7.8_dp   ! POHCOO2- <=> POCOO3- + H+ !
-        
-        pKw=14.0_dp                   ! water equilibruim constant
+        pKpp(1) =  2.26_dp        ! POH2COOH <=> POHCOOH- + H+ 
+        pKpp(2) =  4.6_dp         ! POHCOOH- <=> POHCOO2- + H+ 
+        pKpp(3) =  5.4_dp         ! POHCOOH- <=> POCOOH2- + H+ !
+        pKpp(4) =  6.9_dp         ! POCOOH2- <=> POCOO3- + H+ 
+        pKpp(5) =  7.8_dp         ! POHCOO2- <=> POCOO3- + H+ !
+        pKw = 14.0_dp             ! water equilibruim constant
+
+        ! .. other physical variables
+
         Temp=298.0_dp                 ! temperature in Kelvin
         dielectW=78.54_dp             ! dielectric constant water
         lb=BjerrumLenght(Temp)        ! bjerrum length in water in nm
@@ -391,9 +372,10 @@ contains
         
         real(dp),  dimension(:), allocatable :: x         ! volume fraction solvent iteration vector 
         real(dp),  dimension(:), allocatable :: xguess  
-        
+        real(dp) :: xNaClsalt, xKClsalt, xCaCl2salt, xTBClsalt           ! volume fraction of divalent salt in bulk
         integer :: i
         character(len=15) :: sysflag_old
+
         
         allocate(x(5))
         allocate(xguess(5))
@@ -489,7 +471,7 @@ contains
         K0b(4) = (Kb(4)*vsol)*(Na/1.0e24_dp)
          
 
-        pibulk = -log(xbulk%sol)  ! pressure (pi) of bulk
+        ! pibulk = -log(xbulk%sol)  ! pressure (pi) of bulk
         ! exp(beta mu_i) = (rhobulk_i v_i) / exp(- beta pibulk v_i) 
         expmu%Na    = xbulk%Na   /(xbulk%sol**vNa) 
         expmu%K     = xbulk%K    /(xbulk%sol**vK)
@@ -522,6 +504,8 @@ contains
         !     .. local variable
         
         integer :: i
+        real(dp) :: xNaClsalt, xKClsalt, xCaCl2salt, xTBClsalt           ! volume fraction of divalent salt in bulk
+
 
         !     .. initializations of input dependent variables, electrostatic part 
         
@@ -592,7 +576,7 @@ contains
         K0b(4) = (Kb(4)*vsol)*(Na/1.0e24_dp)
          
 
-        pibulk = -log(xbulk%sol)  ! pressure (pi) of bulk
+        ! pibulk = -log(xbulk%sol)  ! pressure (pi) of bulk
         ! exp(beta mu_i) = (rhobulk_i v_i) / exp(- beta pibulk v_i) 
         expmu%Na    = xbulk%Na   /(xbulk%sol**vNa) 
         expmu%K     = xbulk%K    /(xbulk%sol**vK)
@@ -631,21 +615,16 @@ contains
         phisol=1.0_dp
 
         !  .. equilibrium eq AH2BH <=> AHBH^- +H^+  A<=> B
-
         xA = K0pp(1)*(vpp(AHBH)/vpp(AH2BH))*(phisol)/xbulkHplus
 
         !  .. equilibrium eq AHBH^- <=> ABH^2- +H^+    B<=>C 
-
         xB = K0pp(3)*(vpp(ABH)/vpp(AHBH))*(phisol)/xbulkHplus
        
         !   .. equilibrium eq AHBH^- <=> AHB^2- +H^+    B<=>E 
-
         xBprime = K0pp(2)*(vpp(AHB)/vpp(AHBH))*(phisol)/xbulkHplus
 
         !   .. equilibrium eq AHB^2- <=> AB^3- +H^+    E<=>F
-
         xE = K0pp(5)*(vpp(AB)/vpp(AHB))*(phisol)/xbulkHplus
-
 
         sumx=xA + xA*xB + xA*xBprime + xA*xBprime*xE
 
@@ -654,14 +633,6 @@ contains
         fpp(ABH)   = fpp(AHBH)  * xB
         fpp(AHB)   = fpp(AHBH)  * xBprime 
         fpp(AB)    = fpp(AHB)   * xE
-
-        !print*,"pH = ",pH%val
-        !print*,"fpp(AH2BH) = ", fpp(AH2BH)
-        !print*,"fpp(AHBH)  = ", fpp(AHBH) 
-        !print*,"fpp(ABH)   = ", fpp(ABH)  
-        !print*,"fpp(AHB)   = ", fpp(AHB)   
-        !print*,"fpp(AB)    = ", fpp(AB) 
-
 
     end function
 
@@ -677,12 +648,12 @@ contains
                 
         real(dp),  dimension(:), allocatable :: x         ! volume fraction solvent iteration vector 
         real(dp),  dimension(:), allocatable :: xguess  
-        
         integer :: i, t
         character(len=15) :: sysflag_old
         real(dp) :: Kpp(5), fppbulk(5)
         real(dp) :: xppbulk, rhoqppbulk, cppbulk, sumfpp , rhoqbulk
-        
+        real(dp) :: xNaClsalt, xKClsalt, xCaCl2salt, xTBClsalt           ! volume fraction of divalent salt in bulk
+
         allocate(x(6))
         allocate(xguess(6))
 
