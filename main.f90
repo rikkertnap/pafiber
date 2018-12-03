@@ -86,82 +86,114 @@ program main
 
     !  .. computation starts
                      
-    allocate(xstored(neq))
-    allocate(x(neq))
-    allocate(xguess(neq))   
-    allocate(fvec(neq))   
+    ! .. select variable with which list_array associated
     
-    isfirstguess = .true.    
-    use_xstored = .false.             
-    iter = 0
-
-     ! .. select variable with which list_array associated
-    if (runflag=="rangepHcpp") then
+    if (runflag=="rangepHcpp" .or. runflag=="rangepHcNaCl") then
         call set_value_concen(runflag,info)
         if(info/=0) then
             print*,"Error in input file: info = ",info," : end program." 
             stop
         endif
         list=>concen_array 
-        list_val => cpp    
-
-    else if(runflag=="rangpHcNaCl") then
-        call set_value_concen(runflag,info)
-        if(info/=0) then
-            print*,"Error in input file: info = ",info," : end program." 
-            stop
-        endif
-        list=>concen_array  
-        list_val => cNaCl        
-    
+        if(runflag=="rangepHcpp")   list_val => cpp    
+        if(runflag=="rangepHcNaCl") list_val => cNaCl        
     else
         if(associated(list)) nullify(list) 
         if(associated(list_val)) nullify(list_val) 
         num_concen=1
         allocate(list(1))
-        list_val => list_first ! need to poin to a valid variable
+        list_val => list_first ! need to poinr to a valid variable
     endif    
 
+    if(runflag/="rangenr") then  
 
-    list_first= list(1)
 
-    do c=1,num_concen        ! loop 
+        allocate(xstored(neq))
+        allocate(x(neq))
+        allocate(xguess(neq))   
+        allocate(fvec(neq))   
+    
+        isfirstguess = .true.    
+        use_xstored = .false.             
+        iter = 0
 
-        iter = 0                  ! iteration counter 
-        list_val=list(c)
-        isfirstguess= .true.
-        pH%val=pH%min    
 
-        do while (pH%min<=pH%val.and.pH%val<=pH%max.and.(abs(pH%stepsize)>=pH%delta)) 
-           
-            call init_expmu()
-            call make_guess(x, xguess, isfirstguess) 
-            call solver(x, xguess, error, fnorm) 
+        list_first= list(1)
+
+        do c=1,num_concen        ! loop 
+
+            iter = 0                  ! iteration counter 
+            list_val=list(c)
+            isfirstguess= .true.
+            pH%val=pH%min    
+
+            do while (pH%min<=pH%val.and.pH%val<=pH%max.and.(abs(pH%stepsize)>=pH%delta)) 
+               
+                call init_expmu()
+                call make_guess(x, xguess, isfirstguess) 
+                call solver(x, xguess, error, fnorm) 
+                
+                if(isNaN(fnorm)) then  
+                    text="no solution: backstep"
+                    call print_to_log(LogUnit,text)
+                    pH%stepsize=pH%stepsize/2.0_dp ! smaller 
+                    pH%val=pH%val-pH%stepsize ! step back
+                    do i=1,neq
+                        x(i)=xguess(i)
+                    enddo       
+                else 
+                    ! call fcnenergy()        
+                    ! call average_height()      
+                    ! call charge_polymer()
+                    ! call average_charge_polymer()
+                    call output()           ! writing of output
+                    write(rstr,'(F7.3)')pH%val
+                    text="solution pH="//trim(adjustl(rstr))
+                    pH%val=pH%val+pH%stepsize
+                endif 
+                isfirstguess= .false.
+                iter  = 0              ! reset of iteration counter 
+
+            enddo 
+
+        enddo
+
+    else  ! runflag==rangenr
+
+        allocate(xstored(neq))    
+      
+        nr=nrmax
+        isfirstguess = .true.    
+        use_xstored = .false.
+        iter = 0 
+
+        do while (nr>=nrmin)        ! loop distances
+
+            call set_size_neq()  
             
-            if(isNaN(fnorm)) then  
-                text="no solution: backstep"
-                call print_to_log(LogUnit,text)
-                pH%stepsize=pH%stepsize/2.0_dp ! smaller 
-                pH%val=pH%val-pH%stepsize ! step back
-                do i=1,neq
-                    x(i)=xguess(i)
-                enddo       
-            else 
-                ! call fcnenergy()        
-                ! call average_height()      
-                ! call charge_polymer()
-                ! call average_charge_polymer()
-                call output()           ! writing of output
-                write(rstr,'(F7.3)')pH%val
-                text="solution pH="//trim(adjustl(rstr))
-                pH%val=pH%val+pH%stepsize
-            endif 
-            isfirstguess= .false.
-            iter  = 0              ! reset of iteration counter 
+            allocate(x(neq))
+            allocate(xguess(neq))
+ 
+            call make_guess(x, xguess, isfirstguess, use_xstored, xstored)
 
-        enddo 
+            call solver(x, xguess, error, fnorm)
+            
+            call output()           ! writing of output
 
-    enddo
+            isfirstguess =.false.    
+            use_xstored = .true.
+            iter = 0                ! reset of iteration counter 
+            nr = nr-nrstep          ! reduce distance 
+            do i=1,neq
+                xstored(i)=x(i)
+            enddo
+
+            deallocate(x)   
+            deallocate(xguess)
+        enddo   
+
+    endif    
+ 
 
 
 

@@ -89,7 +89,7 @@ subroutine read_inputfile(info)
     if(bcflag=="pp".or.bcflag=="pd") then 
         read(un_input,*)cTBCl            !   TB=tertraButyl
         if(sysflag=="electligand") then 
-            read(un_input,*)deltaGads
+            read(un_input,*)deltaG0ads
             read(un_input,*)cpp
         endif
     endif   
@@ -103,6 +103,11 @@ subroutine read_inputfile(info)
     read(un_input,*)pKb(4)           !   B2Ca <=> 2B- + Ca2+   
     read(un_input,*)period
     read(un_input,*)nsize
+    if(runflag=="rangenr")then
+        read(un_input,*)nrmax            ! max distance
+        read(un_input,*)nrmin            ! min distance
+        read(un_input,*)nrstep           ! step distance  
+    endif
     read(un_input,*)nsegAB
     read(un_input,*)cuantasAB
     read(un_input,*)nsegC
@@ -201,7 +206,7 @@ subroutine check_value_runflag(runflag,info)
     character(len=15), intent(in) :: runflag
     integer, intent(out),optional :: info
 
-    character(len=15) :: runflagstr(3)
+    character(len=15) :: runflagstr(4)
     integer :: i
     logical :: flag
 
@@ -210,10 +215,11 @@ subroutine check_value_runflag(runflag,info)
     runflagstr(1)="rangepH"
     runflagstr(2)="rangepHcpp"
     runflagstr(3)="rangepHcNaCl"
+    runflagstr(4)="rangenr"
 
     flag=.FALSE.
 
-    do i=1,3
+    do i=1,4
         if(runflag==runflagstr(i)) flag=.TRUE.
     enddo
 
@@ -494,7 +500,14 @@ subroutine output_elect
             fnamelabel=trim(fnamelabel)//"cpp"//trim(adjustl(rstr))
         endif   
         write(rstr,'(F7.3)')pHbulk
-        fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))//".dat"
+        fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))
+        ! nr variable in file names only in rangenr
+        if(runflag/="rangenr") then 
+            fnamelabel=trim(fnamelabel)//".dat"
+        else 
+            write(rstr,'(I4)')nr
+            fnamelabel=trim(fnamelabel)//"nr"//trim(adjustl(rstr))//".dat"
+        endif     
 
     else
 
@@ -623,9 +636,8 @@ subroutine output_elect
     write(un_sys,*)'lsegAB      = ',lsegAB
     write(un_sys,*)'nsegC       = ',nsegC
     write(un_sys,*)'lsegC       = ',lsegC
-    write(un_sys,*)'period      = ',period
-    write(un_sys,*)'nr          = ',nr
-    write(un_sys,*)'delta       = ',delta   
+    write(un_sys,*)'period      = ',period 
+    write(un_sys,*)'delta       = ',delta  
     write(un_sys,*)'vsol        = ',vsol
     write(un_sys,*)'vpolA(1)    = ',vpolA(1)*vsol
     write(un_sys,*)'vpolA(2)    = ',vpolA(2)*vsol
@@ -993,6 +1005,7 @@ subroutine output_elect_nopoly
     logical :: isopen
     real(dp) :: xppfdis(5),cppfdis(5)
     real(dp) :: cppbulk
+    real(dp) :: eta
 
 
     ! .. executable statements 
@@ -1021,7 +1034,16 @@ subroutine output_elect_nopoly
         fnamelabel=trim(fnamelabel)//"cpp"//trim(adjustl(rstr))
     endif   
     write(rstr,'(F7.3)')pHbulk
-    fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))//".dat"
+    fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))
+    ! nr variable in file names only in rangenr
+    if(runflag/="rangenr") then 
+        fnamelabel=trim(fnamelabel)//".dat"
+    else 
+        write(rstr,'(I4)')nr
+        fnamelabel=trim(fnamelabel)//"nr"//trim(adjustl(rstr))//".dat"
+    endif     
+
+
 
 
     sysfilename='system.'//trim(fnamelabel)
@@ -1101,7 +1123,6 @@ subroutine output_elect_nopoly
     write(un_sys,*)'version     = ',VERSION
     write(un_sys,*)'sysflag     = ',sysflag
     write(un_sys,*)'bcflag      = ',bcflag
-    write(un_sys,*)'nr          = ',nr
     write(un_sys,*)'delta       = ',delta   
     write(un_sys,*)'vsol        = ',vsol
     write(un_sys,*)'vNa         = ',vNa*vsol
@@ -1124,7 +1145,8 @@ subroutine output_elect_nopoly
     if(bcflag=="pp".or.bcflag=="pd") then 
         write(un_sys,*)'cTBCl       = ',cTBCl
         write(un_sys,*)'cpp         = ',cpp
-        write(un_sys,*)'deltaGads   = ',deltaGads
+        write(un_sys,*)'deltaG0ads  = ',deltaG0ads
+        write(un_sys,*)'deltaGads   = ',deltaG0ads-log(Na*vsol/1.0e24_dp)
     endif    
     write(un_sys,*)'pHbulk      = ',pHbulk
     write(un_sys,*)'xbulk%sol   = ',xbulk%sol
@@ -1207,6 +1229,10 @@ subroutine output_elect_nopoly
     endif
     write(un_sys,*)'nsize       = ',nsize  
     write(un_sys,*)'iterations  = ',iter
+    if(runflag=="rangenr") then 
+        eta=(radius/(nr*delta))**3
+        write(un_sys,*)'eta       = ',eta
+    endif  
    
     ! .. closing files
 

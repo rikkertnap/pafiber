@@ -118,7 +118,8 @@ module parameters
     real(dp) :: KionK               ! experimemtal equilibruim constant 
     real(dp) :: pKionK              ! experimental equilibruim constant pKion= -log[Kion]	 
     
-    real(dp) :: deltaGads           ! adsorption energy  
+    real(dp) :: deltaG0ads          ! adsorption energy
+    !real(dp) :: deltaGads
     real(dp) :: K0pp(5)             ! intrinsic equilibruim constant ligand acid base equilbria  
     real(dp) :: pKpp(5)   
   
@@ -697,7 +698,10 @@ contains
         KionK = 0.0_dp
         K0ionK = KionK /(vsol*Na/1.0e24_dp) ! intrinstic equilibruim constant 
         K0ionNa = KionNa/(vsol*Na/1.0e24_dp) ! intrinstic equilibruim constant 
-       
+        
+        !K0ads=exp(-deltaG0ads)
+        !Kads = K0ads*(vsol*Na/1.0e24_dp)
+
         !     .. intrinstic equilibruim constants      
         do i=1,5
             Kpp(i)  = 10.0_dp**(-pKpp(i)) ! experimental equilibruim constant acid 

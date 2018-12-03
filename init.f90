@@ -16,8 +16,8 @@ subroutine init_guess_electnopoly(x, xguess)
       
     implicit none
   
-    real(dp) :: x(neq)       ! volume fraction solvent iteration vector 
-    real(dp) :: xguess(neq)  ! guess fraction  solvent 
+    real(dp), intent(inout) :: x(:)       ! volume fraction solvent iteration vector 
+    real(dp), intent(out) :: xguess(:)  ! guess fraction  solvent 
   
     !     ..local variables 
     integer :: n, i
@@ -82,8 +82,8 @@ subroutine init_guess_elect(x, xguess)
       
     implicit none
   
-    real(dp) :: x(neq)       ! volume fraction solvent iteration vector 
-    real(dp) :: xguess(neq)  ! guess fraction  solvent 
+    real(dp), intent(inout) :: x(:)       ! volume fraction solvent iteration vector 
+    real(dp), intent(out) :: xguess(:)  ! guess fraction  solvent 
   
     !     ..local variables 
     integer :: n, i
@@ -152,8 +152,8 @@ subroutine init_guess_neutral(x, xguess)
       
     implicit none
   
-    real(dp) :: x(neq)       ! volume fraction solvent iteration vector 
-    real(dp) :: xguess(neq)  ! guess fraction  solvent 
+    real(dp) :: x(:)       ! volume fraction solvent iteration vector 
+    real(dp) :: xguess(:)  ! guess fraction  solvent 
   
     !     ..local variables 
     integer :: n, i
@@ -216,8 +216,9 @@ subroutine make_guess_from_xstored(xguess,xstored)
 
     implicit none
 
-    real(dp), intent(out) :: xguess(neq)    ! guess volume fraction solvent and potentia
-    real(dp), intent(in) :: xstored(neqmax)
+    real(dp), intent(out) :: xguess(:)    ! guess volume fraction solvent and potentia 
+    real(dp), intent(in) :: xstored(:)  ! assumed-shape array
+ 
 
     !   .. local variables
     integer :: i,neq_bc
@@ -242,7 +243,7 @@ subroutine make_guess_from_xstored(xguess,xstored)
         do i=1,neq_bc
             xguess(4*nr+i)=xstored(4*(nr+nrstep)+i) 
         enddo   
-    elseif (sysflag=="electnopoly") then 
+    elseif (sysflag=="electnopoly".or.sysflag=="electligand") then 
         do i=1,nr/2
             xguess(i)=xstored(i)                    ! volume fraction solvent 
             xguess(i+nr)=xstored(i+nr+nrstep)       ! potential
@@ -271,11 +272,11 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
 
     implicit none
 
-    real(dp), intent(in) :: x(neq)          ! iteration vector 
-    real(dp), intent(out) :: xguess(neq)    ! guess volume fraction solvent and potential 
-    logical, intent(in) :: isfirstguess   ! first guess   
-    logical, optional, intent(in) :: flagstored
-    real(dp), optional, intent(in) :: xstored(neqmax)
+    real(dp), intent(inout) :: x(neq)          ! iteration vector 
+    real(dp), intent(out)   :: xguess(neq)     ! guess volume fraction solvent and potential 
+    logical,  intent(in)    :: isfirstguess    ! first guess   
+    logical,  optional, intent(in) :: flagstored
+    real(dp), optional, intent(in) :: xstored(:) ! assumed-shaped array
 
     !     ..local variables 
     integer :: i,neq_bc

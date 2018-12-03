@@ -492,24 +492,24 @@ contains
 
         use physconst
         use mathconst
-        use parameters, only : deltaGads,expmu,vpp,zpp,xbulk
+        use parameters, only : deltaG0ads,expmu,vpp,zpp,xbulk
 
         real(dp), intent(in) :: psiS
         real(dp) :: surface_charge
     
         ! .. local variables                                                                                                  
 
-        real(dp) :: xS(5),Kads
+        real(dp) :: xS(5),K0ads
         real(dp) :: sum_xS,avfdis
         integer :: t
 
-        Kads=exp(-deltaGads)
+        K0ads=exp(-deltaG0ads)
 
        ! exmpu%i := [exp(-beta(mu0_i-mu_i))v_i/v_w]exp(- beta pibulk v_i) 
 
 
         do t=1,5
-            xS(t) = Kads*exp(-qS(t)*psiS)*expmu%pp(t)/(vpp(t)*xbulk%sol**vpp(t))
+            xS(t) = K0ads*exp(-qS(t)*psiS)*expmu%pp(t)/(vpp(t)*xbulk%sol**vpp(t))
         enddo    
     
         sum_xS = xS(AHBH)+xS(AHB)+xS(ABH)+xs(AB) ! do not include AB2BH assumed to not be adsorbed
