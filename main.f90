@@ -118,6 +118,7 @@ program main
         iter = 0
 
 
+
         list_first= list(1)
 
         do c=1,num_concen        ! loop 
@@ -129,9 +130,12 @@ program main
 
             do while (pH%min<=pH%val.and.pH%val<=pH%max.and.(abs(pH%stepsize)>=pH%delta)) 
                
+                ! isfirstguess= .true. ! debug remove latter
                 call init_expmu()
+                !call set_fcn()
                 call make_guess(x, xguess, isfirstguess) 
                 call solver(x, xguess, error, fnorm) 
+                call fcnptr(x,fvec,neq)
                 
                 if(isNaN(fnorm)) then  
                     text="no solution: backstep"
@@ -146,6 +150,7 @@ program main
                     ! call average_height()      
                     ! call charge_polymer()
                     ! call average_charge_polymer()
+                    qres=charge_neutrality(rhoq,sigmaqSurf) 
                     call output()           ! writing of output
                     write(rstr,'(F7.3)')pH%val
                     text="solution pH="//trim(adjustl(rstr))

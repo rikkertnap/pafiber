@@ -1,22 +1,24 @@
 module surface 
    
-    use globals, only :    AH2BH, AHBH, AHB, ABH, AB
+    use globals, only :    AH2BH, AHBH, AHB, ABH, AB, SuOH, SuCl, Su
     use mathconst
    
     implicit none
     
     !   different surface states
 
-    real(dp) :: fdisS(6)            ! fraction of different surface states
-    real(dp) :: KS(5)               ! experimemtal equilibruim constant 
-    real(dp) :: pKS(5)              ! experimental equilibruim constant pKS= -log[KS]   
-    real(dp) :: K0S(5)              ! intrinsic equilibruim constant
-    real(dp) :: qS(6)               ! charge  real because possitbilito offractional charge 
+    real(dp) :: fdisS(8)            ! fraction of different surface states
+    real(dp) :: gdisS(8)            ! fraction of different surface states, only used for bc=pc
+    
+    real(dp) :: KS(7)               ! experimemtal equilibruim constant 
+    real(dp) :: pKS(7)              ! experimental equilibruim constant pKS= -log[KS]   
+    real(dp) :: K0S(7)              ! intrinsic equilibruim constant
+    real(dp) :: qS(8)               ! charge  real because possitbilito offractional charge 
     real(dp) :: cap                 ! capacitance
  
     real(dp) :: sigmaSurf           ! surface density of acid on surface in nm^2
     real(dp) :: sigmaqSurf          ! surface charge density on surface in nm^2
-    real(dp) :: fdisR               ! fraction of surface ligand density sites not boudn 
+    real(dp) :: fdisR               ! fraction of surface ligand density sites not bound 
 
     real(dp) :: psiSurf             ! surface potential     
     
@@ -47,9 +49,11 @@ contains
             case ("pp")
                 call init_surface_pp(sigmaSurf)  ! pp == phoshonatepropionate
             case ("pd")
-                call init_surface_pp_dynamic(sigmaSurf)       
+                call init_surface_pp_dynamic(sigmaSurf)   
+            case ("pc")
+                call init_surface_pp_dynamic_cond(sigmaSurf)      
             case default
-                print*,"bc does not match qu, cl, ca, ta, cc, pp, or pd"
+                print*,"bc does not match qu, cl, ca, ta, cc, pp, pd, or pc"
         end select 
             
     end subroutine init_surface
@@ -75,9 +79,11 @@ contains
             case ("pp")
                 sigma_surface_charge = surface_charge_pp(psisurf)
             case ("pd")
-                sigma_surface_charge = surface_charge_pp_dynamic(psiSurf)     
+                sigma_surface_charge = surface_charge_pp_dynamic(psiSurf)
+            case ("pc")
+                sigma_surface_charge = surface_charge_pp_dynamic_cond(psiSurf)       
             case default
-                print*,"bc does not match qu, cl, ca, ta, cc, pp, or pd"    
+                print*,"bc does not match qu, cl, ca, ta, cc, pp, pd, or pc"    
                 sigma_surface_charge = 0.0_dp
         end select
 
@@ -234,7 +240,8 @@ contains
 
     end subroutine init_surface_taurine
 
-   
+
+    
     subroutine init_surface_pp_dynamic(sigmaSurf)
 
         real(dp) ,intent(inout) :: sigmaSurf 
@@ -268,17 +275,58 @@ contains
         enddo
 
         ! charges surface states
-        qS(AHBH)=0.0_dp    !>SPOHCOOH
+        qS(AHBH)= 0.0_dp    !>SPOHCOOH
         qS(AHB) =-1.0_dp   !>SPOHCOO-
         qS(ABH) =-1.0_dp   !>SPOCOOH-
         qS(AB)  =-2.0_dp   !>SPOCOO2-
-        qS(AH2BH)= 0
+        qS(AH2BH)= 0.0_dp
        
     
         ! sites density
         sigmaSurf = sigmaSurf * (4.0_dp*pi*lb)*delta ! dimensionless surface charge     
 
     end subroutine init_surface_pp
+
+    subroutine init_surface_pp_dynamic_cond(sigmaSurf)
+    
+        use mathconst 
+        use physconst, only : Na
+        use parameters,  only : vsol,delta,lb
+
+        real(dp) ,intent(inout) :: sigmaSurf 
+
+        integer :: i
+        real(dp) :: pKSa,pKSb
+
+        pKS(1)=   4.6_dp  !  >SPOHCOOH <=> >SPOHCOO- + H+ ! carboxlic group of pp ligand
+        pKS(2)=   5.4_dp  !  >SPOHCOOH <=> >SPOCOOH- + H+ ! second phosphonate state of pp ligand
+        pKSa  =   6.9_dp  !  >SPOCOOH- <=> >SPOCOO2- + H+ ! carboxylic group of pp ligand 
+        pKSb  =   7.8_dp  !  >SPOHCOO- <=> >SPOCOO2- + H+ ! both 
+        pKS(3)=   pKS(1)+pKSb !  >SPOHCOOH <=> >SPOCOO2- + H+ 
+        
+
+        
+        do i=1,4
+            KS(i)  = 10.0_dp**(-pKS(i))       ! experimental equilibruim constant surface acid
+            K0S(i) = (KS(i)*vsol)*(Na/1.0e24_dp) ! intrinstic equilibruim constant 
+        enddo
+
+        ! charges surface states
+        qS(AHBH) =  0.0_dp    !>SPOHCOOH
+        qS(AHB)  = -1.0_dp    !>SPOHCOO-
+        qS(ABH)  = -1.0_dp    !>SPOCOOH-
+        qS(AB)   = -2.0_dp    !>SPOCOO2-
+        qS(AH2BH)=  0.0_dp    ! notbound 
+        qS(Su)   =  1.0_dp    !>S+ 
+        qS(SuOH)  =  0.0_dp    !>SOH  
+        qS(SuCl)  =  0.0_dp    !>SCl
+    
+        ! sites density
+        sigmaSurf = sigmaSurf * (4.0_dp*pi*lb)*delta ! dimensionless surface charge     
+
+
+    end subroutine init_surface_pp_dynamic_cond
+
 
 
     subroutine init_surface_constcharge()
@@ -538,5 +586,100 @@ contains
         ! print*,"surface_charge        =",surface_charge
 
     end function surface_charge_pp_dynamic
+
+    function surface_charge_pp_dynamic_cond(psiS) result(surface_charge)
+
+        use physconst
+        use mathconst
+        use parameters, only : deltaG0ads,deltaG0adsSuOH,deltaG0adsSuCl
+        use parameters, only : expmu,vpp,zpp,xbulk,vCl
+
+        real(dp), intent(in) :: psiS
+        real(dp) :: surface_charge
+    
+        ! .. local variables                                                                                                  
+
+        real(dp) :: xS(7),K0ads,K0adsSuOH,K0adsSuCl
+        real(dp) :: sum_xS,avfdis, sum_Z, sum_W, sumfdis
+        integer :: t
+
+        
+        K0ads=exp(-deltaG0ads)
+        if(deltaG0adsSuOH>10.0_dp) then 
+            K0adsSuOH=0.0_dp
+        else
+            K0adsSuOH=exp(-deltaG0adsSuOH)
+        endif
+        if(deltaG0adsSuCl>10.0_dp) then
+            K0adsSuCl=0.0_dp
+        else    
+            K0adsSuCl=exp(-deltaG0adsSuCl)
+        endif    
+        
+       ! exmpu%i := [exp(-beta(mu0_i-mu_i))v_i/v_w]exp(- beta pibulk v_i) 
+
+
+        do t=1,5
+            xS(t) = K0ads*exp(-(qS(t)-qS(Su))*psiS)*expmu%pp(t)/(vpp(t)*xbulk%sol**vpp(t))
+        enddo    
+        xS(SuOH) = K0adsSuOH*exp(-(qS(SuOH)-qS(Su))*psiS)*expmu%OHmin/(xbulk%sol)
+        xS(SuCl) = K0adsSuCl*exp(-(qS(SuCl)-qS(Su))*psiS)*expmu%Cl/(vCl*xbulk%sol**vCl)
+
+        sum_xS = xS(AHBH)+xS(AHB)+xS(ABH)+xs(AB) +xs(SuOH)+xs(SuCl) ! do not include AB2BH assumed to not be adsorbed
+
+        ! fdisR(t) =sigma(t)/sigma0
+
+        fdisS(Su)     = 1.0_dp/(1.0_dp+sum_xS)  ! >S+
+        fdisR        = fdisS(Su)
+
+        fdisS(AHBH)  = xS(AHBH)*fdisR     ! >SAHBH  
+        fdisS(AHB)   = xS(AHB)*fdisR      ! >SAHB-                                                                                 
+        fdisS(ABH)   = xS(ABH)*fdisR      ! >SABH- 
+        fdisS(AB)    = xS(AB)*fdisR       ! >SAB2-                                                                                 
+        fdisS(AH2BH) = 0.0_dp
+        fdisS(SuOH)  = xS(SuOH)*fdisR      ! >SOH
+        fdisS(SuCl)  = xS(SuCl)*fdisR     ! >SCl
+
+        avfdis=0.0_dp
+        sumfdis=0.0_dp
+        do t=1,8
+            avfdis=avfdis +qS(t)*fdisS(t)
+            sumfdis=sumfdis+fdisS(t)   
+        enddo
+      !  print*,"sumfdis=", sumfdis
+
+        surface_charge=sigmaSurf*avfdis
+
+        ! fraction of adsorbed ligand found in state t
+        sum_Z = xS(AHBH)+xS(AHB)+xS(ABH)+xs(AB) 
+       
+
+        gdisS(AHBH)  = xS(AHBH)/sum_Z     ! >SAHBH  
+        gdisS(AHB)   = xS(AHB)/sum_Z      ! >SAHB-                                                                                 
+        gdisS(ABH)   = xS(ABH)/sum_Z      ! >SABH- 
+        gdisS(AB)    = xS(AB)/sum_Z       ! >SAB2-                                                                                 
+        gdisS(AH2BH) = 0.0_dp
+        
+        ! fraction of ROH, RCl or R+ of non-ligand adsorbed
+        sum_W = xS(SuOH)+xS(SuCl)+1.0_dp
+
+        gdisS(SuOH)   = xS(SuOH)/sum_W      ! >SOH
+        gdisS(SuCl)   = xS(SuCl)/sum_W     ! >SCl
+        gdisS(Su)     = xS(Su)/sum_W     ! >SCl
+        
+
+        ! print*,"fdisS(AH2BH) =",fdisS(AH2BH)  
+        ! print*,"fdisS(AHBH)  =",fdisS(AHBH)
+        ! print*,"fdisS(AHB)   =",fdisS(AHB)
+        ! print*,"fdisS(ABH)   =",fdisS(ABH)
+        ! print*,"fdisS(AB)    =",fdisS(AB)
+        ! print*,"fdisR        =",fdisR
+        ! print*,"fdisS(SuOH)  =",fdisS(SuOH)
+        ! print*,"fdisS(SuCl)  =",fdisS(SuCl)
+        
+
+        ! print*,"surface_charge        =",surface_charge
+
+    end function surface_charge_pp_dynamic_cond
 
 end module surface

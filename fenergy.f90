@@ -50,6 +50,31 @@ module energy
 
 contains
 
+
+    
+    function charge_neutrality(rhoq,sigmaqSurf) result(sumcharge)
+
+        use mathconst 
+        use volume, only : delta,deltaG
+        use parameters, only : vsol,lb
+        implicit none
+
+        real(dp), intent(in) :: rhoq(:)
+        real(dp), intent(in) :: sigmaqSurf
+        real(dp) :: sumcharge
+        integer :: n, i
+
+        n=size(rhoq)
+
+        sumcharge=0.0_dp
+        do i=1, n
+            sumcharge=sumcharge+rhoq(i)*deltaG(i)
+        enddo
+        sumcharge = (delta/vsol)*sumcharge +sigmaqSurf/(4.0_dp*pi*lb*delta)
+
+    end function charge_neutrality
+        
+
     subroutine fcnenergy()
  
         use globals

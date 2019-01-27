@@ -15,10 +15,12 @@ module field
     real(dp), dimension(:), allocatable :: xNa     ! volume fraction of positive Na+ ion
     real(dp), dimension(:), allocatable :: xK      ! volume fraction of positive K+ ion
     real(dp), dimension(:), allocatable :: xTB     ! volume fraction of psitive TB (tetra butyl ammonium) ion
+    real(dp), dimension(:), allocatable :: xTM     ! volume fraction of psitive TB (tetra methyl ammonium) ion
     real(dp), dimension(:), allocatable :: xCa     ! volume fraction of positive Ca2+ ion
     real(dp), dimension(:), allocatable :: xNaCl   ! volume fraction of NaCl ion pair
     real(dp), dimension(:), allocatable :: xKCl    ! volume fraction of KCl  ion pair
     real(dp), dimension(:), allocatable :: xCl     ! volume fraction of Cl- ion
+    real(dp), dimension(:), allocatable :: xNO3    ! volume fraction of NO3- ion, nitrate
     real(dp), dimension(:), allocatable :: xHplus  ! volume fraction of Hplus
     real(dp), dimension(:), allocatable :: xOHmin  ! volume fraction of OHmin 
     real(dp), dimension(:), allocatable :: rhoq    ! total charge density in units of vsol
@@ -55,10 +57,12 @@ contains
         allocate(xNa(N))
         allocate(xK(N))
         allocate(xTB(N))
+        allocate(xTM(N))
         allocate(xCa(N))
         allocate(xNaCl(N)) 
         allocate(xKCl(N)) 
-        allocate(xCl(N)) 
+        allocate(xCl(N))
+        allocate(xNO3(N))  
         allocate(xHplus(N))
         allocate(xOHmin(N))
         allocate(rhoq(N))
@@ -88,10 +92,12 @@ contains
         deallocate(xNa)
         deallocate(xK)
         deallocate(xTB)
+        deallocate(xTM)
         deallocate(xCa)
         deallocate(xNaCl) 
         deallocate(xKCl) 
-        deallocate(xCl) 
+        deallocate(xCl)
+        deallocate(xNO3)  
         deallocate(xHplus)
         deallocate(xOHmin)
         deallocate(rhoq)

@@ -28,6 +28,9 @@ module globals
     integer, parameter :: AHB   = 2
     integer, parameter :: ABH   = 3
     integer, parameter :: AB    = 4
+    integer, parameter :: SuOH  = 6
+    integer, parameter :: SuCl  = 7  
+    integer, parameter :: Su    = 8
 
 
 end module globals

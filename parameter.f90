@@ -25,7 +25,9 @@ module parameters
     real(dp) :: vNa                ! volume positive ion in units of vsol
     real(dp) :: vK                 ! volume positive ion in units of vsol
     real(dp) :: vTB                ! volume positive ion in units of vsol
-    real(dp) :: vCl                ! volume negative ion in units of vsol   
+    real(dp) :: vTM                ! volume positive ion in units of vsol
+    real(dp) :: vCl                ! volume negative ion in units of vsol
+    real(dp) :: vNO3               ! volume negative ion in units of vsol      
     real(dp) :: vCa                ! volume positive divalent ion in units of vsol
     real(dp) :: vNaCl
     real(dp) :: vKCl
@@ -39,9 +41,12 @@ module parameters
   
     real(dp) :: RNa
     real(dp) :: RK
-    real(dp) :: RTB 
+    real(dp) :: RTB
+    real(dp) :: RTM 
     real(dp) :: RCl
     real(dp) :: RCa
+    real(dp) :: RNO3
+
 
     ! .. segment length 
 
@@ -72,6 +77,8 @@ module parameters
     integer :: zCa                 ! valence charge divalent positive ion 
     integer :: zCl                 ! valence charge negative ion 
     integer :: zTB               
+    integer :: zTM              
+    integer :: zNO3
     integer :: zpp(5)              ! valence protonantion states        
 
     real(dp) :: Temp               ! temperature in K
@@ -119,7 +126,9 @@ module parameters
     real(dp) :: pKionK              ! experimental equilibruim constant pKion= -log[Kion]	 
     
     real(dp) :: deltaG0ads          ! adsorption energy
-    !real(dp) :: deltaGads
+    real(dp) :: deltaG0adsSuOH
+    real(dp) :: deltaG0adsSuCl
+
     real(dp) :: K0pp(5)             ! intrinsic equilibruim constant ligand acid base equilbria  
     real(dp) :: pKpp(5)   
   
@@ -128,13 +137,15 @@ module parameters
     real(dp), target :: cNaCl      ! concentration of NaCl in bulk in mol/liter
     real(dp) :: cKCl               ! concentration of KCl in bulk in mol/liter
     real(dp) :: cCaCl2             ! concentration of CaCl2 in bulk in mol/liter
-    real(dp) :: cTBCl              ! concentration of TBCl in  bulk in mol/liter 
+    real(dp) :: cTBCl              ! concentration of TBCl in  bulk in mol/liter
+    real(dp) :: cTMNO3             ! concentration of TMNO3 in  bulk in mol/liter
     real(dp) :: cHplus             ! concentration of H+ in bulk in mol/liter
     real(dp) :: cOHmin             ! concentration of OH- in bulk in mol/liter
     real(dp) :: pHbulk             ! pH of bulk pH = -log([H+])
     real(dp) :: pOHbulk            ! p0H of bulk p0H = -log([0H-])
     real(dp), target :: cpp        ! concentration ligand in bulk in mol/liter  
-  
+    real(dp) :: rhoqbulk           ! total charge in bulk
+
     type (looplist), target :: pH
         
 contains
@@ -215,8 +226,10 @@ contains
         zNa   = 1                 ! valence positive charged ion
         zK    = 1                 ! valence positive charged ion
         zCa   = 2                 ! valence divalent positive charged ion
-        zCl   =-1                 ! valence negative charged ion
+        zCl   = -1                 ! valence negative charged ion
         zTB   = 1 
+        zTM   = 1
+        zNO3  = -1
 
         zpolA(1)=-1 ! A-
         zpolA(2)= 0 ! AH
@@ -242,7 +255,9 @@ contains
         RK  = 0.138_dp             ! radius of K+ in nm
         RCl = 0.181_dp             ! radius of Cl- in nm
         RCa = 0.106_dp             ! radius of Ca2+ in nm
-        RTB = 0.50_dp              ! radius of TBA+ in nm 
+        RTB = 0.50_dp              ! radius of TBA+ in nm  
+        RTM = 0.50_dp              ! radius of TMA+ in nm values from Wang, Nap et al in Jacs 133:2192, 2011
+        RNO3= 0.30_dp              ! radius of NO3- in nm values form Kieland Jacs 59:1675, 1937
 
         !     .. volume
 
@@ -260,7 +275,11 @@ contains
         vK   = ((4.0_dp/3.0_dp)*pi*(RK)**3)/vsol 
         vCl  = ((4.0_dp/3.0_dp)*pi*(RCl)**3)/vsol 
         vCa  = ((4.0_dp/3.0_dp)*pi*(RCa)**3)/vsol 
-        vTB  = ((4.0_dp/3.0_dp)*pi*(RTB)**3)/vsol 
+        vTB  = ((4.0_dp/3.0_dp)*pi*(RTB)**3)/vsol
+        vTM  = ((4.0_dp/3.0_dp)*pi*(RTM)**3)/vsol
+        vNO3  = ((4.0_dp/3.0_dp)*pi*(RNO3)**3)/vsol
+
+
         vHplus = 1.0_dp
         vOHmin = 1.0_dp 
 
@@ -394,7 +413,7 @@ contains
         
         xNaClsalt = (cNaCl*Na/(1.0d24))*((vNa+vCl)*vsol) ! volume fraction NaCl salt in mol/l
         
-        if(pHbulk.le.7) then      ! pH<= 7
+        if(pHbulk<=7) then      ! pH<= 7
             xbulk%Na=xNaClsalt*vNa/(vNa+vCl)  
             xbulk%Cl=xNaClsalt*vCl/(vNa+vCl) +(xbulk%Hplus -xbulk%OHmin)*vCl  ! NaCl+ HCl
         else                      ! pH >7
@@ -459,6 +478,8 @@ contains
             
         endif
 
+        rhoqbulk = xbulk%Hplus -xbulk%OHmin +xbulk%Cl*zCl/vCl+xbulk%Na*zNa/vNa +xbulk%K*zK/vK+xbulk%Ca*zCa/vCa
+        print*,"hello"
         !     .. intrinstic equilibruim constants      
         do i=1,4
              Ka(i)  = 10.0_dp**(-pKa(i)) ! experimental equilibruim constant acid 
@@ -505,7 +526,7 @@ contains
         !     .. local variable
         
         integer :: i
-        real(dp) :: xNaClsalt, xKClsalt, xCaCl2salt, xTBClsalt           ! volume fraction of divalent salt in bulk
+        real(dp) :: xNaClsalt, xKClsalt, xCaCl2salt, xTBClsalt, xTMNO3salt            ! volume fraction of divalent salt in bulk
 
 
         !     .. initializations of input dependent variables, electrostatic part 
@@ -541,17 +562,28 @@ contains
         xbulk%Ca=xCaCl2salt*vCa/(vCa+2.0_dp*vCl)
         xbulk%Cl=xbulk%Cl+ xCaCl2salt*2.0_dp*vCl/(vCa+2.0_dp*vCl)
         
-        ! TBCl in solution TBCl=tetrabutyl 
+        ! TBCl in solution TBCl=tetrabutyl ammonium chloride 
         xTBClsalt = (cTBCl*Na/(1.0e24_dp))*((vTB+vCl)*vsol) ! volume fraction KCl salt in mol/l
         xbulk%TB = xTBClsalt*vTB/(vTB+vCl)  
         xbulk%Cl = xbulk%Cl + xTBClsalt*vCl/(vTB+vCl)  
+
+        ! TMNO3 in solution TMNO3=tetramethyl ammonium nitrate 
+        xTMNO3salt = (cTMNO3*Na/(1.0e24_dp))*((vTM+vNO3)*vsol) ! volume fraction KCl salt in mol/l
+        xbulk%TM = xTMNO3salt*vTM/(vTM+vNO3)  
+        xbulk%NO3 =xTMNO3salt*vNO3/(vTM+vNO3)  
+
+
+
         ! no ionparing 
 
         xbulk%NaCl=0.0_dp  
         xbulk%KCl=0.0_dp   
         
-        xbulk%sol=1.0_dp -xbulk%Hplus -xbulk%OHmin -xbulk%Cl -xbulk%Na -xbulk%K-xbulk%NaCl-xbulk%KCl-xbulk%Ca-xbulk%TB   
+        xbulk%sol=1.0_dp -xbulk%Hplus -xbulk%OHmin -xbulk%Cl -xbulk%Na -xbulk%K-xbulk%NaCl-xbulk%KCl-xbulk%Ca&
+            -xbulk%TB   -xbulk%TM - xbulk%NO3       
         
+        rhoqbulk = xbulk%Hplus -xbulk%OHmin +xbulk%Cl*zCl/vCl +xbulk%Na*zNa/vNa +xbulk%K*zK/vK+&
+            xbulk%TB*zTB/vTB + xbulk%Ca*zCa/vCa + xbulk%TM*zTM/vTM+xbulk%NO3*zNO3/vNO3
 
         !     .. if Kion neq 0 ion pairing !
         !     .. intrinstic equilibruim constant acid        
@@ -582,12 +614,15 @@ contains
         expmu%Na    = xbulk%Na   /(xbulk%sol**vNa) 
         expmu%K     = xbulk%K    /(xbulk%sol**vK)
         expmu%TB    = xbulk%TB   /(xbulk%sol**vTB)
+        expmu%TM    = xbulk%TM   /(xbulk%sol**vTM)
         expmu%Ca    = xbulk%Ca   /(xbulk%sol**vCa) 
         expmu%Cl    = xbulk%Cl   /(xbulk%sol**vCl)
+        expmu%NO3   = xbulk%NO3  /(xbulk%sol**vNO3)
         expmu%NaCl  = xbulk%NaCl /(xbulk%sol**vNaCl)
         expmu%KCl   = xbulk%KCl  /(xbulk%sol**vKCl)
         expmu%Hplus = xbulk%Hplus/xbulk%sol ! vsol = vHplus 
         expmu%OHmin = xbulk%OHmin/xbulk%sol ! vsol = vOHmin 
+
           
         !     .. end init electrostatic part 
             
@@ -652,8 +687,8 @@ contains
         integer :: i, t
         character(len=15) :: sysflag_old
         real(dp) :: Kpp(5), fppbulk(5)
-        real(dp) :: xppbulk, rhoqppbulk, cppbulk, sumfpp , rhoqbulk
-        real(dp) :: xNaClsalt, xKClsalt, xCaCl2salt, xTBClsalt           ! volume fraction of divalent salt in bulk
+        real(dp) :: xppbulk, rhoqppbulk, cppbulk, sumfpp
+        real(dp) :: xNaClsalt, xKClsalt, xCaCl2salt, xTBClsalt ,xTMNO3salt            ! volume fraction of divalent salt in bulk
 
         allocate(x(6))
         allocate(xguess(6))
@@ -688,6 +723,13 @@ contains
         xTBClsalt = (cTBCl*Na/(1.0e24_dp))*((vTB+vCl)*vsol) ! volume fraction KCl salt in mol/l
         xbulk%TB = xTBClsalt*vTB/(vTB+vCl)  
         xbulk%Cl = xbulk%Cl + xTBClsalt*vCl/(vTB+vCl)  
+
+
+        ! TMNO3 in solution TMNO3=tetramethyl ammonium nitrate 
+        xTMNO3salt = (cTMNO3*Na/(1.0e24_dp))*((vTM+vNO3)*vsol) ! volume fraction KCl salt in mol/l
+        xbulk%TM  = xTMNO3salt*vTM/(vTM+vNO3)  
+        xbulk%NO3 = xTMNO3salt*vNO3/(vTM+vNO3)  
+
 
         !  .. no ionpairs 
         xbulk%NaCl = 0.0_dp  
@@ -748,9 +790,12 @@ contains
         xbulk%Cl =x(5)
         xbulk%K  =x(6)
 
-        xbulk%sol=1.0_dp-xbulk%Hplus-xbulk%OHmin - xbulk%Cl -xbulk%Na -xbulk%K-xbulk%TB-xbulk%Ca -xppbulk
-        rhoqbulk= xbulk%Hplus-xbulk%OHmin +xbulk%Cl*zCl/vCl +xbulk%Na*zNa/vNa +xbulk%K*zK/vK+xbulk%TB*zTB/vTB+xbulk%Ca*zCa/vCa
-        rhoqbulk=rhoqbulk+rhoqppbulk*vsol
+        xbulk%sol=1.0_dp-xbulk%Hplus-xbulk%OHmin - xbulk%Cl -xbulk%Na -xbulk%K-xbulk%TB-xbulk%Ca -xppbulk &
+        -xbulk%TM-xbulk%NO3
+        
+        rhoqbulk = xbulk%Hplus-xbulk%OHmin +xbulk%Cl*zCl/vCl +xbulk%Na*zNa/vNa +xbulk%K*zK/vK+&
+            xbulk%TB*zTB/vTB+xbulk%Ca*zCa/vCa+rhoqppbulk*vsol+xbulk%TM*zTM/vTM+xbulk%NO3*zNO3/vNO3
+        
 
         ! reset of flags
         iter=0
@@ -767,8 +812,10 @@ contains
         expmu%Na    = xbulk%Na   /(xbulk%sol**vNa) 
         expmu%K     = xbulk%K    /(xbulk%sol**vK)
         expmu%TB    = xbulk%TB   /(xbulk%sol**vTB)
+        expmu%TM    = xbulk%TM   /(xbulk%sol**vTM)
         expmu%Ca    = xbulk%Ca   /(xbulk%sol**vCa) 
         expmu%Cl    = xbulk%Cl   /(xbulk%sol**vCl)
+        expmu%NO3   = xbulk%NO3  /(xbulk%sol**vNO3)
         expmu%NaCl  = xbulk%NaCl /(xbulk%sol**vNaCl)
         expmu%KCl   = xbulk%KCl  /(xbulk%sol**vKCl)
         expmu%Hplus = xbulk%Hplus/xbulk%sol ! vsol = vHplus 
