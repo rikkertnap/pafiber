@@ -1019,127 +1019,173 @@ module listfcn
 
     end subroutine fcnbulkligand
 
-    !     .. function solves for bulk volume fraction 
 
-    ! subroutine fcnbulkligandtmp(x,f,nn)   
+        !     .. function solves for bulk volume fraction 
 
-    !     !     .. variables and constant declaractions 
+    subroutine fcnbulkligandHCL(x,f,nn)   
 
-    !     use globals
-    !     use volume
-    !     use chains
-    !     use field
-    !     use parameters
-    !     use physconst
-    !     use vectornorm
-    !     use molecules
-    !     use vectornorm
+        !     .. variables and constant declaractions 
 
-    !     implicit none
+        use globals
+        use volume
+        use chains
+        use field
+        use parameters
+        use physconst
+        use vectornorm
+        use molecules
+        use vectornorm
 
-    !     !     .. scalar arguments
+        implicit none
 
-    !     integer(8), intent(in) :: nn
+        !     .. scalar arguments
+        integer(8), intent(in) :: nn
 
-    !     !     .. array arguments
+        !     .. array arguments
+        real(dp), intent(in) :: x(neq)
+        real(dp), intent(out):: f(neq)
 
-    !     real(dp), intent(in) :: x(neq)
-    !     real(dp), intent(out):: f(neq)
+        !     .. local variables
+
+        real(dp) :: fppin(5),fppout(5)
+        real(dp) :: cppbulk, psisol
+        real(dp) :: xppbulkin, rhoqppbulkin
+        real(dp) :: xppbulkout, rhoqppbulkout
+        real(dp) :: phisol,phiKin,phiClin,phiClout,phiKout
+        real(dp) :: phiNO3in,phiNO3out
+        real(dp) :: xA,xB,xBprime,xE,xF
+        real(dp) :: sumx, sumfpp, deltacharge
+        integer :: t
+        real(dp) :: norm
+
+        !     .. executable statements 
+        !     .. input vector 
+
+        sumfpp=0.0_dp
+        do t=1,4
+            fppin(t)=x(t)
+            sumfpp=sumfpp+fppin(t)
+        enddo    
+        fppin(5)=1.0_dp-sumfpp
+
+        if(isbulkHCl) then 
+            phiClin   = x(5)
+        else
+            phiNO3in   = x(5)
+        endif    
+        phiKin    = x(6)
 
 
-    !     !     .. local variables
+        cppbulk=cpp*(Na/1.0e24_dp) !  .. bulk concentration  cpp in mol/liter cppbulk in ligands/nm^3
+        xppbulkin=0.0_dp             
+        rhoqppbulkin=0.0_dp
+        do t=1,5
+            xppbulkin=xppbulkin+fppin(t)*vpp(t)
+            rhoqppbulkin=rhoqppbulkin+fppin(t)*zpp(t)
+        enddo
+        xppbulkin = xppbulkin*cppbulk*vsol      !  .. bulk ligand volume fraction 
+        rhoqppbulkin = rhoqppbulkin*cppbulk     !  .. charge density ligand 
+
+        if(isbulkHCl) then 
+            phisol=1.0_dp-phiClin-phiKin-xbulk%TB-xbulk%Hplus-xbulk%OHmin-xppbulkin
+            phisol=phisol-xbulk%TM-xbulk%NO3! -xbulk%Na this needs to be checked
+        else
+            phisol=1.0_dp-phiNO3in-phiKin-xbulk%TB-xbulk%Hplus-xbulk%OHmin-xppbulkin
+            phisol=phisol-xbulk%TM-xbulk%Cl!
+        endif    
+    !    print*,"phisol=",phisol
+
+
+        ! pKpp(1)  = 2.26_dp  ! POH2COOH <=> POHCOOH- + H+ : A<=> B
+        ! pKpp(2) =  4.6_dp   ! POHCOOH- <=> POHCOO2- + H+ : B<=> E
+        ! pKpp(3) =  5.4_dp   ! POHCOOH- <=> POCOOH2- + H+ : B<=> C
+        ! pKpp(4) =  6.9_dp   ! POCOOH2- <=> POCOO3- + H+  : C<=> F
+        ! pKpp(5) =  7.8_dp   ! POHCOO2- <=> POCOO3- + H+  : E<=> F
+
+        !  .. equilibrium eq AH2BH <=> AHBH^- +H^+  A<=> B
+
+        xA = K0pp(1)*(vpp(AHBH)/vpp(AH2BH))*(phisol)/xbulk%Hplus
+
+        !  .. equilibrium eq AHBH^- <=> ABH^2- +H^+    B<=>C 
+
+        xB = K0pp(3)*(vpp(ABH)/vpp(AHBH))*(phisol)/xbulk%Hplus
+       
+        !   .. equilibrium eq AHBH^- <=> AHB^2- +H^+    B<=>E 
+
+        xBprime = K0pp(2)*(vpp(AHB)/vpp(AHBH))*(phisol)/xbulk%Hplus
+
+        !   .. equilibrium eq AHB^2- <=> AB^3- +H^+    E<=>F
+
+        xE = K0pp(5)*(vpp(AB)/vpp(AHB))*(phisol)/xbulk%Hplus
+
+
+        sumx=xA + xA*xB + xA*xBprime + xA*xBprime*xE
+
+        fppout(AH2BH) = 1.0_dp/(1.0_dp+sumx)
+        fppout(AHBH)  = fppout(AH2BH) * xA
+        fppout(ABH)   = fppout(AHBH)  * xB
+        fppout(AHB)   = fppout(AHBH)  * xBprime 
+        fppout(AB)    = fppout(AHB)   * xE
+
+        rhoqppbulkout=0.0_dp
+        do t=1,5
+            rhoqppbulkout=rhoqppbulkout+fppout(t)*zpp(t)
+        enddo 
+
+        rhoqppbulkout= rhoqppbulkout*cppbulk 
+    
+        deltacharge = xbulk%Hplus/vsol-xbulk%OHmin/vsol+rhoqppbulkout  ! number density   
+
+        if(deltacharge<0) then
+
+            ! delta [Cl^-]=0
+            if(isbulkHCl) then
+                phiClout = xbulk%Cl    ! NaCl and TBCl no extra Cl added
+            else
+                phiNO3out = xbulk%NO3
+            endif    
+            phiKout  = abs(deltacharge)*vK*vsol   ! added KOH  
         
-    !     type(moleclist) :: phi
-    !     real(dp) :: phipptot, rhoqpptot, rhopptot
-    !     integer :: t, i
-    !     real(dp) :: norm
-
-    !     !     .. executable statements 
-
-
-    !     do t=1,5
-    !         phi%pp(t)=x(t)
-    !     enddo    
-    !     phi%Cl   = x(6)
-    !     phi%K    = x(7)
-
-
-
-    !     phipptot=0.0_dp
-    !     rhoqpptot=0.0_dp
-    !     rhopptot=0.0_dp
-
-    !     do t=1,5
-    !         phipptot=phipptot+phi%pp(t)
-    !         rhoqpptot=rhoqpptot+phi%pp(t)*zpp(t)/vpp(t)
-    !         rhopptot= rhopptot+phi%pp(t)/vpp(t)
+        else if(deltacharge>0) then 
         
-    !         print*,t,zpp(t),vpp(t),phipptot,rhoqpptot,rhopptot,vsol*(Na/1.0e24_dp)*cpp
-    !     enddo
-
-    ! !    print*,"ABH=",ABH,"phi%pp(ABH)=",phi%pp(ABH),"neq=",neq
-
-    !     phi%sol=1.0_dp-phi%Cl-phi%K-xbulk%TB-xbulk%Hplus-xbulk%OHmin-phipptot
-    !     print*,"phi%sol=",phi%sol
-
-    !     ! phi%sol=phi%sol-xbulk%Ca-xbulk%Na
-
-    !     ! pKpp(1)  = 2.26_dp  ! POH2COOH <=> POHCOOH- + H+ : A<=> B
-    !     ! pKpp(2) =  4.6_dp   ! POHCOOH- <=> POHCOO2- + H+ : B<=> E
-    !     ! pKpp(3) =  5.4_dp   ! POHCOOH- <=> POCOOH2- + H+ : B<=> C
-    !     ! pKpp(4) =  6.9_dp   ! POCOOH2- <=> POCOO3- + H+  : C<=> F
-    !     ! pKpp(5) =  7.8_dp   ! POHCOO2- <=> POCOO3- + H+  : E<=> F
-
-    !     !  .. equilibrium eq AH2BH <=> AHBH^- +H^+  A<=> B
-
-    !     !f(1) = phi%pp(AHBH)*xbulk%Hplus-phi%pp(AH2BH)*K0pp(1)*(vpp(AHBH)/vpp(AH2BH))*(phi%sol**deltavpp(1))
-
-    !     f(1) = phi%pp(AHBH)*xbulk%Hplus/phi%pp(AH2BH) -K0pp(1)*(vpp(AHBH)/vpp(AH2BH))*(phi%sol)
-
-    !     !  .. equilibrium eq AHBH^- <=> ABH^2- +H^+    B<=>C 
-
-    !     !f(2) = phi%pp(ABH)*xbulk%Hplus-phi%pp(AHBH)*K0pp(3)*(vpp(ABH)/vpp(AHBH))*(phi%sol**deltavpp(2))
-    !     f(2) = phi%pp(ABH)*xbulk%Hplus/phi%pp(AHBH)-K0pp(3)*(vpp(ABH)/vpp(AHBH))*(phi%sol)
-    !     !print*,phi%pp(ABH), xbulk%Hplus, phi%pp(AHBH), K0pp(2), phi%sol, deltavpp(2)
-
-    !     !   .. equilibrium eq AHBH^- <=> AHB^2- +H^+    B<=>E 
-
-    !     !f(3) = phi%pp(AHB)*xbulk%Hplus-phi%pp(AHBH)*K0pp(2)*(vpp(AHB)/vpp(AHBH))*(phi%sol**deltavpp(3))
-
-    !     f(3) = phi%pp(AHB)*xbulk%Hplus/phi%pp(AHBH)-K0pp(2)*(vpp(AHB)/vpp(AHBH))*(phi%sol)
-
-    !     !   .. equilibrium eq AHB^2- <=> AB^3- +H^+    E<=>F
-
-    !     !f(4) = phi%pp(AB)*xbulk%Hplus-phi%pp(AHB)*K0pp()*(vpp(AB)/vpp(AHB))*(phi%sol**deltavpp(4))
-    !     f(4) = phi%pp(AB)*xbulk%Hplus/phi%pp(AHB)-K0pp(5)*(vpp(AB)/vpp(AHB))*(phi%sol)
-
-    !     !  .. charge neutrality  
-    !     f(5) = xbulk%TB/vTB+xbulk%Hplus-xbulk%OHmin+rhoqpptot-phi%Cl/vCl+phi%K/vK
-
-
-    !     !     .. conservation of ligand
-    !     f(6) = rhopptot-vsol*(Na/1.0e24_dp)*cpp
-
-
-    !     !   .. conservation of number ions
-    !     f(7)= phi%Cl/vCl+phi%K/vK-abs(xbulk%Hplus-xbulk%OHmin) -vsol*(Na/1.0e24_dp)*cTBCl
-
+            ! delta [K^+]=0
+            if(isbulkHCl) then
+                phiClout = deltacharge*vCl*vsol +xbulk%Cl  ! added HCl 
+            else
+                phiNO3out = deltacharge*vNO3*vsol +xbulk%NO3  ! added HCl     
+            endif
+            phiKout  = 0.0_dp     ! no added KCl   
         
+        else  !deltacharge==0
+        
+            if(isbulkHCl) then
+                phiClout = xbulk%Cl   ! no HCL
+            else
+                phiNO3out= xbulk%NO3   ! no HNO3
+            endif    
+            phiKout  = 0.0_dp     ! no KOH 
+        
+        endif    
 
 
-    ! !    do i=1,7
-    ! !        print*,"f(",i,")=",f(i)
-    ! !    enddo
+        do t=1,4
+            f(t)=fppout(t)-fppin(t)
+        enddo
 
-    !     norm=l2norm(f,7)
-    !     iter=iter+1
+        if(isbulkHCl) then
+            f(5)=phiClout-phiClin
+        else
+            f(5)=phiNO3out-phiNO3in
+        endif    
+        f(6)=phiKout -phiKin
+    
+       ! norm=l2norm(f,6)
+        iter=iter+1
      
-    ! !    print*,'iter=', iter ,'norm=',norm
+       ! print*,'iter=', iter ,'norm=',norm
 
-    ! end subroutine fcnbulkligandtmp
+    end subroutine fcnbulkligandHCl
 
-
- ! selects correct fcn function 
 
     subroutine set_fcn
 
@@ -1162,7 +1208,9 @@ module listfcn
             case ("bulk water") 
                  fcnptr => fcnbulk
             case ("bulk ligand") 
-                 fcnptr => fcnbulkligand     
+                 !fcnptr => fcnbulkligand
+                 fcnptr => fcnbulkligandHCl
+                      
             case default
                 print*,"Error in call to solver subroutine"    
                 print*,"Wrong value sysflag : ", sysflag

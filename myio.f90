@@ -95,6 +95,7 @@ subroutine read_inputfile(info)
             if(bcflag=="pc") then 
                 read(un_input,*)deltaG0adsSuOH
                 read(un_input,*)deltaG0adsSuCl
+                read(un_input,*)deltaG0adsSuNO3
             endif
             read(un_input,*)cpp
         endif    
@@ -123,7 +124,8 @@ subroutine read_inputfile(info)
     read(un_input,*)VdWcutoff
     read(un_input,*)verboseflag  
     read(un_input,*)geometry
-    read(un_input,*)delta   
+    read(un_input,*)delta 
+    read(un_input,*)isbulkHCl  
 
     close(un_input)
           
@@ -1050,17 +1052,21 @@ subroutine output_elect_nopoly
     logical :: isopen
     real(dp) :: xppfdis(5),cppfdis(5)
     real(dp) :: cppbulk
-    real(dp) :: eta
+    real(dp) :: eta, sigmaSurf0
 
 
     ! .. executable statements 
 
     ! .. make label filenames 
 
-    
+    sigmaSurf0=sigmaSurf/(4.0_dp*pi*lb*delta)  
     ! filelabel for qdot only                     
+    if(sigmaSurf0<10.0_dp) then 
+        write(rstr,'(F5.3)')sigmaSurf0    
+    else    
+        write(rstr,'(F6.3)')sigmaSurf0
+    endif
         
-    write(rstr,'(F5.3)')sigmaSurf/(4.0_dp*pi*lb*delta)
     fnamelabel="sg"//trim(adjustl(rstr))
     
     if(cTBCl>=0.001) then 
@@ -1301,7 +1307,7 @@ subroutine output_elect_nopoly
         write(un_sys,*)'sigmaR     = ',fdisR*sigmaSurf/(4.0_dp*pi*lb*delta)
         write(un_sys,*)'sigmaLR    = ',(1.0_dp-fdisR)*sigmaSurf/(4.0_dp*pi*lb*delta)
     else if(bcflag=='pc') then   
-        do i=1,8   
+        do i=1,9   
             write(un_sys,fmt)'fdisSu(',i,')   = ',fdisS(i)
         enddo
         do i=1,8   
@@ -1309,7 +1315,8 @@ subroutine output_elect_nopoly
         enddo   
         write(un_sys,*)'fdisR      = ',fdisR
         write(un_sys,*)'sigmaR     = ',fdisR*sigmaSurf/(4.0_dp*pi*lb*delta)
-        write(un_sys,*)'sigmaLR    = ',(1.0_dp-fdisS(Su)-fdisS(SuOH)-fdisS(SuCl))*sigmaSurf/(4.0_dp*pi*lb*delta)
+        write(un_sys,*)'sigmaLR    = ',(1.0_dp-fdisS(Su)-fdisS(SuOH)-fdisS(SuCl)-fdisS(SuNO3))&
+            *sigmaSurf/(4.0_dp*pi*lb*delta)
     else
         do i=1,6   
             write(un_sys,fmt)' fdisSu(',i,')  = ',fdisS(i)

@@ -128,6 +128,8 @@ module parameters
     real(dp) :: deltaG0ads          ! adsorption energy
     real(dp) :: deltaG0adsSuOH
     real(dp) :: deltaG0adsSuCl
+    real(dp) :: deltaG0adsSuNO3
+
 
     real(dp) :: K0pp(5)             ! intrinsic equilibruim constant ligand acid base equilbria  
     real(dp) :: pKpp(5)   
@@ -147,6 +149,8 @@ module parameters
     real(dp) :: rhoqbulk           ! total charge in bulk
 
     type (looplist), target :: pH
+
+    logical :: isBulkHCl           ! if true adjustment of pH with HCl if false HNO3
         
 contains
 
@@ -750,7 +754,7 @@ contains
             K0pp(i) = (Kpp(i)*vsol)*(Na/1.0e24_dp) ! intrinstic equilibruim constant 
         enddo         
       
-        ! solver non linear eq of fcnbulkgligand 
+        ! solver non linear eq of fcnbulkligand 
 
         sysflag_old=sysflag 
         sysflag="bulk ligand"       ! set sysflag 
@@ -762,7 +766,12 @@ contains
         do t=1,4    
             x(t)= fppbulk(t)
         enddo
-        x(5)= xbulk%Cl
+
+        if(isbulkHCl) then
+            x(5)= xbulk%Cl
+        else
+            x(5)= xbulk%NO3
+        endif    
         x(6)= xbulk%K
         do i=1,6
             xguess(i)=x(i)
@@ -787,7 +796,12 @@ contains
             xppbulk = xppbulk +xbulk%pp(t) ! total ligand volume fraction
             rhoqppbulk=rhoqppbulk +cppbulk*fppbulk(t)*zpp(t)
         enddo
-        xbulk%Cl =x(5)
+        
+        if(isbulkHCl) then
+            xbulk%Cl =x(5)
+        else
+            xbulk%NO3=x(5)
+        endif    
         xbulk%K  =x(6)
 
         xbulk%sol=1.0_dp-xbulk%Hplus-xbulk%OHmin - xbulk%Cl -xbulk%Na -xbulk%K-xbulk%TB-xbulk%Ca -xppbulk &

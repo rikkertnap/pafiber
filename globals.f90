@@ -31,6 +31,8 @@ module globals
     integer, parameter :: SuOH  = 6
     integer, parameter :: SuCl  = 7  
     integer, parameter :: Su    = 8
+    integer, parameter :: SuNO3 = 9
+    
 
 
 end module globals

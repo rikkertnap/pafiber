@@ -1,19 +1,19 @@
 module surface 
    
-    use globals, only :    AH2BH, AHBH, AHB, ABH, AB, SuOH, SuCl, Su
+    use globals, only :    AH2BH, AHBH, AHB, ABH, AB, SuOH, SuCl, Su, SuNO3
     use mathconst
    
     implicit none
     
     !   different surface states
 
-    real(dp) :: fdisS(8)            ! fraction of different surface states
-    real(dp) :: gdisS(8)            ! fraction of different surface states, only used for bc=pc
+    real(dp) :: fdisS(9)            ! fraction of different surface states
+    real(dp) :: gdisS(9)            ! fraction of different surface states, only used for bc=pc
     
     real(dp) :: KS(7)               ! experimemtal equilibruim constant 
     real(dp) :: pKS(7)              ! experimental equilibruim constant pKS= -log[KS]   
     real(dp) :: K0S(7)              ! intrinsic equilibruim constant
-    real(dp) :: qS(8)               ! charge  real because possitbilito offractional charge 
+    real(dp) :: qS(9)               ! charge  real because possitbilito offractional charge 
     real(dp) :: cap                 ! capacitance
  
     real(dp) :: sigmaSurf           ! surface density of acid on surface in nm^2
@@ -312,14 +312,15 @@ contains
         enddo
 
         ! charges surface states
-        qS(AHBH) =  0.0_dp    !>SPOHCOOH
-        qS(AHB)  = -1.0_dp    !>SPOHCOO-
-        qS(ABH)  = -1.0_dp    !>SPOCOOH-
-        qS(AB)   = -2.0_dp    !>SPOCOO2-
-        qS(AH2BH)=  0.0_dp    ! notbound 
-        qS(Su)   =  1.0_dp    !>S+ 
+        qS(AHBH)  =  0.0_dp    !>SPOHCOOH
+        qS(AHB)   = -1.0_dp    !>SPOHCOO-
+        qS(ABH)   = -1.0_dp    !>SPOCOOH-
+        qS(AB)    = -2.0_dp    !>SPOCOO2-
+        qS(AH2BH) =  0.0_dp    ! notbound 
+        qS(Su)    =  1.0_dp    !>S+ 
         qS(SuOH)  =  0.0_dp    !>SOH  
         qS(SuCl)  =  0.0_dp    !>SCl
+        qS(SuNO3) =  0.0_dp    !>SNO3 
     
         ! sites density
         sigmaSurf = sigmaSurf * (4.0_dp*pi*lb)*delta ! dimensionless surface charge     
@@ -591,15 +592,15 @@ contains
 
         use physconst
         use mathconst
-        use parameters, only : deltaG0ads,deltaG0adsSuOH,deltaG0adsSuCl
-        use parameters, only : expmu,vpp,zpp,xbulk,vCl
+        use parameters, only : deltaG0ads,deltaG0adsSuOH,deltaG0adsSuCl,deltaG0adsSuNO3
+        use parameters, only : expmu,vpp,zpp,xbulk,vCl,vNO3
 
         real(dp), intent(in) :: psiS
         real(dp) :: surface_charge
     
         ! .. local variables                                                                                                  
 
-        real(dp) :: xS(7),K0ads,K0adsSuOH,K0adsSuCl
+        real(dp) :: xS(9),K0ads,K0adsSuOH,K0adsSuCl,K0adsSuNO3
         real(dp) :: sum_xS,avfdis, sum_Z, sum_W, sumfdis
         integer :: t
 
@@ -614,6 +615,12 @@ contains
             K0adsSuCl=0.0_dp
         else    
             K0adsSuCl=exp(-deltaG0adsSuCl)
+        endif   
+
+        if(deltaG0adsSuNO3>10.0_dp) then
+            K0adsSuNO3=0.0_dp
+        else    
+            K0adsSuNO3=exp(-deltaG0adsSuNO3)
         endif    
         
        ! exmpu%i := [exp(-beta(mu0_i-mu_i))v_i/v_w]exp(- beta pibulk v_i) 
@@ -622,10 +629,11 @@ contains
         do t=1,5
             xS(t) = K0ads*exp(-(qS(t)-qS(Su))*psiS)*expmu%pp(t)/(vpp(t)*xbulk%sol**vpp(t))
         enddo    
-        xS(SuOH) = K0adsSuOH*exp(-(qS(SuOH)-qS(Su))*psiS)*expmu%OHmin/(xbulk%sol)
-        xS(SuCl) = K0adsSuCl*exp(-(qS(SuCl)-qS(Su))*psiS)*expmu%Cl/(vCl*xbulk%sol**vCl)
+        xS(SuOH)  = K0adsSuOH *exp(-(qS(SuOH) -qS(Su))*psiS)*expmu%OHmin/(xbulk%sol)
+        xS(SuCl)  = K0adsSuCl *exp(-(qS(SuCl) -qS(Su))*psiS)*expmu%Cl/(vCl*xbulk%sol**vCl)
+        xS(SuNO3) = K0adsSuNO3*exp(-(qS(SuNO3)-qS(Su))*psiS)*expmu%NO3/(vNO3*xbulk%sol**vNO3)
 
-        sum_xS = xS(AHBH)+xS(AHB)+xS(ABH)+xs(AB) +xs(SuOH)+xs(SuCl) ! do not include AB2BH assumed to not be adsorbed
+        sum_xS = xS(AHBH)+xS(AHB)+xS(ABH)+xs(AB) +xs(SuOH)+xs(SuCl) +xs(SuNO3) ! do not include AB2BH assumed to not be adsorbed
 
         ! fdisR(t) =sigma(t)/sigma0
 
@@ -638,11 +646,13 @@ contains
         fdisS(AB)    = xS(AB)*fdisR       ! >SAB2-                                                                                 
         fdisS(AH2BH) = 0.0_dp
         fdisS(SuOH)  = xS(SuOH)*fdisR      ! >SOH
-        fdisS(SuCl)  = xS(SuCl)*fdisR     ! >SCl
+        fdisS(SuCl)  = xS(SuCl)*fdisR      ! >SCl
+        fdisS(SuNO3) = xS(SuNO3)*fdisR     ! >SNO3
+
 
         avfdis=0.0_dp
         sumfdis=0.0_dp
-        do t=1,8
+        do t=1,9
             avfdis=avfdis +qS(t)*fdisS(t)
             sumfdis=sumfdis+fdisS(t)   
         enddo
@@ -661,11 +671,12 @@ contains
         gdisS(AH2BH) = 0.0_dp
         
         ! fraction of ROH, RCl or R+ of non-ligand adsorbed
-        sum_W = xS(SuOH)+xS(SuCl)+1.0_dp
+        sum_W = xS(SuOH)+xS(SuCl)+xS(SuNO3)+1.0_dp
 
         gdisS(SuOH)   = xS(SuOH)/sum_W      ! >SOH
-        gdisS(SuCl)   = xS(SuCl)/sum_W     ! >SCl
-        gdisS(Su)     = xS(Su)/sum_W     ! >SCl
+        gdisS(SuCl)   = xS(SuCl)/sum_W      ! >SCl
+        gdisS(SuNO3)  = xS(SuNO3)/sum_W      ! >SCl
+        gdisS(Su)     = xS(Su)/sum_W        ! >S
         
 
         ! print*,"fdisS(AH2BH) =",fdisS(AH2BH)  
