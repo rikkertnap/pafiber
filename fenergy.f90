@@ -19,7 +19,7 @@ module energy
     real(dp) :: FErho               ! sum over densities
     real(dp) :: FEel                ! electrostatics energ
     real(dp) :: FEelsurf            ! electrostatics energy from  surface
-    real(dp) :: FEchemsurf        ! chemical free energy surface
+    real(dp) :: FEchemsurf          ! chemical free energy surface
     real(dp) :: FEchem
     real(dp) :: FEbind              ! complexation contribution
     real(dp) :: FEVdW               ! Van der Waals contribution

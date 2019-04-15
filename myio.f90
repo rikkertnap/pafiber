@@ -69,10 +69,6 @@ subroutine read_inputfile(info)
     read(un_input,*)sysflag
     read(un_input,*)bcflag
     read(un_input,*)runflag
-    read(un_input,*)chainmethod
-    read(un_input,*)chaintype
-    read(un_input,*)sigmaAB
-    read(un_input,*)sigmaC
     read(un_input,*)error             
     read(un_input,*)infile              ! guess  1==yes
     read(un_input,*)radius
@@ -100,28 +96,14 @@ subroutine read_inputfile(info)
             read(un_input,*)cpp
         endif    
     endif   
-    read(un_input,*)pKa(1)           !   AH   <=> A- + H+ 
-    read(un_input,*)pKa(2)           !   ANa  <=> A- + Na+  
-    read(un_input,*)pKa(3)           !   ACa+ <=> A- + Ca2+ 
-    read(un_input,*)pKa(4)           !   A2Ca <=> 2A- + Ca2+
-    read(un_input,*)pKb(1)           !   BH   <=> B- + H+ 
-    read(un_input,*)pKb(2)           !   BNa  <=> B- + Na+ 
-    read(un_input,*)pKb(3)           !   BCa+ <=> B- + Ca2+   
-    read(un_input,*)pKb(4)           !   B2Ca <=> 2B- + Ca2+   
-    read(un_input,*)period
+
     read(un_input,*)nsize
     if(runflag=="rangenr")then
         read(un_input,*)nrmax            ! max distance
         read(un_input,*)nrmin            ! min distance
         read(un_input,*)nrstep           ! step distance  
     endif
-    read(un_input,*)nsegAB
-    read(un_input,*)cuantasAB
-    read(un_input,*)nsegC
-    read(un_input,*)cuantasC
-    read(un_input,*)VdWepsC
-    read(un_input,*)VdWepsB    
-    read(un_input,*)VdWcutoff
+   
     read(un_input,*)verboseflag  
     read(un_input,*)geometry
     read(un_input,*)delta 
@@ -162,11 +144,6 @@ subroutine read_inputfile(info)
         return
     endif
 
-    call check_value_chaintype(chaintype,info_chaintype)
-    if (info_chaintype == myio_err_chaintype) then
-        if (present(info)) info = info_chaintype
-        return
-    endif
 
     if (present(info)) info = 0
 
@@ -178,22 +155,19 @@ subroutine check_value_sysflag(sysflag,info)
     character(len=15), intent(in) :: sysflag
     integer, intent(out),optional :: info
 
-    character(len=15) :: sysflagstr(6)
+    character(len=15) :: sysflagstr(3)
     integer :: i
     logical :: flag
 
     ! permissible values of sysflag
 
-    sysflagstr(1)="elect"
-    sysflagstr(2)="bulk water"
-    sysflagstr(3)="neutral"
-    sysflagstr(4)="electnopoly"
-    sysflagstr(5)="electHC"
-    sysflagstr(6)="electligand"
+    sysflagstr(1)="bulk water"
+    sysflagstr(2)="electnopoly"
+    sysflagstr(3)="electligand"
 
     flag=.FALSE.
 
-    do i=1,6
+    do i=1,3
         if(sysflag==sysflagstr(i)) flag=.TRUE.
     enddo
 
@@ -314,37 +288,6 @@ subroutine check_value_geometry(geometry,info)
 end subroutine check_value_geometry
 
 
-subroutine check_value_chaintype(chaintype,info)
-
-    character(len=8), intent(in) :: chaintype
-    integer, intent(out),optional :: info
-
-    logical :: flag
-    character(len=8) :: chaintypestr(3)
-    integer :: i
-
-    ! permissible values of chaintype
-
-    chaintypestr(1)="diblock"
-    chaintypestr(2)="altA"
-    chaintypestr(3)="altB"
-
-    flag=.FALSE.
-
-    do i=1,3
-        if(chaintype==chaintypestr(i)) flag=.TRUE.
-    enddo
-
-    if (present(info)) info = 0
-
-    if (flag.eqv. .FALSE.) then
-        print*,"Error: value of chaintype is not permissible"
-        print*,"chaintype = ",chaintype
-        if (present(info)) info = myio_err_chaintype
-        return
-    endif
-
-end subroutine check_value_chaintype
 
 subroutine check_value_method(method,info)
 
@@ -423,13 +366,9 @@ subroutine output()
     use globals, only : sysflag
     implicit none
 
-    if(sysflag=="elect") then 
-        call output_elect
-    elseif(sysflag=="neutral") then
-        call output_neutral
-    elseif(sysflag=="electnopoly") then
+    if(sysflag=="electnopoly") then
         call output_elect_nopoly
-        call output_individualcontr_fe
+        !call output_individualcontr_fe
     elseif(sysflag=="electligand") then
         call output_elect_nopoly
     else
@@ -447,7 +386,7 @@ subroutine output_elect
     use volume
     use parameters
     use field
-    use energy
+    !use energy
     use surface 
     use myutils, only : newunit
   
@@ -455,9 +394,9 @@ subroutine output_elect
     
     character(len=90) :: sysfilename     
     character(len=90) :: xsolfilename 
-    character(len=90) :: xpolABfilename 
-    character(len=90) :: xpolCfilename 
-    character(len=90) :: xpolendfilename 
+    !character(len=90) :: xpolABfilename 
+    !character(len=90) :: xpolCfilename 
+    !character(len=90) :: xpolendfilename 
     character(len=90) :: xNafilename
     character(len=90) :: xKfilename
     character(len=90) :: xTBfilename
@@ -473,8 +412,8 @@ subroutine output_elect
     character(len=90) :: chargefilename
     character(len=90) :: xHplusfilename
     character(len=90) :: xOHminfilename
-    character(len=90) :: densfracAfilename
-    character(len=90) :: densfracBfilename
+    !character(len=90) :: densfracAfilename
+    !character(len=90) :: densfracBfilename
     character(len=90) :: densfracionpairfilename
 
     integer :: i,j,k,t     ! dummy indexes
@@ -533,11 +472,9 @@ subroutine output_elect
         endif     
 
     else
-
-        write(rstr,'(F5.3)')sigmaAB*delta 
-        fnamelabel="sg"//trim(adjustl(rstr)) 
+ 
         write(rstr,'(F5.3)')cNaCl
-        fnamelabel=trim(fnamelabel)//"cNaCl"//trim(adjustl(rstr))
+        fnamelabel="cNaCl"//trim(adjustl(rstr))
         write(rstr,'(F5.3)')cCaCl2
         fnamelabel=trim(fnamelabel)//"cCaCl2"//trim(adjustl(rstr))
         write(rstr,'(F7.3)')pHbulk
@@ -545,8 +482,8 @@ subroutine output_elect
     endif
 
     sysfilename='system.'//trim(fnamelabel)
-    xpolABfilename='xpolAB.'//trim(fnamelabel)
-    xpolCfilename='xpolC.'//trim(fnamelabel)
+    !xpolABfilename='xpolAB.'//trim(fnamelabel)
+    !xpolCfilename='xpolC.'//trim(fnamelabel)
     xsolfilename='xsol.'//trim(fnamelabel)
     xNafilename='xNaions.'//trim(fnamelabel)
     xKfilename='xKions.'//trim(fnamelabel)
@@ -561,8 +498,8 @@ subroutine output_elect
     chargefilename='charge.'//trim(fnamelabel)
     xHplusfilename='xHplus.'//trim(fnamelabel)
     xOHminfilename='xOHmin.'//trim(fnamelabel)
-    densfracAfilename='densityAfrac.'//trim(fnamelabel)
-    densfracBfilename='densityBfrac.'//trim(fnamelabel)
+    !densfracAfilename='densityAfrac.'//trim(fnamelabel)
+    !densfracBfilename='densityBfrac.'//trim(fnamelabel)
     densfracionpairfilename='densityfracionpair.'//trim(fnamelabel)
     xppfilename='xppions.'//trim(fnamelabel)
 
@@ -572,12 +509,12 @@ subroutine output_elect
     open(unit=newunit(un_xsol),file=xsolfilename)
     open(unit=newunit(un_psi),file=potentialfilename)
 
-    if(sysflag/="electnopoly") then          
-        open(unit=newunit(un_xpolAB),file=xpolABfilename)
-        open(unit=newunit(un_xpolC),file=xpolCfilename)
-        open(unit=newunit(un_fdisA),file=densfracAfilename) 
-        open(unit=newunit(un_fdisB),file=densfracBfilename) 
-    endif   
+    !if(sysflag/="electnopoly") then          
+    !    open(unit=newunit(un_xpolAB),file=xpolABfilename)
+    !    open(unit=newunit(un_xpolC),file=xpolCfilename)
+    !   open(unit=newunit(un_fdisA),file=densfracAfilename) 
+    !    open(unit=newunit(un_fdisB),file=densfracBfilename) 
+    ! endif   
 
     if(sysflag=="electligand") open(unit=newunit(un_xpp),file=xppfilename)
       
@@ -616,14 +553,14 @@ subroutine output_elect
    
     if(geometry=="invcylindrical") write(un_psi,*)radius,psiSurf
 
-    if(sysflag/="electnopoly") then 
-        do i=1,nr
-            write(un_xpolAB,fmt4reals)rc(i),xpolAB(i),rhopolA(i),rhopolB(i)
-            write(un_xpolC,fmt2reals)rc(i),xpolC(i)
-            write(un_fdisA,fmt6reals)rc(i),fdisA(1,i),fdisA(2,i),fdisA(3,i),fdisA(4,i),fdisA(5,i)        
-            write(un_fdisB,fmt6reals)rc(i),fdisB(1,i),fdisB(2,i),fdisB(3,i),fdisB(4,i),fdisB(5,i)
-        enddo
-    endif   
+  !  if(sysflag/="electnopoly") then 
+  !      do i=1,nr
+  !          write(un_xpolAB,fmt4reals)rc(i),xpolAB(i),rhopolA(i),rhopolB(i)
+  !          write(un_xpolC,fmt2reals)rc(i),xpolC(i)
+  !          write(un_fdisA,fmt6reals)rc(i),fdisA(1,i),fdisA(2,i),fdisA(3,i),fdisA(4,i),fdisA(5,i)        
+  !          write(un_fdisB,fmt6reals)rc(i),fdisB(1,i),fdisB(2,i),fdisB(3,i),fdisB(4,i),fdisB(5,i)
+  !      enddo
+  !  endif   
 
     if(sysflag=="electligand") then 
         do i=1,nr
@@ -652,31 +589,10 @@ subroutine output_elect
 
     write(un_sys,*)'system      = planar weakpolyelectrolyte brush'
     write(un_sys,*)'version     = ',VERSION
-    write(un_sys,*)'chainmethod = ',chainmethod
-    write(un_sys,*)'chaintype   = ',chaintype
-    if(chainmethod.eq."FILE") then
-       write(un_sys,*)'readinchains = ',readinchains
-    endif
     write(un_sys,*)'sysflag     = ',sysflag
     write(un_sys,*)'bcflag      = ',bcflag
-    write(un_sys,*)'nsegAB      = ',nsegAB
-    write(un_sys,*)'lsegAB      = ',lsegAB
-    write(un_sys,*)'nsegC       = ',nsegC
-    write(un_sys,*)'lsegC       = ',lsegC
-    write(un_sys,*)'period      = ',period 
     write(un_sys,*)'delta       = ',delta  
     write(un_sys,*)'vsol        = ',vsol
-    write(un_sys,*)'vpolA(1)    = ',vpolA(1)*vsol
-    write(un_sys,*)'vpolA(2)    = ',vpolA(2)*vsol
-    write(un_sys,*)'vpolA(3)    = ',vpolA(3)*vsol
-    write(un_sys,*)'vpolA(4)    = ',vpolA(4)*vsol
-    write(un_sys,*)'vpolA(5)    = ',vpolA(5)*vsol
-    write(un_sys,*)'vpolB(1)    = ',vpolB(1)*vsol
-    write(un_sys,*)'vpolB(2)    = ',vpolB(2)*vsol
-    write(un_sys,*)'vpolB(3)    = ',vpolB(3)*vsol
-    write(un_sys,*)'vpolB(4)    = ',vpolB(4)*vsol
-    write(un_sys,*)'vpolB(5)    = ',vpolB(5)*vsol
-    write(un_sys,*)'vpolC       = ',vpolC*vsol
     write(un_sys,*)'vNa         = ',vNa*vsol
     write(un_sys,*)'vCl         = ',vCl*vsol
     write(un_sys,*)'vCa         = ',vCa*vsol
@@ -746,22 +662,10 @@ subroutine output_elect
         write(un_sys,*)'fdis(ABH)   = ',cppfdis(ABH)
         write(un_sys,*)'fdis(AB)    = ',cppfdis(AB)
     endif    
-    write(un_sys,*)'sigmaAB     = ',sigmaAB*delta
-    write(un_sys,*)'sigmaC      = ',sigmaC*delta
     write(un_sys,*)'dielectW    = ',dielectW
     write(un_sys,*)'lb          = ',lb
     write(un_sys,*)'T           = ',Temp
-    write(un_sys,*)'VdWepsC     = ',VdWepsC*vpolC*vsol 
-    write(un_sys,*)'VdWepsB     = ',VdWepsB*vpolB(3)*vsol
-    write(un_sys,*)'zpolA(1)    = ',zpolA(1)
-    write(un_sys,*)'zpolA(2)    = ',zpolA(2)
-    write(un_sys,*)'zpolA(3)    = ',zpolA(3)
-    write(un_sys,*)'zpolA(4)    = ',zpolA(4)
-    write(un_sys,*)'zpolB(1)    = ',zpolB(1)
-    write(un_sys,*)'zpolB(2)    = ',zpolB(2)
-    write(un_sys,*)'zpolB(3)    = ',zpolB(3)
-    write(un_sys,*)'zpolB(4)    = ',zpolB(4)
-    write(un_sys,*)'zpolB(5)    = ',zpolB(5)
+   
     write(un_sys,*)'zNa         = ',zNa
     write(un_sys,*)'zCa         = ',zCa
     write(un_sys,*)'zK          = ',zK
@@ -774,44 +678,22 @@ subroutine output_elect
         write(un_sys,*)'zpp(AB)     = ',zpp(AB)
     endif    
     write(un_sys,*)'nr          = ',nr
-    write(un_sys,*)'free energy = ',FE
-    write(un_sys,*)'energy bulk = ',FEbulk 
-    write(un_sys,*)'deltafenergy = ',deltaFE
+    !write(un_sys,*)'free energy = ',FE
+    !write(un_sys,*)'energy bulk = ',FEbulk 
+    !write(un_sys,*)'deltafenergy = ',deltaFE
     write(un_sys,*)'fnorm       = ',fnorm
-    write(un_sys,*)'q residual  = ',qres
+    !write(un_sys,*)'q residual  = ',qres
     write(un_sys,*)'error       = ',error
-    write(un_sys,*)'sigmaAB     = ',sigmaAB*delta
-    write(un_sys,*)'sumphiA     = ',sumphiA
-    write(un_sys,*)'sumphiB     = ',sumphiB
-    write(un_sys,*)'sumphiC     = ',sumphiC
-    write(un_sys,*)'check phi   = ',checkphi 
-    write(un_sys,*)'FEq         = ',FEq 
-    write(un_sys,*)'FEpi        = ',FEpi
-    write(un_sys,*)'FErho       = ',FErho
-    write(un_sys,*)'FEel        = ',FEel
-    write(un_sys,*)'FEelsurf    = ',FEelsurf
-    write(un_sys,*)'FEbind      = ',FEbind
-    write(un_sys,*)'FEVdW       = ',FEVdW 
-    write(un_sys,*)'FEalt       = ',FEalt
-    write(un_sys,*)'qAB         = ',qAB
-    write(un_sys,*)'qC          = ',qC
-    write(un_sys,*)'muAB        = ',-log(qAB)
-    write(un_sys,*)'muC         = ',-log(qC)
-    write(un_sys,*)'heightAB    = ',heightAB
-    write(un_sys,*)'heightC     = ',heightC
-    write(un_sys,*)'qpolA       = ',qpolA
-    write(un_sys,*)'qpolB       = ',qpolB
-    write(un_sys,*)'qpoltot     = ',qpol_tot
-    write(un_sys,*)'avfdisA(1)  = ',avfdisA(1)
-    write(un_sys,*)'avfdisA(2)  = ',avfdisA(2)
-    write(un_sys,*)'avfdisA(3)  = ',avfdisA(3)
-    write(un_sys,*)'avfdisA(4)  = ',avfdisA(4)
-    write(un_sys,*)'avfdisA(5)  = ',avfdisA(5)
-    write(un_sys,*)'avfdisB(1)  = ',avfdisB(1)
-    write(un_sys,*)'avfdisB(2)  = ',avfdisB(2)
-    write(un_sys,*)'avfdisB(3)  = ',avfdisB(3)
-    write(un_sys,*)'avfdisB(4)  = ',avfdisB(4)
-    write(un_sys,*)'avfdisB(5)  = ',avfdisB(5)
+    ! write(un_sys,*)'check phi   = ',checkphi 
+    !write(un_sys,*)'FEq         = ',FEq 
+    !write(un_sys,*)'FEpi        = ',FEpi
+    !write(un_sys,*)'FErho       = ',FErho
+    !write(un_sys,*)'FEel        = ',FEel
+    !write(un_sys,*)'FEelsurf    = ',FEelsurf
+    !write(un_sys,*)'FEbind      = ',FEbind
+    !write(un_sys,*)'FEVdW       = ',FEVdW 
+    !write(un_sys,*)'FEalt       = ',FEalt
+    
     write(un_sys,*)'sigmaSurf   = ',sigmaSurf/(4.0_dp*pi*lb*delta)
     write(un_sys,*)'sigmaqSurf  = ',sigmaqSurf/(4.0_dp*pi*lb*delta)
     write(un_sys,*)'psiSurf     = ',psiSurf
@@ -846,8 +728,6 @@ subroutine output_elect
         enddo  
     endif
     write(un_sys,*)'nsize       = ',nsize  
-    write(un_sys,*)'cuantasAB   = ',cuantasAB
-    write(un_sys,*)'cuantasC    = ',cuantasC
     write(un_sys,*)'iterations  = ',iter
    
     ! .. closing files
@@ -881,142 +761,6 @@ end subroutine output_elect
 
 
 
-subroutine output_neutral
-  
-    !     .. variables and constant declaractions
-    use globals 
-    use volume
-    use parameters    
-    use field
-    use energy
-    use myutils, only : newunit
-
-    !     .. output file names         
-    character(len=90) :: sysfilename     
-    character(len=90) :: xsolfilename 
-    character(len=90) :: xpolABfilename 
-    character(len=90) :: xpolCfilename 
-    character(len=90) :: xpolendfilename 
-    
-    character(len=80) :: fmt2reals,fmt3reals,fmt4reals,fmt5reals,fmt6reals   
-
-    !     .. local arguments
-    integer :: i
-    character(len=100) :: fnamelabel
-    character(len=20) :: rstr
-    logical :: isopen
-    !     .. executable statements 
-
-    fmt2reals = "(2ES25.16)"  
-    fmt3reals = "(3ES25.16)"  
-    fmt4reals = "(4ES25.16)"  
-    fmt5reals = "(5ES25.16)" 
-    fmt6reals = "(6ES25.16)" 
-
-    !     .. make label filenames 
-    write(rstr,'(F5.3)')sigmaAB*delta 
-    fnamelabel="sg"//trim(adjustl(rstr)) 
-    write(rstr,'(F5.3)')VdWepsB
-    fnamelabel=trim(fnamelabel)//"VdWepsB"//trim(adjustl(rstr))//".dat"
-
-    !     .. make filenames 
-    sysfilename='system.'//trim(fnamelabel)
-    xpolABfilename='xpolAB.'//trim(fnamelabel)   
-    xpolCfilename='xpolC.'//trim(fnamelabel)   
-    xsolfilename='xsol.'//trim(fnamelabel)   
-    xpolendfilename='xpolend.'//trim(fnamelabel)   
-    
-    !      .. opening files
-    open(unit=newunit(un_sys),file=sysfilename)   
-    open(unit=newunit(un_xpolAB),file=xpolABfilename)
-    open(unit=newunit(un_xpolC),file=xpolCfilename)
-    open(unit=newunit(un_xsol),file=xsolfilename)
-
-    
-    do i=1,nr    
-       write(un_xpolAB,fmt4reals)rc(i),xpolAB(i),rhopolA(i),rhopolB(i)
-       write(un_xpolC,fmt2reals)rc(i),xpolC(i)
-       write(un_xsol,fmt2reals)rc(i),xsol(i)
-    !     write(40,*)rc(i),endpol(i)
-    enddo
-        
-    !     .. system information 
-
-    write(un_sys,*)'system      = planar  brush' 
-    write(un_sys,*)'version     = ',VERSION
-    write(un_sys,*)'sysflag     = ',sysflag
-    write(un_sys,*)'chainmethod = ',chainmethod
-    write(un_sys,*)'chaintype   = ',chaintype
-    if(chainmethod.eq."FILE") then
-        write(un_sys,*)'readinchains = ',readinchains
-    endif
-    write(un_sys,*)'sysflag     = ',sysflag
-    write(un_sys,*)'nsegAB      = ',nsegAB
-    write(un_sys,*)'lsegAB      = ',lsegAB
-    write(un_sys,*)'nsegC       = ',nsegC
-    write(un_sys,*)'lsegC       = ',lsegC
-    write(un_sys,*)'period      = ',period
-    write(un_sys,*)'delta       = ',delta
-    write(un_sys,*)'tol_conv    = ',error
-    write(un_sys,*)'vsol        = ',vsol
-    write(un_sys,*)'vpolA(1)    = ',vpolA(1)*vsol
-    write(un_sys,*)'vpolA(2)    = ',vpolA(2)*vsol
-    write(un_sys,*)'vpolA(3)    = ',vpolA(3)*vsol
-    write(un_sys,*)'vpolA(4)    = ',vpolA(4)*vsol
-    write(un_sys,*)'vpolA(5)    = ',vpolA(5)*vsol
-    write(un_sys,*)'vpolB(1)    = ',vpolB(1)*vsol
-    write(un_sys,*)'vpolB(2)    = ',vpolB(2)*vsol
-    write(un_sys,*)'vpolB(3)    = ',vpolB(3)*vsol
-    write(un_sys,*)'vpolB(4)    = ',vpolB(4)*vsol
-    write(un_sys,*)'vpolB(5)    = ',vpolB(5)*vsol
-    write(un_sys,*)'vpolC       = ',vpolC*vsol
-    write(un_sys,*)'T           = ',Temp
-    write(un_sys,*)'VdWepsC     = ',VdWepsC*vpolC*vsol
-    write(un_sys,*)'VdWepsB     = ',VdWepsB*vpolB(3)*vsol
-    write(un_sys,*)'cuantasAB   = ',cuantasAB
-    write(un_sys,*)'cuantasC    = ',cuantasC
-    
-    write(un_sys,*)'distance  = ',nr*delta 
-    write(un_sys,*)'nr          = ',nr
-    write(un_sys,*)'free energy = ',FE  
-    write(un_sys,*)'energy bulk = ',FEbulk 
-    write(un_sys,*)'deltafenergy = ',deltaFE
-    write(un_sys,*)'FEalt       = ',FEalt
-    write(un_sys,*)'FEconfC     = ',FEconfC
-    write(un_sys,*)'FEconfAB    = ',FEconfAB
-    write(un_sys,*)'FEtrans%sol = ',FEtrans%sol  
-    write(un_sys,*)'fnorm       = ',fnorm
-    write(un_sys,*)'sumphiA     = ',sumphiA
-    write(un_sys,*)'sumphiB     = ',sumphiB
-    write(un_sys,*)'sumphiC     = ',sumphiC
-    write(un_sys,*)'check phi   = ',checkphi 
-    write(un_sys,*)'FEq         = ',FEq 
-    write(un_sys,*)'FEpi        = ',FEpi
-    write(un_sys,*)'FErho       = ',FErho
-    write(un_sys,*)'FEVdW       = ',FEVdW
-    write(un_sys,*)'qAB         = ',qAB
-    write(un_sys,*)'qC          = ',qC
-    write(un_sys,*)'muAB        = ',-dlog(qAB)
-    write(un_sys,*)'muC         = ',-dlog(qC)
-    write(un_sys,*)'heightAB    = ',heightAB
-    write(un_sys,*)'heightC     = ',heightC
-    write(un_sys,*)'nsize       = ',nsize  
-    write(un_sys,*)'cuantasAB   = ',cuantasAB
-    write(un_sys,*)'cuantasC    = ',cuantasC
-    write(un_sys,*)'iterations  = ',iter
-    
-    ! .. closing files
- 
-    close(un_xsol)
-    close(un_xpolAB)
-    close(un_xpolC)
-    close(un_sys)
-
-  
-end subroutine output_neutral
-
-
-
 subroutine output_elect_nopoly
   
     !     .. variables and constant declaractions
@@ -1024,7 +768,7 @@ subroutine output_elect_nopoly
     use volume
     use parameters
     use field
-    use energy
+   ! use energy
     use surface 
     use myutils, only : newunit
   
@@ -1276,19 +1020,19 @@ subroutine output_elect_nopoly
         write(un_sys,*)'zpp(AB)     = ',zpp(AB)
     endif    
     write(un_sys,*)'nr          = ',nr
-    write(un_sys,*)'free energy = ',FE
-    write(un_sys,*)'energy bulk = ',FEbulk 
-    write(un_sys,*)'deltafenergy = ',deltaFE
+    !write(un_sys,*)'free energy = ',FE
+    !write(un_sys,*)'energy bulk = ',FEbulk 
+    !write(un_sys,*)'deltafenergy = ',deltaFE
     write(un_sys,*)'fnorm       = ',fnorm
-    write(un_sys,*)'q residual  = ',qres
+    !write(un_sys,*)'q residual  = ',qres
     write(un_sys,*)'error       = ',error
-    write(un_sys,*)'FEpi        = ',FEpi
-    write(un_sys,*)'FErho       = ',FErho
-    write(un_sys,*)'FEel        = ',FEel
-    write(un_sys,*)'FEelsurf    = ',FEelsurf
-    write(un_sys,*)'FEbind      = ',FEbind
-    write(un_sys,*)'FEalt       = ',FEalt
-    write(un_sys,*)'sigmaSurf   = ',sigmaSurf/(4.0_dp*pi*lb*delta)
+    ! write(un_sys,*)'FEpi        = ',FEpi
+    ! write(un_sys,*)'FErho       = ',FErho
+    ! write(un_sys,*)'FEel        = ',FEel
+    ! write(un_sys,*)'FEelsurf    = ',FEelsurf
+    ! write(un_sys,*)'FEbind      = ',FEbind
+    ! write(un_sys,*)'FEalt       = ',FEalt
+    ! write(un_sys,*)'sigmaSurf   = ',sigmaSurf/(4.0_dp*pi*lb*delta)
     write(un_sys,*)'sigmaqSurf  = ',sigmaqSurf/(4.0_dp*pi*lb*delta)
     write(un_sys,*)'psiSurf     = ',psiSurf
     if(bcflag=='ta') then
@@ -1352,84 +1096,84 @@ subroutine output_elect_nopoly
 end subroutine output_elect_nopoly
 
 
-subroutine output_individualcontr_fe
+! subroutine output_individualcontr_fe
 
-    use globals, only : sysflag
-    use energy
-    use myutils, only : newunit
-    use parameters, only : sigmaAB,cNaCl,cCaCl2,pHbulk,VdWepsB
-    use volume, only : delta,nr,nrmax,nrmin
+!     use globals, only : sysflag
+!     use energy
+!     use myutils, only : newunit
+!     use parameters, only : sigmaAB,cNaCl,cCaCl2,pHbulk,VdWepsB
+!     use volume, only : delta,nr,nrmax,nrmin
 
-    ! local arguments
+!     ! local arguments
 
-    integer :: un_fe
+!     integer :: un_fe
 
-    character(len=100) :: fenergyfilename   
-    character(len=100) :: fnamelabel
-    character(len=20) :: rstr
+!     character(len=100) :: fenergyfilename   
+!     character(len=100) :: fnamelabel
+!     character(len=20) :: rstr
 
-   !     .. make label filename
+!    !     .. make label filename
 
-    if(sysflag=="elect".or.sysflag=="electdouble".or.sysflag=="electnopoly") then 
-        write(rstr,'(F5.3)')sigmaAB*delta 
-        fnamelabel="sg"//trim(adjustl(rstr)) 
-        write(rstr,'(F5.3)')cNaCl
-        fnamelabel=trim(fnamelabel)//"cNaCl"//trim(adjustl(rstr))
-        write(rstr,'(F5.3)')cCaCl2
-        fnamelabel=trim(fnamelabel)//"cCaCl2"//trim(adjustl(rstr))
-        write(rstr,'(F7.3)')pHbulk
-        fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))//".dat"
-    elseif(sysflag=="neutral") then 
-        write(rstr,'(F5.3)')sigmaAB*delta 
-        fnamelabel="sg"//trim(adjustl(rstr)) 
-        write(rstr,'(F5.3)')VdWepsB
-        fnamelabel=trim(fnamelabel)//"VdWepsB"//trim(adjustl(rstr))//".dat"
-    else
-        print*,"Error in output_individualcontr_fe subroutine"
-        print*,"Wrong value sysflag : ", sysflag
-    endif    
+!     if(sysflag=="elect".or.sysflag=="electdouble".or.sysflag=="electnopoly") then 
+!         write(rstr,'(F5.3)')sigmaAB*delta 
+!         fnamelabel="sg"//trim(adjustl(rstr)) 
+!         write(rstr,'(F5.3)')cNaCl
+!         fnamelabel=trim(fnamelabel)//"cNaCl"//trim(adjustl(rstr))
+!         write(rstr,'(F5.3)')cCaCl2
+!         fnamelabel=trim(fnamelabel)//"cCaCl2"//trim(adjustl(rstr))
+!         write(rstr,'(F7.3)')pHbulk
+!         fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))//".dat"
+!     elseif(sysflag=="neutral") then 
+!         write(rstr,'(F5.3)')sigmaAB*delta 
+!         fnamelabel="sg"//trim(adjustl(rstr)) 
+!         write(rstr,'(F5.3)')VdWepsB
+!         fnamelabel=trim(fnamelabel)//"VdWepsB"//trim(adjustl(rstr))//".dat"
+!     else
+!         print*,"Error in output_individualcontr_fe subroutine"
+!         print*,"Wrong value sysflag : ", sysflag
+!     endif    
 
-    fenergyfilename='energy.'//trim(fnamelabel)   
+!     fenergyfilename='energy.'//trim(fnamelabel)   
         
-    !     .. opening files        
+!     !     .. opening files        
 
-    open(unit=newunit(un_fe),file=fenergyfilename) 
+!     open(unit=newunit(un_fe),file=fenergyfilename) 
 
-    write(un_fe,*)'FE              = ',FE  
-    write(un_fe,*)'FEbulk          = ',FEbulk 
-    write(un_fe,*)'deltaFE         = ',deltaFE
-    write(un_fe,*)'FEalt           = ',FEalt  
-    write(un_fe,*)'FEbulkalt       = ',FEbulkalt 
-    write(un_fe,*)'deltaFEalt      = ',deltaFEalt
+!     write(un_fe,*)'FE              = ',FE  
+!     write(un_fe,*)'FEbulk          = ',FEbulk 
+!     write(un_fe,*)'deltaFE         = ',deltaFE
+!     write(un_fe,*)'FEalt           = ',FEalt  
+!     write(un_fe,*)'FEbulkalt       = ',FEbulkalt 
+!     write(un_fe,*)'deltaFEalt      = ',deltaFEalt
     
-    write(un_fe,*)"FEtrans%sol     = ",FEtrans%sol   
-    write(un_fe,*)"FEtrans%Na      = ",FEtrans%Na  
-    write(un_fe,*)"FEtrans%Cl      = ",FEtrans%Cl  
-    write(un_fe,*)"FEtrans%Ca      = ",FEtrans%Ca  
-    write(un_fe,*)"FEtrans%K       = ",FEtrans%K
-    write(un_fe,*)"FEtrans%KCl     = ",FEtrans%KCl
-    write(un_fe,*)"FEtrans%NaCl    = ",FEtrans%NaCl  
-    write(un_fe,*)"FEtrans%Hplus   = ",FEtrans%Hplus  
-    write(un_fe,*)"FEtrans%OHmin   = ",FEtrans%OHmin  
+!     write(un_fe,*)"FEtrans%sol     = ",FEtrans%sol   
+!     write(un_fe,*)"FEtrans%Na      = ",FEtrans%Na  
+!     write(un_fe,*)"FEtrans%Cl      = ",FEtrans%Cl  
+!     write(un_fe,*)"FEtrans%Ca      = ",FEtrans%Ca  
+!     write(un_fe,*)"FEtrans%K       = ",FEtrans%K
+!     write(un_fe,*)"FEtrans%KCl     = ",FEtrans%KCl
+!     write(un_fe,*)"FEtrans%NaCl    = ",FEtrans%NaCl  
+!     write(un_fe,*)"FEtrans%Hplus   = ",FEtrans%Hplus  
+!     write(un_fe,*)"FEtrans%OHmin   = ",FEtrans%OHmin  
     
-    write(un_fe,*)"FEchempot%Na    = ",FEchempot%Na
-    write(un_fe,*)"FEchempot%Cl    = ",FEchempot%Cl
-    write(un_fe,*)"FEchempot%Ca    = ",FEchempot%Ca
-    write(un_fe,*)"FEchempot%K     = ",FEchempot%K
-    write(un_fe,*)"FEchempot%KCl   = ",FEchempot%KCl
-    write(un_fe,*)"FEchempot%NaCl  = ",FEchempot%NaCl
-    write(un_fe,*)"FEchempot%Hplus = ",FEchempot%Hplus
-    write(un_fe,*)"FEchempot%OHmin = ",FEchempot%OHmin
+!     write(un_fe,*)"FEchempot%Na    = ",FEchempot%Na
+!     write(un_fe,*)"FEchempot%Cl    = ",FEchempot%Cl
+!     write(un_fe,*)"FEchempot%Ca    = ",FEchempot%Ca
+!     write(un_fe,*)"FEchempot%K     = ",FEchempot%K
+!     write(un_fe,*)"FEchempot%KCl   = ",FEchempot%KCl
+!     write(un_fe,*)"FEchempot%NaCl  = ",FEchempot%NaCl
+!     write(un_fe,*)"FEchempot%Hplus = ",FEchempot%Hplus
+!     write(un_fe,*)"FEchempot%OHmin = ",FEchempot%OHmin
 
-    write(un_fe,*)"FEchemsurf      = ",FEchemsurf
-    write(un_fe,*)"FEchemsurfalt   = ",FEchemsurfalt
+!     write(un_fe,*)"FEchemsurf      = ",FEchemsurf
+!     write(un_fe,*)"FEchemsurfalt   = ",FEchemsurfalt
     
-    write(un_fe,*)"delta FEchemsurfalt= ",FEchemsurfalt-FEchemsurf-diffFEchemsurf
+!     write(un_fe,*)"delta FEchemsurfalt= ",FEchemsurfalt-FEchemsurf-diffFEchemsurf
     
-    close(un_fe)
+!     close(un_fe)
 
 
-end subroutine   output_individualcontr_fe
+! end subroutine   output_individualcontr_fe
 
 end module
 

@@ -22,16 +22,12 @@ program main
     use random
     use field
     use parameters
-    use matrices
-    use energy
-    use chains
-    use VdW
+    !use energy
     use listfcn
     use initxvector
     use surface
     use myio
     use myutils
-    use chaingenerator
     use fcnpointer
     
     implicit none  
@@ -65,16 +61,6 @@ program main
     call read_inputfile()
     call init_constants()
    
-    if(sysflag/="electligand".and.sysflag/="electnopoly") then
-
-        call init_matrices()            ! init matrices for chain generation
-        call allocate_chains(cuantasAB,nsegAB,cuantasC,nsegC)  
-        call make_sequence_chain(period,chaintype)
-        call set_properties_chain(period,chaintype)  
-        call make_chains(chainmethod)   ! generate polymer configurations 
-    
-    endif
-
     call allocate_geometry(nsize)
     call make_geometry()            ! generate volume elements lattice 
     call allocate_field(nsize) 
@@ -137,7 +123,7 @@ program main
                 call solver(x, xguess, error, fnorm) 
                 call fcnptr(x,fvec,neq)
                 
-                if(isNaN(fnorm)) then  
+                if(myIsNaN(fnorm)) then  
                     text="no solution: backstep"
                     call print_to_log(LogUnit,text)
                     pH%stepsize=pH%stepsize/2.0_dp ! smaller 
@@ -147,10 +133,7 @@ program main
                     enddo       
                 else 
                     ! call fcnenergy()        
-                    ! call average_height()      
-                    ! call charge_polymer()
-                    ! call average_charge_polymer()
-                    qres=charge_neutrality(rhoq,sigmaqSurf) 
+                    ! qres=charge_neutrality(rhoq,sigmaqSurf) 
                     call output()           ! writing of output
                     write(rstr,'(F7.3)')pH%val
                     text="solution pH="//trim(adjustl(rstr))

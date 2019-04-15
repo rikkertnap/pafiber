@@ -1,8 +1,9 @@
 #Unix makefile for fortran-file	
 
 # put the name of the target program here
-TARGET = brush.weak.qdot # the list of source files
-SRC =  precision.f90  mathconst.f90 physconst.f90 globals.f90 myutils.f90 molecule.f90 loop.f90 chains.f90 volume.f90 L2norm.f90 rands.f90 parameter.f90  field.f90 VdW.f90 surface.f90 fenergy.f90 initcha.f90  myio.f90 rota.f90 cadenas.f90 cadenas-sequence.f90 fcnCa.f90  init.f90 chaingenerator.f90 kinsolsolver.f90  solver.f90  main.f90
+TARGET = pbgen.pb # the list of source file
+SRC =  precision.f90  mathconst.f90 physconst.f90 globals.f90 myutils.f90 molecule.f90 loop.f90  volume.f90 L2norm.f90 rands.f90 parameter.f90  field.f90  surface.f90   myio.f90 fcn.f90  init.f90 kinsolsolver.f90  solver.f90  main.f90 # fenergy.f90
+#
 # some definitions
 SHELL = /bin/bash
 

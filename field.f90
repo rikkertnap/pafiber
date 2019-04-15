@@ -113,145 +113,18 @@ contains
     end subroutine deallocate_field
 
 
-  
-  !     .. compute average height of tethered layer 
-  !     .. first moment of density profile 
-  
-    subroutine average_height()
 
-        use globals
-        use parameters
-        use volume
-
+    logical function myIsNaN(x)
         implicit none
-
-        integer :: i
-
-        real(dp) :: zerom,firstm  
-
-        firstm=0.0_dp               ! first moment 
-        zerom=0.0_dp                ! zero moment  
-        do i=1,nr
-            zerom=zerom+xpolAB(i)*deltaG(i)
-            firstm=firstm+xpolAB(i)*rc(i)*deltaG(i)
-        enddo
-
-        if(zerom>0.0_dp) then 
-            heightAB=firstm/zerom
+        real(dp) :: x
+        if (x /= x) then
+            myIsNaN=.true.
         else
-            heightAB=0.0_dp
-        endif
+            myIsNaN=.false.
+        endif 
 
-        firstm=0.0_dp               ! first moment 
-        zerom=0.0_dp                ! zero moment  
-        do i=1,nr
-            zerom=zerom+xpolC(i)*deltaG(i)
-            firstm=firstm+xpolC(i)*rc(i)*deltaG(i)
-        enddo
+    end function myIsNaN
 
-        if(zerom>0.0_dp)then 
-          heightC=firstm/zerom
-        else
-          heightC=0.0_dp
-        endif
-
-        if(isNaN(heightAB)) print*,"heightAB NaN"
-        if(isNaN(heightC)) print*,"heightC NaN"
-
-    end subroutine average_height
-
-    subroutine charge_polymer()
-
-        use globals
-        use volume
-        use parameters
-
-        implicit none
-
-        integer :: i
-
-        qpolA=0.0_dp
-        qpolB=0.0_dp
-
-        do i=1,nr
-            qpolA=qpolA+(zpolA(1)*fdisA(1,i)*rhopolA(i)+&
-                zpolA(4)*fdisA(4,i)*rhopolA(i))*deltaG(i) 
-            qpolB=qpolB+(zpolB(1)*fdisB(1,i)*rhopolB(i)+&
-                zpolB(4)*fdisB(4,i)*rhopolB(i))*deltaG(i)
-        enddo
-
-        qpolA=qpolA*delta
-        qpolB=qpolB*delta
-        qpol_tot=qpolA+qpolB
-
-    end subroutine charge_polymer
-
-  ! .. post : return average charge of state of 
-  !   of polymers
-
-subroutine average_charge_polymer()
-        
-    use globals
-    use volume
-    use parameters
-    use chains
-
-    implicit none 
-   
-    integer :: i,s,k
-    integer   :: npolA,npolB
-    real(dp)  :: sigmaLR  
-    
-    ! .. number of A and B monomors 
-    npolA=0
-    do s=1,nsegAB
-        if(isAmonomer(s).eqv..true.) then
-            npolA=npolA+1
-        endif
-    enddo
-    npolB=nsegAB-npolA
-    
-    if(npolA/=0 .and. sigmaLR/=0 ) then
-        do k=1,5
-            avfdisA(k)=0.0_dp
-            do i=1,nr
-                avfdisA(k)=avfdisA(k)+fdisA(k,i)*rhopolA(i)*deltaG(i) 
-            enddo
-            avfdisA(k)=avfdisA(k)*delta/(sigmaAB*delta*npolA)
-        enddo
-    else
-        do k=1,5
-            avfdisA(k)=0.0_dp
-        enddo
-    endif
-    
-    if(npolB/=0 .and. sigmaLR/=0) then
-        do k=1,5
-            avfdisB(k)=0.0_dp
-            do i=1,nr
-                avfdisB(k)=avfdisB(k)+fdisB(k,i)*rhopolB(i)*deltaG(i) 
-            enddo
-            avfdisB(k)=avfdisB(k)*delta/(sigmaAB*delta*npolB)
-        enddo
-    else
-        do k=1,5
-            avfdisB(k)=0.0_dp
-        enddo
-    endif
-    
-end subroutine average_charge_polymer
-  
-
-logical function isNaN(x)
-    implicit none
-    real(dp) :: x
-    if (x /= x) then
-        isNaN=.true.
-    else
-        isNaN=.false.
-    endif 
-
-end function isNaN 
   
 end module field
 

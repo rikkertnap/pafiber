@@ -15,12 +15,7 @@ module parameters
 
     !  .. volume 
     real(dp) :: vsol               ! volume of solvent  in nm^3       
-    !  .. volume monomers
-    real(dp) :: vpolB(5)           ! volume of one polymer segment, vpol  in units of vsol
-    real(dp) :: vpolA(5)           ! volume of one polymer segment, vpol  in units of vsol
-    real(dp) :: vpolC              ! volume of one polymer segment hydrocarbon, vpol  in units of vsol
-    real(dp) :: deltavA(4)
-    real(dp) :: deltavB(4)
+
     !  .. volume ions   
     real(dp) :: vNa                ! volume positive ion in units of vsol
     real(dp) :: vK                 ! volume positive ion in units of vsol
@@ -49,29 +44,9 @@ module parameters
 
 
     ! .. segment length 
-
-    real(dp) :: lsegAB
-    real(dp) :: lsegA              ! segment length of A polymer in nm
-    real(dp) :: lsegB              ! segment length of B polymer in nm
-    real(dp) :: lsegC              ! segment length of C polymer in nm
-    real(dp) :: lsegCH2 
-    real(dp) :: lsegPAA   
-    real(dp) :: lsegPAMPS
-    
-    integer :: period              ! chain peridociy of repeat of A or B block 
-  
-    real(dp) :: VdWepsB            ! strenght VdW interaction in units of kT
-    real(dp) :: VdWepsC            ! strenght VdW interaction in units of kT
-    real(dp) :: chibulk            ! value of chibulk 
-    integer :: numlayers
-    integer :: VdWcutoff           ! cutoff VdW interaction in units of lseg 	
-    integer :: VdWcutoffdelta      ! cutoff VdW interaction in units of delta
-    integer :: layeroffset
   
     ! .. valence charge 
 
-    integer :: zpolA(5)            ! valence charge polymer
-    integer :: zpolB(5)            ! valence charge polymer
     integer :: zNa                 ! valence charge positive ion 
     integer :: zK                  ! valence charge positive ion 
     integer :: zCa                 ! valence charge divalent positive ion 
@@ -86,9 +61,6 @@ module parameters
     real(dp) :: lb                 ! Bjerrum length	   
     real(dp) :: constqW            ! constant in Poisson eq dielectric constant of water 
 
-    real(dp) :: sigmaAB            ! sigma AB polymer coated on surface
-    real(dp) :: sigmaC             ! sigma C polymer coated on planar surface
-  
     integer :: itmax               ! maximum number of iterations
     real(dp) :: error              ! error imposed accuaracy
     real(dp) :: fnorm              ! L2 norm of residual vector function fcn  
@@ -96,19 +68,9 @@ module parameters
     integer :: iter                ! counts number of iterations
   
     character(len=8) :: method           ! method="kinsol" or "zspow"  
-    character(len=8) :: chainmethod      ! method of generating chains ="MC" or "FILE" 
-    character(len=8) :: chaintype        ! type of chain: diblock,alt
-    integer :: readinchains              ! nunmber of used/readin chains
     character(len=3) ::  verboseflag     ! select input flag 
 
-    real(dp) :: heightAB           ! average height of layer
-    real(dp) :: heightC            ! average height of layer 
-    real(dp) :: qpolA              ! charge poly A of layer 
-    real(dp) :: qpolB              ! charge poly B of layer 
-    real(dp) :: qpol_tot           ! charge poly A+B of layer 
-    real(dp) :: avfdisA(5)         ! average degree of dissociation 
-    real(dp) :: avfdisB(5)         ! average degree of dissociation
-  
+   
     !  .. equibrium constant
   
     real(dp) :: K0A(4)              ! intrinsic equilibruim constant
@@ -169,18 +131,8 @@ contains
         if(bcflag/="cc") neq_bc=neq_bc+1
 
         select case (sysflag)
-            case ("elect") 
-                neq = 4 * nr + neq_bc
-            case ("electdouble")  
-                neq = 4 * nr
-            case ("electnopoly") 
-                neq = 2 * nr + neq_bc
             case ("electligand") 
                 neq = 2 * nr  + neq_bc    
-            case ("electHC") 
-                neq = 5 * nr +neq_bc
-            case ("neutral") 
-                neq = 2 * nr
             case ("bulk water") 
                 neq = 5 
             case ("bulk ligand") 
@@ -234,18 +186,6 @@ contains
         zTB   = 1 
         zTM   = 1
         zNO3  = -1
-
-        zpolA(1)=-1 ! A-
-        zpolA(2)= 0 ! AH
-        zpolA(3)= 0 ! ANa
-        zpolA(4)= 1 ! ACa+
-        zpolA(5)= 0 ! A2Ca
-        
-        zpolB(1)=-1 ! B-
-        zpolB(2)= 0 ! BH
-        zpolB(3)= 0 ! BNa
-        zpolB(4)= 1 ! BCa+
-        zpolB(5)= 0 ! B2Ca
         
         zpp(AH2BH) = 0       ! charged states ligand
         zpp(AHBH)  = -1
@@ -303,50 +243,7 @@ contains
         deltavpp(3)=vpp(AHB)+vHplus-vpp(AHBH)    
         deltavpp(4)=vpp(AB)+vHplus-vpp(AHB)     
 
-        !     .. volume polymer segments
-        !     .. all volume scaled by vsol
-        
-        vAA  =  0.07448_dp/vsol ! volume based on VdW radii 
-        vAMPS = 0.2134_dp/vsol
     
-        vA = vAA
-        vB = vAMPS
-
-        vpolA(1)= vA              ! vA-
-        vpolA(2)= vA              ! vAH
-        vpolA(3)= vA+vNa          ! vANa
-        vpolA(4)= vA+vCa          ! vACa
-        vpolA(5)= 2.0_dp*vA+vCa   ! vA2Ca
-        
-        vpolB(1)= vB              ! vB-
-        vpolB(2)= vB              ! vBH
-        vpolB(3)= vB+vNa          ! vBNa
-        vpolB(4)= vB+vCa          ! vBCa
-        vpolB(5)= 2.0_dp*vB+vCa   ! vB2Ca
-        
-        deltavA(1)=vpolA(1)+1.0_dp-vpolA(2) ! vA-+vH+-vAH
-        deltavA(2)=vpolA(1)+vNa-vpolA(3)    ! vA-+vNa+-vANa+
-        deltavA(3)=vpolA(1)+vCa-vpolA(4)    ! vA- + vCa2+ -vACa+
-        deltavA(4)=2.0_dp*vpolA(1)+vCa-vpolA(5) ! 2vA- + vCa2+ -vA2Ca
-        
-        deltavB(1)=vpolB(1)+1.0_dp-vpolB(2) ! vB-+vH+-vBH
-        deltavB(2)=vpolB(1)+vNa-vpolB(3)    ! vB-+vNa+-vBNa+
-        deltavB(3)=vpolB(1)+vCa-vpolB(4)    ! vB- +vCa2+ -vBCa+
-        deltavB(4)=2.0_dp*vpolB(1)+vCa-vpolB(5) ! 2vB- + vCa2+ -vB2Ca+
-        
-        vpolC  = 0.0270_dp/vsol    ! volume CH2
-       
-        !  .. polymer segment lenght 
-        lsegPAA   = 0.36287_dp     ! segment length in nm
-        lsegPAMPS = 0.545_dp       ! segment length in nm
-        lsegCH2   = 0.153_dp       ! segment length in nm od CH2 check  
-        lsegAB = lsegPAMPS          
-        lsegA  = lsegPAA            
-        lsegB  = lsegPAMPS          
-        lsegC  = lsegCH2            
-
-        ! .. see also subroutine set_chain_properties 
-
         ! .. chemical equilbrium constants
 
         pKpp(1) =  2.26_dp        ! POH2COOH <=> POHCOOH- + H+ 
@@ -364,20 +261,6 @@ contains
         seed  = 435672                ! seed for random number generator
         constqW = delta*delta*4.0_dp*pi*lb/vsol ! multiplicative constant Poisson Eq. 
         
-        !  .. initializations of input dependent variables 
-        
-        sigmaAB = sigmaAB * (1.0_dp/(delta))  ! dimensionless sigma no vpol*vsol !!!!!!!!!!!! 
-        sigmaC   = sigmaC * (1.0_dp/(delta)) ! dimensionless sigma no vpol*vsol !!!!!!!!!!!!
-        
-        ! VdWepsC  = VdWepsC/(vpolC*vsol) ! VdW eps scaled 
-        ! VdWepsB  = VdWepsB/(vpolB(3)*vsol) ! VdW eps scaled 
-        
-        ! .. make radius integer multiply of delta
-        ! .. needed because VdW-coefficeint computed on grid 
-        ! Íradius=delta*int(radius/delta)
-
-        max_conforAB=cuantasAB
-        max_conforC=cuantasC
 
     end subroutine init_constants
    
@@ -511,9 +394,7 @@ contains
           
         !     .. end init electrostatic part 
             
-        VdWepsC  = VdWepsC/(vpolC*vsol) ! VdW eps scaled 
-        VdWepsB  = VdWepsB/(vpolB(3)*vsol) ! VdW eps scaled 
-
+    
         deallocate(x)
         deallocate(xguess)
         
@@ -629,9 +510,6 @@ contains
 
           
         !     .. end init electrostatic part 
-            
-        VdWepsC  = VdWepsC/(vpolC*vsol) ! VdW eps scaled 
-        VdWepsB  = VdWepsB/(vpolB(3)*vsol) ! VdW eps scaled 
 
         
     end subroutine init_expmu_elect_qdot
@@ -838,11 +716,7 @@ contains
         do t=1,5
             expmu%pp(t)=xbulk%pp(t)/xbulk%sol**vpp(t)
         enddo
-          
-        !     .. end init electrostatic part 
-            
-        VdWepsC  = VdWepsC/(vpolC*vsol) ! VdW eps scaled 
-        VdWepsB  = VdWepsB/(vpolB(3)*vsol) ! VdW eps scaled 
+        
 
         deallocate(x)
         deallocate(xguess)
@@ -852,35 +726,19 @@ contains
 
 
 
-    subroutine init_expmu_neutral
-
-        implicit none
-          
-        xbulk%sol=1.0_dp ! only solvent 
-
-        VdWepsC  = VdWepsC/(vpolC*vsol) ! VdW eps scaled 
-        VdWepsB  = VdWepsB/(vpolB(3)*vsol) ! VdW eps scaled
-
-    end subroutine init_expmu_neutral
-
     subroutine init_expmu
 
         use globals, only : sysflag, bcflag
         implicit none
 
 
-        if(sysflag=="elect") then 
-            call init_expmu_elect()
-        elseif(sysflag=="electdouble") then 
-            call init_expmu_elect()
-        elseif(sysflag=="electnopoly") then
+      
+        if(sysflag=="electnopoly") then
             if(bcflag=="pp") then 
                 call init_expmu_elect_qdot()
             else
                 call init_expmu_elect()
             endif    
-        elseif(sysflag=="neutral") then
-            call init_expmu_neutral()
         elseif(sysflag=="electligand") then
             call init_expmu_elect_ligand()   
         else
