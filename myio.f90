@@ -55,6 +55,11 @@ subroutine read_inputfile(info)
     integer :: info_sys, info_bc, info_run, info_geo, info_meth, info_chaintype, info_combi
     character(len=8) :: fname
     integer :: ios,un_input  ! un = unit number    
+
+    character(len=100) :: buffer, label
+    integer :: pos
+    integer :: line
+        
     
     !     .. reading in of variables from file
     write(fname,'(A8)')'input.in'
@@ -65,49 +70,107 @@ subroutine read_inputfile(info)
         return
     endif
 
-    read(un_input,*)method
-    read(un_input,*)sysflag
-    read(un_input,*)bcflag
-    read(un_input,*)runflag
-    read(un_input,*)error             
-    read(un_input,*)infile              ! guess  1==yes
-    read(un_input,*)radius
-    read(un_input,*)pH%val
-    read(un_input,*)pH%min
-    read(un_input,*)pH%max
-    read(un_input,*)pH%stepsize
-    read(un_input,*)pH%delta
-    read(un_input,*)KionNa
-    read(un_input,*)KionK
-    read(un_input,*)sigmaSurf
-    read(un_input,*)cNaCl
-    read(un_input,*)cKCl
-    read(un_input,*)cCaCl2
-    if(bcflag=="pp".or.bcflag=="pd".or.bcflag=="pc") then 
-        read(un_input,*)cTBCl            !   TB=tertraButyl
-        read(un_input,*)cTMNO3
-        if(sysflag=="electligand") then 
-            read(un_input,*)deltaG0ads
-            if(bcflag=="pc") then 
-                read(un_input,*)deltaG0adsSuOH
-                read(un_input,*)deltaG0adsSuCl
-                read(un_input,*)deltaG0adsSuNO3
-            endif
-            read(un_input,*)cpp
-        endif    
-    endif   
+    ios=0 
+    line = 0
 
-    read(un_input,*)nsize
-    if(runflag=="rangenr")then
-        read(un_input,*)nrmax            ! max distance
-        read(un_input,*)nrmin            ! min distance
-        read(un_input,*)nrstep           ! step distance  
+    ! ios<0 : if an end of record condition is encountered or if an end of file condition was detected.  
+    ! ios>0 : if an error occured 
+    ! ios=0 : otherwise.
+
+    do while (ios == 0)
+
+        read(un_input, '(A)', iostat=ios) buffer
+
+        if (ios == 0) then
+    
+            line = line + 1
+
+            !  Split buffer into label and data based on first occurence of a whitespace
+            
+            pos = scan(buffer, '     ')
+            label = buffer(1:pos)
+            buffer = buffer(pos+1:)
+
+            select case (label) !list-directed The CHARACTER variable is treated as an 'internal file'
+            case ('method')    
+                read(buffer, *,iostat=ios) method
+            case ('sysflag')
+                read(buffer, *,iostat=ios) sysflag
+            case ('runtype')
+                read(buffer, *,iostat=ios) runflag
+            case ('bcflag')
+                read(buffer, *,iostat=ios) bcflag
+            case ('error')
+                read(buffer,*,iostat=ios) error 
+            case ('infile')
+                read(buffer,*,iostat=ios) infile              ! guess  1==yes
+            case ('radius')
+                read(buffer,*,iostat=ios) radius 
+            case ('pH%val')    
+                read(buffer,*,iostat=ios) pH%val
+            case ('pH%min')
+                read(buffer,*,iostat=ios) pH%min
+            case ('pH%max')
+                read(buffer,*,iostat=ios) pH%max
+            case ('pH%stepsize')
+                read(buffer,*,iostat=ios) pH%stepsize
+            case ('pH%delta')
+                read(buffer,*,iostat=ios) pH%delta
+            case ('KionNa')
+                read(buffer,*,iostat=ios) KionNa
+            case ('KionK')
+                read(buffer,*,iostat=ios) KionK
+            case ('sigmasurf')
+                read(buffer,*,iostat=ios) sigmasurf
+            case ('cNaCl')
+                read(buffer,*,iostat=ios) cNaCl
+            case ('cKCl')
+                read(buffer,*,iostat=ios) cKCl
+            case ('cCaCl2')
+                read(buffer,*,iostat=ios) cCaCl2   
+            case ('cTBCl')
+                read(buffer,*,iostat=ios) cTBCl  !   TB=tertraButyl 
+            case ('cTMNO3')
+                read(buffer,*,iostat=ios) cTMNO3
+            case ('deltaG0ads')                                        
+                read(buffer,*,iostat=ios) deltaG0ads  ! only if sysflag=="electligand")
+            case ('deltaG0adsSuOH ')
+                read(buffer,*,iostat=ios) deltaG0adsSuOH ! only if bcflag=="pc"
+            case ('deltaG0adsSuCl')
+                read(buffer,*,iostat=ios) deltaG0adsSuCl ! only if bcflag=="pc"
+            case ('deltaG0adsSuNO3')    
+                read(buffer,*,iostat=ios) deltaG0adsSuNO3 ! only if bcflag=="pc"
+            case ('cpp')
+                read(buffer,*,iostat=ios) cpp
+            case ('nsize')
+                read(buffer,*,iostat=ios) nsize  
+            case ('nrmax')
+                read(buffer,*,iostat=ios) nrmax ! only if runflag=="rangnr"    
+            case ('nrmin')
+                read(buffer,*,iostat=ios) nrmin ! only if runflag=="rangnr"    
+            case ('nrstep')
+                read(buffer,*,iostat=ios) nrstep ! only if runflag=="rangnr"    
+            case ('verboseflag')
+                read(buffer,*,iostat=ios)verboseflag  
+            case ('geometry')
+                read(buffer,*,iostat=ios) geometry
+            case ('delta')
+                read(buffer,*,iostat=ios) delta   
+            case ('isbulkHCl')
+                read(buffer,*,iostat=ios) isbulkHCl  
+            case default
+                if(pos>1) then 
+                    print *, 'Invalid label at line', line  ! empty lines are skipped
+                endif
+            end select
+        endif
+    enddo
+
+    if(ios >0 ) then
+        print*, 'Error parsing file : iostat =', ios            
+        if (present(info)) info = myio_err_inputfile
+        return
     endif
-   
-    read(un_input,*)verboseflag  
-    read(un_input,*)geometry
-    read(un_input,*)delta 
-    read(un_input,*)isbulkHCl  
 
     close(un_input)
           
@@ -143,9 +206,6 @@ subroutine read_inputfile(info)
         if (present(info)) info = info_meth
         return
     endif
-
-
-    if (present(info)) info = 0
 
 end subroutine read_inputfile
  
