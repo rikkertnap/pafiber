@@ -104,8 +104,6 @@ subroutine read_inputfile(info)
                 read(buffer,*,iostat=ios) error 
             case ('infile')
                 read(buffer,*,iostat=ios) infile              ! guess  1==yes
-            case ('radius')
-                read(buffer,*,iostat=ios) radius 
             case ('pH%val')    
                 read(buffer,*,iostat=ios) pH%val
             case ('pH%min')
@@ -132,6 +130,8 @@ subroutine read_inputfile(info)
                 read(buffer,*,iostat=ios) cTBCl  !   TB=tertraButyl 
             case ('cTMNO3')
                 read(buffer,*,iostat=ios) cTMNO3
+            case ('cpp')
+                read(buffer,*,iostat=ios) cpp
             case ('deltaG0ads')                                        
                 read(buffer,*,iostat=ios) deltaG0ads  ! only if sysflag=="electligand")
             case ('deltaG0adsSuOH ')
@@ -140,8 +140,6 @@ subroutine read_inputfile(info)
                 read(buffer,*,iostat=ios) deltaG0adsSuCl ! only if bcflag=="pc"
             case ('deltaG0adsSuNO3')    
                 read(buffer,*,iostat=ios) deltaG0adsSuNO3 ! only if bcflag=="pc"
-            case ('cpp')
-                read(buffer,*,iostat=ios) cpp
             case ('nsize')
                 read(buffer,*,iostat=ios) nsize  
             case ('nrmax')
@@ -151,13 +149,19 @@ subroutine read_inputfile(info)
             case ('nrstep')
                 read(buffer,*,iostat=ios) nrstep ! only if runflag=="rangnr"    
             case ('verboseflag')
-                read(buffer,*,iostat=ios)verboseflag  
+                read(buffer,*,iostat=ios)verboseflag 
+            case ('radius')
+                read(buffer,*,iostat=ios) radius  
             case ('geometry')
                 read(buffer,*,iostat=ios) geometry
             case ('delta')
                 read(buffer,*,iostat=ios) delta   
             case ('isbulkHCl')
-                read(buffer,*,iostat=ios) isbulkHCl  
+                read(buffer,*,iostat=ios) isbulkHCl      
+       !    case ('radiuspacore')                     ! only if sysflag=="pafiber"
+       !         read(buffer,*,iostat=ios) radiuspacore
+       !     case ('radiuspahgr') 
+       !         read(buffer,*,iostat=ios) radiuspahgr      
             case default
                 if(pos>1) then 
                     print *, 'Invalid label at line', line  ! empty lines are skipped
@@ -174,7 +178,13 @@ subroutine read_inputfile(info)
 
     close(un_input)
           
-    ! .. check error flag
+     ! set geometry and bcflag for pa fiber
+
+    if(sysflag=="pafiber") then 
+        geometry="cylindrical"
+        bcflag="cc" 
+    endif    
+    ! .. check values of certain input parametere
 
     call check_value_sysflag(sysflag,info_sys) 
     if (info_sys == myio_err_sysflag) then
@@ -207,6 +217,7 @@ subroutine read_inputfile(info)
         return
     endif
 
+
 end subroutine read_inputfile
  
 
@@ -215,7 +226,7 @@ subroutine check_value_sysflag(sysflag,info)
     character(len=15), intent(in) :: sysflag
     integer, intent(out),optional :: info
 
-    character(len=15) :: sysflagstr(3)
+    character(len=15) :: sysflagstr(4)
     integer :: i
     logical :: flag
 
@@ -224,10 +235,12 @@ subroutine check_value_sysflag(sysflag,info)
     sysflagstr(1)="bulk water"
     sysflagstr(2)="electnopoly"
     sysflagstr(3)="electligand"
+    sysflagstr(4)="pafiber"
+
 
     flag=.FALSE.
 
-    do i=1,3
+    do i=1,4
         if(sysflag==sysflagstr(i)) flag=.TRUE.
     enddo
 
@@ -427,10 +440,12 @@ subroutine output()
     implicit none
 
     if(sysflag=="electnopoly") then
-        call output_elect_nopoly
+        call output_ligand
         !call output_individualcontr_fe
     elseif(sysflag=="electligand") then
-        call output_elect_nopoly
+        call output_ligand
+    else if(sysflag=="pafiber") then
+        call output_pafiber
     else
         print*,"Error in output subroutine"
         print*,"Wrong value sysflag : ", sysflag
@@ -821,7 +836,7 @@ end subroutine output_elect
 
 
 
-subroutine output_elect_nopoly
+subroutine output_ligand
   
     !     .. variables and constant declaractions
     use globals 
@@ -1153,7 +1168,226 @@ subroutine output_elect_nopoly
     endif
         
 
-end subroutine output_elect_nopoly
+end subroutine output_ligand
+
+subroutine output_pafiber
+  
+    !     .. variables and constant declaractions
+    use globals 
+    use volume
+    use parameters
+    use field
+    !use energy
+    use surface 
+    use myutils, only : newunit
+  
+    !     .. output file names       
+    
+    character(len=90) :: sysfilename     
+    character(len=90) :: xsolfilename 
+    character(len=90) :: xNafilename
+    character(len=90) :: xKfilename
+    character(len=90) :: xCafilename
+    character(len=90) :: xNaClfilename
+    character(len=90) :: xKClfilename
+    character(len=90) :: xClfilename
+    character(len=90) :: xHplusfilename
+    character(len=90) :: xOHminfilename
+    character(len=90) :: potentialfilename
+    character(len=90) :: chargefilename
+    character(len=90) :: densfracionpairfilename
+
+    integer :: i,j,k,t     ! dummy indexes
+    character(len=100) :: fnamelabel
+    character(len=20) :: rstr
+    logical :: isopen
+    real(dp) :: epscKCl
+
+    ! .. executable statements 
+
+    ! .. make label filenames 
+
+    epscKCl = 0.00001_dp
+ 
+    write(rstr,'(F5.3)')cNaCl
+    fnamelabel="cNaCl"//trim(adjustl(rstr))
+
+    if(cKCl>epscKCl) then 
+        write(rstr,'(F5.3)')cKCl
+        fnamelabel=trim(fnamelabel)//"cKCl"//trim(adjustl(rstr))
+    endif 
+    
+    write(rstr,'(F5.3)')cCaCl2
+    fnamelabel=trim(fnamelabel)//"cCaCl2"//trim(adjustl(rstr))
+    write(rstr,'(F7.3)')pHbulk
+    fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))//".dat"
+
+
+    
+
+    sysfilename='system.'//trim(fnamelabel)
+    xsolfilename='xsol.'//trim(fnamelabel)
+    xNafilename='xNaions.'//trim(fnamelabel)
+    xKfilename='xKions.'//trim(fnamelabel)
+    xCafilename='xCaions.'//trim(fnamelabel)
+    xNaClfilename='xNaClionpair.'//trim(fnamelabel)
+    xKClfilename='xKClionpair.'//trim(fnamelabel)
+    xClfilename='xClions.'//trim(fnamelabel)
+    potentialfilename='potential.'//trim(fnamelabel)
+    chargefilename='charge.'//trim(fnamelabel)
+    xHplusfilename='xHplus.'//trim(fnamelabel)
+    xOHminfilename='xOHmin.'//trim(fnamelabel)
+    densfracionpairfilename='densityfracionpair.'//trim(fnamelabel)
+    
+    !     .. opening files        
+    
+    open(unit=newunit(un_sys),file=sysfilename)       
+    open(unit=newunit(un_xsol),file=xsolfilename)
+    open(unit=newunit(un_psi),file=potentialfilename)
+  
+    if(verboseflag=="yes") then    
+        open(unit=newunit(un_xNa),file=xNafilename)
+        open(unit=newunit(un_xK),file=xKfilename)
+        open(unit=newunit(un_xCa),file=xCafilename)
+        open(unit=newunit(un_xNaCl),file=xNaClfilename)
+        open(unit=newunit(un_xKCl),file=xKClfilename)
+        open(unit=newunit(un_xpair),file=densfracionpairfilename)
+        open(unit=newunit(un_xCl),file=xClfilename)
+        open(unit=newunit(un_charge),file=chargefilename)
+        open(unit=newunit(un_xHplus),file=xHplusfilename)
+        open(unit=newunit(un_xOHmin),file=xOHminfilename)
+    endif
+    
+    !   .. writting files   
+
+    select case (geometry)
+        case ("spherical")
+            write(un_psi,*)radius,psiSurf
+        case ("cylindrical")
+            write(un_psi,*)radius,psiSurf
+        case ("planar")
+                write(un_psi,*)0.0,psiSurf 
+        ! case invcylinder append at end file (un_psi) not begining
+    end select  
+
+    do i=1,nr
+        write(un_xsol,*)rc(i),xsol(i)
+        write(un_psi,*)rc(i),psi(i)
+    enddo    
+   
+    if(geometry=="invcylindrical") write(un_psi,*)radius,psiSurf
+   
+    
+    if(verboseflag=="yes") then 
+        do i=1,nr
+            write(un_xNa,*)rc(i),xNa(i)
+            write(un_xK,*)rc(i),xK(i)
+            write(un_xCa,*)rc(i),xCa(i)
+            write(un_xNaCl,*)rc(i),xNaCl(i)
+            write(un_xKCl,*)rc(i),xKCl(i)
+            write(un_xpair,*)rc(i),(xNaCl(i)/vNaCl)/(xNa(i)/vNa+xCl(i)/vCl+xNaCl(i)/vNaCl)
+            write(un_xCl,*)rc(i),xCl(i)
+            write(un_charge,*)rc(i),rhoq(i)
+            write(un_xHplus,*)rc(i),xHplus(i)
+            write(un_xOHmin,*)rc(i),xOHmin(i)    
+        enddo    
+    endif
+
+    write(un_sys,*)'system      = planar weakpolyelectrolyte brush'
+    write(un_sys,*)'version     = ',VERSION
+    write(un_sys,*)'sysflag     = ',sysflag
+    write(un_sys,*)'bcflag      = ',bcflag
+    write(un_sys,*)'delta       = ',delta  
+    write(un_sys,*)'vsol        = ',vsol
+    write(un_sys,*)'vNa         = ',vNa*vsol
+    write(un_sys,*)'vCl         = ',vCl*vsol
+    write(un_sys,*)'vCa         = ',vCa*vsol
+    write(un_sys,*)'vK          = ',vK*vsol
+    write(un_sys,*)'vNaCl       = ',vNaCl*vsol
+    write(un_sys,*)'vKCl        = ',vKCl*vsol
+    write(un_sys,*)'cNaCl       = ',cNaCl
+    write(un_sys,*)'cKCl        = ',cKCl
+    write(un_sys,*)'cCaCl2      = ',cCaCl2
+    write(un_sys,*)'pHbulk      = ',pHbulk
+    write(un_sys,*)'KionNa      = ',KionNa
+    write(un_sys,*)'KionK       = ',KionK
+    write(un_sys,*)'K0ionNa     = ',K0ionNa
+    write(un_sys,*)'K0ionK      = ',K0ionK
+
+    write(un_sys,*)'xbulk%sol   = ',xbulk%sol
+    write(un_sys,*)'xbulk%Na    = ',xbulk%Na
+    write(un_sys,*)'xbulk%Cl    = ',xbulk%Cl
+    write(un_sys,*)'xbulk%K     = ',xbulk%K
+    write(un_sys,*)'xbulk%NaCl  = ',xbulk%NaCl
+    write(un_sys,*)'xbulk%KCl   = ',xbulk%KCl
+    write(un_sys,*)'xbulk%Ca    = ',xbulk%Ca
+    write(un_sys,*)'xbulk%Hplus = ',xbulk%Hplus
+    write(un_sys,*)'xbulk%OHmin = ',xbulk%OHmin
+    write(un_sys,*)'dielectW    = ',dielectW
+    write(un_sys,*)'lb          = ',lb
+    write(un_sys,*)'T           = ',Temp
+   
+    write(un_sys,*)'zNa         = ',zNa
+    write(un_sys,*)'zCa         = ',zCa
+    write(un_sys,*)'zK          = ',zK
+    write(un_sys,*)'zCl         = ',zCl
+    write(un_sys,*)'nr          = ',nr
+    !write(un_sys,*)'free energy = ',FE
+    !write(un_sys,*)'energy bulk = ',FEbulk 
+    !write(un_sys,*)'deltafenergy = ',deltaFE
+    write(un_sys,*)'fnorm       = ',fnorm
+    !write(un_sys,*)'q residual  = ',qres
+    write(un_sys,*)'error       = ',error
+    ! write(un_sys,*)'check phi   = ',checkphi 
+    !write(un_sys,*)'FEq         = ',FEq 
+    !write(un_sys,*)'FEpi        = ',FEpi
+    !write(un_sys,*)'FErho       = ',FErho
+    !write(un_sys,*)'FEel        = ',FEel
+    !write(un_sys,*)'FEelsurf    = ',FEelsurf
+    !write(un_sys,*)'FEbind      = ',FEbind
+    !write(un_sys,*)'FEVdW       = ',FEVdW 
+    !write(un_sys,*)'FEalt       = ',FEalt
+    
+    write(un_sys,*)'sigmaSurf   = ',sigmaSurf/(4.0_dp*pi*lb*delta)
+    write(un_sys,*)'sigmaqSurf  = ',sigmaqSurf/(4.0_dp*pi*lb*delta)
+    write(un_sys,*)'psiSurf     = ',psiSurf
+    if(bcflag=='ta') then
+        do i=1,4   
+            write(un_sys,fmt)'fdisTa(',i,')   = ',fdisTaL(i)
+        enddo  
+    else if(bcflag=='pp'.or.bcflag=='pd'.or.bcflag=='pc') then
+        print*,"output_pafiber: wrong bcflag : ",bcflag   
+    else
+        do i=1,6   
+            write(un_sys,fmt)' fdisSu(',i,')  = ',fdisS(i)
+        enddo  
+    endif
+    write(un_sys,*)'nsize       = ',nsize  
+    write(un_sys,*)'iterations  = ',iter
+   
+    ! .. closing files
+
+    close(un_sys)
+    close(un_xsol)
+    close(un_psi)
+
+    
+    if(verboseflag=="yes") then 
+        close(un_xNa)   
+        close(un_xK)
+        close(un_xCa)
+        close(un_xNaCl)
+        close(un_xKCl)
+        close(un_xpair)
+        close(un_xCl)
+        close(un_charge)
+        close(un_xHplus)
+        close(un_xOHmin)
+
+    endif
+        
+
+end subroutine output_pafiber
 
 
 ! subroutine output_individualcontr_fe

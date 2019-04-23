@@ -79,6 +79,7 @@ module parameters
     real(dp) :: K0B(4)              ! intrinsic equilibruim constant
     real(dp) :: KB(4)               ! experimemtal equilibruim constant 
     real(dp) :: pKB(4)              ! experimental equilibruim constant pKa= -log[Ka]
+    
     real(dp) :: pKw                 ! water equilibruim constant pKw= -log[Kw] ,Kw=[H+][OH-] 
     real(dp) :: K0ionNa             ! intrinsic equilibruim constant
     real(dp) :: KionNa              ! experimemtal equilibruim constant 
@@ -87,7 +88,7 @@ module parameters
     real(dp) :: KionK               ! experimemtal equilibruim constant 
     real(dp) :: pKionK              ! experimental equilibruim constant pKion= -log[Kion]	 
     
-    real(dp) :: deltaG0ads          ! adsorption energy
+    real(dp) :: deltaG0ads          ! adsorption energy of ligand
     real(dp) :: deltaG0adsSuOH
     real(dp) :: deltaG0adsSuCl
     real(dp) :: deltaG0adsSuNO3
@@ -113,6 +114,12 @@ module parameters
     type (looplist), target :: pH
 
     logical :: isBulkHCl           ! if true adjustment of pH with HCl if false HNO3
+
+    real(dp) :: radiuspacore
+    real(dp) :: radiuspahgr 
+    real(dp) :: radiuspahgrend   
+    real(dp) :: rhohgr 
+    real(dp) :: xpalinker
         
 contains
 
@@ -132,13 +139,15 @@ contains
 
         select case (sysflag)
             case ("electligand") 
+                neq = 2 * nr  + neq_bc  
+            case ("pafiber") 
                 neq = 2 * nr  + neq_bc    
             case ("bulk water") 
                 neq = 5 
             case ("bulk ligand") 
                 neq = 6 
             case default
-                print*,"Wrong value sysflag:  ",sysflag
+                print*,"set_size_neq: wrong value sysflag:  ",sysflag
                 stop
         end select  
          
@@ -244,7 +253,7 @@ contains
         deltavpp(4)=vpp(AB)+vHplus-vpp(AHB)     
 
     
-        ! .. chemical equilbrium constants
+        ! .. chemical equilbrium constants of ppp
 
         pKpp(1) =  2.26_dp        ! POH2COOH <=> POHCOOH- + H+ 
         pKpp(2) =  4.6_dp         ! POHCOOH- <=> POHCOO2- + H+ 
@@ -261,6 +270,8 @@ contains
         seed  = 435672                ! seed for random number generator
         constqW = delta*delta*4.0_dp*pi*lb/vsol ! multiplicative constant Poisson Eq. 
         
+        call set_ppa_properties()
+
 
     end subroutine init_constants
    
@@ -366,25 +377,24 @@ contains
         endif
 
         rhoqbulk = xbulk%Hplus -xbulk%OHmin +xbulk%Cl*zCl/vCl+xbulk%Na*zNa/vNa +xbulk%K*zK/vK+xbulk%Ca*zCa/vCa
-        print*,"hello"
+        
         !     .. intrinstic equilibruim constants      
-        do i=1,4
-             Ka(i)  = 10.0_dp**(-pKa(i)) ! experimental equilibruim constant acid 
-             Kb(i)  = 10.0_dp**(-pKb(i)) ! experimental equilibruim constant acid
-             K0a(i) = (Ka(i)*vsol)*(Na/1.0e24_dp) ! intrinstic equilibruim constant 
-             K0b(i) = (Kb(i)*vsol)*(Na/1.0e24_dp) ! intrinstic equilibruim constant 
-        enddo
+        !do i=1,4
+        !     Ka(i)  = 10.0_dp**(-pKa(i)) ! experimental equilibruim constant acid 
+        !     Kb(i)  = 10.0_dp**(-pKb(i)) ! experimental equilibruim constant acid
+        !      K0a(i) = (Ka(i)*vsol)*(Na/1.0e24_dp) ! intrinstic equilibruim constant 
+        !   K0b(i) = (Kb(i)*vsol)*(Na/1.0e24_dp) ! intrinstic equilibruim constant 
+        !enddo
         !     .. rescale for i=4 2A- Ca <=> A2Ca
           
-        K0a(4) = (Ka(4)*vsol)*(Na/1.0e24_dp)
-        K0b(4) = (Kb(4)*vsol)*(Na/1.0e24_dp)
+        !K0a(4) = (Ka(4)*vsol)*(Na/1.0e24_dp)
+        !K0b(4) = (Kb(4)*vsol)*(Na/1.0e24_dp)
          
 
         ! pibulk = -log(xbulk%sol)  ! pressure (pi) of bulk
         ! exp(beta mu_i) = (rhobulk_i v_i) / exp(- beta pibulk v_i) 
         expmu%Na    = xbulk%Na   /(xbulk%sol**vNa) 
         expmu%K     = xbulk%K    /(xbulk%sol**vK)
-
         expmu%Ca    = xbulk%Ca   /(xbulk%sol**vCa) 
         expmu%Cl    = xbulk%Cl   /(xbulk%sol**vCl)
         expmu%NaCl  = xbulk%NaCl /(xbulk%sol**vNaCl)
@@ -396,7 +406,7 @@ contains
             
     
         deallocate(x)
-        deallocate(xguess)
+        deallocate(xguess)    
         
     end subroutine init_expmu_elect
 
@@ -729,9 +739,6 @@ contains
     subroutine init_expmu
 
         use globals, only : sysflag, bcflag
-        implicit none
-
-
       
         if(sysflag=="electnopoly") then
             if(bcflag=="pp") then 
@@ -740,7 +747,11 @@ contains
                 call init_expmu_elect()
             endif    
         elseif(sysflag=="electligand") then
+
             call init_expmu_elect_ligand()   
+       
+        elseif(sysflag=="pafiber") then 
+            call init_expmu_elect()
         else
             print*,"Error in call to init_expmu subroutine"    
             print*,"Wrong value sysflag : ", sysflag
@@ -748,5 +759,23 @@ contains
         endif   
 
     end subroutine init_expmu
+
+
+    ! dimensions ppa_fiber
+    ! numbers are place holder values !!!!!!!!
+    ! need to be called before make_geometry 
+    subroutine set_ppa_properties
+
+
+        radiuspacore   = 2.0_dp 
+        radius = radiuspacore    
+        ! important radius need be equal to radiuscore : important other volume elements are wrong !
+        radiuspahgr    = 3.5_dp
+        radiuspahgrend = 4.5_dp 
+        rhohgr         = 5.0_dp 
+        xpalinker      = 0.8_dp
+
+    end subroutine
+
 
  end module parameters

@@ -32,7 +32,7 @@ module listfcn
     contains
 
    
-
+    !
     subroutine fcnelectNoPoly(x,f,nn)
 
        !     .. variables and constant declaractions 
@@ -82,8 +82,9 @@ module listfcn
             xCl(i)    = expmu%Cl  *(xsol(i)**vCl)*exp(-psi(i)*zCl)  ! ion neg volume fraction
             xHplus(i) = expmu%Hplus*(xsol(i))*exp(-psi(i))          ! H+  volume fraction
             xOHmin(i) = expmu%OHmin*(xsol(i))*exp(+psi(i))          ! OH-  volume fraction
-            xTB(i)    = expmu%TB  *(xsol(i)**vTB) *exp(-psi(i)*zTB)   ! ion plus volume fraction
-    
+            ! xTB(i)    = expmu%TB  *(xsol(i)**vTB) *exp(-psi(i)*zTB)   ! ion plus volume fraction
+            ! .. warning fcn bulk solution see fcnbulk has not TBCl thus XTb=0
+            xTB(i) = 0.0_dp     
         enddo
 
         !   .. construction of fcn 
@@ -126,6 +127,7 @@ module listfcn
     end subroutine fcnelectNoPoly
 
 
+    ! ligand pp adsorbtion 
     subroutine fcnelectligand(x,f,nn)
 
         !     .. variables and constant declaractions 
@@ -232,6 +234,95 @@ module listfcn
 
     end subroutine fcnelectligand
 
+
+    subroutine fcnpafiber(x,f,nn)
+
+        !     .. variables and constant declaractions 
+
+        use globals
+        use volume
+        use field
+        use parameters
+        use surface 
+        use vectornorm
+
+        !     .. scalar arguments
+        !     .. array arguments
+
+        real(dp), intent(in) :: x(neq)
+        real(dp), intent(out) :: f(neq)
+        integer(8), intent(in) :: nn   ! nn=neq 
+
+        !     .. declare local variables
+
+        integer :: n                 ! n=nr 
+        integer :: i,t               ! dummy indices
+        integer :: neq_bc           
+
+        !     .. executable statements 
+ 
+        n=nr                       ! size vector neq=5*nz x=(pi,psi,rhopolA,rhopolB,xpolC)
+
+        do i=1,n                   ! init x 
+            xsol(i)= x(i)          ! solvent volume fraction 
+            psi(i) = x(i+n)        ! potential
+        enddo
+        
+
+        if(bcflag/="cc") then
+            neq_bc=1 
+            psiSurf =x(2*n+neq_bc) ! surface potential
+        endif 
+    
+        do i=1,n                  ! init volume fractions 
+            xNa(i)    = expmu%Na  *(xsol(i)**vNa)*exp(-psi(i)*zNa)  ! ion plus volume fraction
+            xK(i)     = expmu%K   *(xsol(i)**vK) *exp(-psi(i)*zK)   ! ion plus volume fraction
+            xCa(i)    = expmu%Ca  *(xsol(i)**vCa)*exp(-psi(i)*zCa)  ! ion divalent pos volume fraction
+            xNaCl(i)  = expmu%NaCl*(xsol(i)**vNaCl)                  ! ion pair  volume fraction
+            xKCl(i)   = expmu%KCl *(xsol(i)**vKCl)                   ! ion pair  volume fraction
+            xCl(i)    = expmu%Cl  *(xsol(i)**vCl)*exp(-psi(i)*zCl)  ! ion neg volume fraction
+            xHplus(i) = expmu%Hplus*(xsol(i))*exp(-psi(i))          !mo H+  volume fraction
+            xOHmin(i) = expmu%OHmin*(xsol(i))*exp(+psi(i))           ! OH-  volume fraction    
+        enddo
+            
+        
+        !   .. construction of fcn 
+        do i=1,n
+              f(i)=xpa(i)+xsol(i)+xNa(i)+xCl(i)+xNaCl(i)+xK(i)+xKCl(i)+xCa(i)+xHplus(i)+xOHmin(i)-1.0_dp
+               rhoq(i)=rhoqpa(i)+zNa*xNa(i)/vNa+zCa*xCa(i)/vCa +zK*xK(i)/vK +zCl*xCl(i)/vCl+xHplus(i)-xOHmin(i)
+            
+            !   ..  total charge density in units of vsol
+        enddo 
+
+        ! .. electrostatics 
+
+        ! .. charge regulating surface charge 
+        sigmaqSurf=surface_charge(bcflag,psiSurf)
+        
+        if(runflag=="rangenr") then
+            psi(n+1) = psi(n)
+        else 
+            psi(n+1) = 0.0_dp
+        endif 
+        ! .. Poisson Eq 
+  
+        f(n+1)= -0.5_dp*(Fplus(1)*(psi(2)-psi(1)) + Fmin(1)*sigmaqSurf +rhoq(1)*constqW)      !     boundary
+  
+        do i=2,n
+            f(n+i)= -0.5_dp*(Fplus(i)*psi(i+1)-2.0_dp*psi(i) + Fmin(i)*psi(i-1) +rhoq(i)*constqW)
+        enddo
+
+        ! self consistent boundary conditions
+
+        if(bcflag/='cc') then 
+            f(2*n+neq_bc)=psi(1)-psisurf+sigmaqSurf/2.0_dp
+        else    
+            psisurf=psi(1)+sigmaqSurf/2.0_dp
+        endif   
+       
+        iter=iter+1 
+
+    end subroutine fcnpafiber
 
     
     !     .. function solves for bulk volume fraction 
@@ -509,7 +600,7 @@ module listfcn
 
         if(isbulkHCl) then 
             phisol=1.0_dp-phiClin-phiKin-xbulk%TB-xbulk%Hplus-xbulk%OHmin-xppbulkin
-            phisol=phisol-xbulk%TM-xbulk%NO3! -xbulk%Na this needs to be checked
+            phisol=phisol-xbulk%TM-xbulk%NO3! -xbulk%Na this needs to be checked assumes no NaCl added !!!
         else
             phisol=1.0_dp-phiNO3in-phiKin-xbulk%TB-xbulk%Hplus-xbulk%OHmin-xppbulkin
             phisol=phisol-xbulk%TM-xbulk%Cl!
@@ -621,11 +712,12 @@ module listfcn
             case ("electligand") 
                 fcnptr => fcnelectligand 
             case ("bulk water") 
-                 fcnptr => fcnbulk
+                fcnptr => fcnbulk
             case ("bulk ligand") 
-                 !fcnptr => fcnbulkligand
-                 fcnptr => fcnbulkligandHCl
-                      
+                !fcnptr => fcnbulkligand
+                fcnptr => fcnbulkligandHCl
+            case ("pafiber")
+                fcnptr => fcnpafiber
             case default
                 print*,"Error in call to solver subroutine"    
                 print*,"Wrong value sysflag : ", sysflag

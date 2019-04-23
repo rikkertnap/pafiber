@@ -4,13 +4,9 @@ module field
     use precision_definition
 
     implicit none
-    
-    real(dp), dimension(:), allocatable :: xpolAB  ! total volume fraction of polymer on sphere
-    real(dp), dimension(:), allocatable :: xpolC   ! total volume fraction of polymer on sphere: hydrocarbon chain
-    real(dp), dimension(:), allocatable :: rhopolA ! density A monomer of polymer on sphere
-    real(dp), dimension(:), allocatable :: rhopolB ! density B monomer of polymer on sphere
-    real(dp), dimension(:), allocatable :: rhopolC ! density C monomer of polymer on sphere
+   
     real(dp), dimension(:), allocatable :: xsol    ! volume fraction solvent
+    real(dp), dimension(:), allocatable :: xpa     ! volume fraction pa-fiber
     real(dp), dimension(:), allocatable :: psi     ! electrostatic potential 
     real(dp), dimension(:), allocatable :: xNa     ! volume fraction of positive Na+ ion
     real(dp), dimension(:), allocatable :: xK      ! volume fraction of positive K+ ion
@@ -24,21 +20,14 @@ module field
     real(dp), dimension(:), allocatable :: xHplus  ! volume fraction of Hplus
     real(dp), dimension(:), allocatable :: xOHmin  ! volume fraction of OHmin 
     real(dp), dimension(:), allocatable :: rhoq    ! total charge density in units of vsol
-    real(dp), dimension(:), allocatable :: qpol    ! charge density of polymer
-    real(dp), dimension(:,:), allocatable :: fdisA ! degree of dissociation 
-    real(dp), dimension(:,:), allocatable :: fdisB ! degree of dissociation
+    real(dp), dimension(:), allocatable :: rhoqpa  ! pa charge density in units of vsol
+    
     real(dp), dimension(:,:), allocatable :: xpp   ! volume fraction pp ligand
 
-    real(dp) :: qAB             ! normalization partion fnc polymer 
-    real(dp) :: qC              ! normalization partion fnc polymer 
+    !real(dp) :: qAB             ! normalization partion fnc polymer 
+    !real(dp) :: qC              ! normalization partion fnc polymer 
 
-    real(dp), dimension(:), allocatable :: rhopolAL ! density A monomer of polymer on sphere
-    real(dp), dimension(:), allocatable :: rhopolBL ! density B monomer of polymer on sphere
-    real(dp), dimension(:), allocatable :: rhopolAR ! density A monomer of polymer on sphere
-    real(dp), dimension(:), allocatable :: rhopolBR ! density B monomer of polymer on sphere
-
-    real(dp) :: qABL,qABR
-
+    
   
 contains
 
@@ -47,12 +36,9 @@ contains
 
         integer, intent(in) :: N
 
-        allocate(xpolAB(N))
-        allocate(xpolC(N))
-        allocate(rhopolA(N))
-        allocate(rhopolB(N))
-        allocate(rhopolC(N))
+       
         allocate(xsol(N))
+        allocate(xpa(N))
         allocate(psi(N+1))
         allocate(xNa(N))
         allocate(xK(N))
@@ -66,13 +52,8 @@ contains
         allocate(xHplus(N))
         allocate(xOHmin(N))
         allocate(rhoq(N))
-        allocate(qpol(N))
-        allocate(fdisA(5,N))
-        allocate(fdisB(5,N))
-        allocate(rhopolAL(N))
-        allocate(rhopolAR(N))
-        allocate(rhopolBL(N))
-        allocate(rhopolBR(N))
+        allocate(rhoqpa(N))
+        
         allocate(xpp(N,6))
         
     end subroutine allocate_field
@@ -82,12 +63,9 @@ contains
         implicit none
         
         
-        deallocate(xpolAB)
-        deallocate(xpolC)
-        deallocate(rhopolA)
-        deallocate(rhopolB)
-        deallocate(rhopolC)
         deallocate(xsol)
+        deallocate(xpa)
+        
         deallocate(psi)
         deallocate(xNa)
         deallocate(xK)
@@ -101,29 +79,55 @@ contains
         deallocate(xHplus)
         deallocate(xOHmin)
         deallocate(rhoq)
-        deallocate(qpol)
-        deallocate(fdisA)
-        deallocate(fdisB)
-        deallocate(rhopolAL)
-        deallocate(rhopolAR)
-        deallocate(rhopolBL)
-        deallocate(rhopolBR)
+        deallocate(rhoqpa)
+        
         deallocate(xpp)
         
     end subroutine deallocate_field
 
 
 
-    logical function myIsNaN(x)
-        implicit none
-        real(dp) :: x
-        if (x /= x) then
-            myIsNaN=.true.
-        else
-            myIsNaN=.false.
-        endif 
+    ! set volume fraction of pa 
+    ! split pa fiber in tree core-shell region 
+    ! r< R=radius is 
 
-    end function myIsNaN
+    subroutine init_xpa_elect_volume_dist
+        
+
+        use volume, only : nr
+
+        integer ::i 
+
+        ! init volumer fraction pa fiber 
+        do i=1,nr
+            xpa(i)=0.0_dp
+        enddo    
+        
+        deltai=(radiuspahgr-radiuspacore)
+        radiuspahgrend = 4.5_dp 
+        rhohgr         = 5.0_dp 
+        xpalinker      = 0.8_dp
+
+    end subroutine
+    
+    
+
+
+    subroutine init_rhoqpa_charge_dist
+        
+        use volume, only : nr
+
+        integer ::i 
+
+        ! .. init 
+        do i=1,nr
+            rhoqpa(i)=0.0_dp
+        enddo    
+
+            
+
+
+    end subroutine
 
   
 end module field

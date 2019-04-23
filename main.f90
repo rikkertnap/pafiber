@@ -1,6 +1,6 @@
 ! ---------------------------------------------------------------|
-! Solves the SCMFT eqs planar/spherical/(inv)cylidrical surface, |
-! coated with weak poyelectrolytes and/or have a surface charge  |
+! Solves the SCMFT eqs in planar/spheric/cylindrical geometry    |
+! surface NP/colloid/fiber/ has a surface charge                 |
 ! Different surface charge (bcflags)                             |
 ! 	 1) "qu" = quartz                                            |
 !    2) "cl" = clay                                              |
@@ -60,15 +60,17 @@ program main
 
     call read_inputfile()
     call init_constants()
-   
     call allocate_geometry(nsize)
     call make_geometry()            ! generate volume elements lattice 
     call allocate_field(nsize) 
-
-    
     call set_size_neq()             ! number of non-linear equation neq    
     call init_expmu()
     call init_surface(bcflag)
+    
+    if(sysflag=="pafiber") then 
+        call init_xpa_elect_volume_dist
+        call init_rhoqpa_charge_dist
+    endif   
 
     !  .. computation starts
                      
@@ -117,10 +119,11 @@ program main
             do while (pH%min<=pH%val.and.pH%val<=pH%max.and.(abs(pH%stepsize)>=pH%delta)) 
                
                 ! isfirstguess= .true. ! debug remove latter
+               
                 call init_expmu()
                 !call set_fcn()
-                call make_guess(x, xguess, isfirstguess) 
-                call solver(x, xguess, error, fnorm) 
+                call make_guess(x, xguess, isfirstguess)  
+                call solver(x, xguess, error, fnorm)  
                 call fcnptr(x,fvec,neq)
                 
                 if(myIsNaN(fnorm)) then  
@@ -156,16 +159,15 @@ program main
         iter = 0 
 
         do while (nr>=nrmin)        ! loop distances
-
+             
+          
             call set_size_neq()  
             
             allocate(x(neq))
             allocate(xguess(neq))
- 
-            call make_guess(x, xguess, isfirstguess, use_xstored, xstored)
 
+            call make_guess(x, xguess, isfirstguess, use_xstored, xstored)
             call solver(x, xguess, error, fnorm)
-            
             call output()           ! writing of output
 
             isfirstguess =.false.    
