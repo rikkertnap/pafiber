@@ -20,7 +20,7 @@ module myio
     ! unit number 
     integer :: un_sys,un_xpolAB,un_xpolC,un_xsol,un_xNa,un_xCl,un_xK,un_xCa,un_xNaCl,un_xKCl,un_xNO3
     integer :: un_xOHmin,un_xHplus,un_fdisA,un_fdisB,un_psi,un_charge, un_xpair, un_rhopolAB, un_xTB, un_xTM
-    integer :: un_xpp, un_cpp
+    integer :: un_xpp, un_cpp, un_xRb, un_xIm
    
     ! format specifiers 
     character(len=80), parameter  :: fmt = "(A8,I1,A5,ES25.16)"
@@ -33,6 +33,8 @@ module myio
     integer :: num_concen      ! number of concentrations     
     real(dp), dimension(:), allocatable, target :: concen_array   ! concentrations     
 
+    real(dp),  parameter :: eps_salt = 0.00001_dp ! if salt concentration below value salt concentration not in output file
+    
     private 
 
     public :: read_inputfile
@@ -124,6 +126,10 @@ subroutine read_inputfile(info)
                 read(buffer,*,iostat=ios) cNaCl
             case ('cKCl')
                 read(buffer,*,iostat=ios) cKCl
+            case ('cRbCl')
+                read(buffer,*,iostat=ios) cRbCl    
+            case ('cImCl')
+                read(buffer,*,iostat=ios) cImCl    
             case ('cCaCl2')
                 read(buffer,*,iostat=ios) cCaCl2   
             case ('cTBCl')
@@ -698,14 +704,14 @@ subroutine output_elect
         write(un_sys,*)'deltaGadsSuCl   = ',deltaG0adsSuCl-log(Na*vsol/1.0e24_dp)
     endif      
     write(un_sys,*)'pHbulk      = ',pHbulk
-    write(un_sys,*)'pKa         = ',pKa(1)      
-    write(un_sys,*)'pKaNa       = ',pKa(2)
-    write(un_sys,*)'pKaACa      = ',pKa(3)
-    write(un_sys,*)'pKaA2Ca     = ',pKa(4)
-    write(un_sys,*)'pKb         = ',pKb(1)      
-    write(un_sys,*)'pKbNa       = ',pKb(2)
-    write(un_sys,*)'pKbBCa      = ',pKb(3)
-    write(un_sys,*)'pKbB2Ca     = ',pKb(4)
+!    write(un_sys,*)'pKa         = ',pKa(1)      
+!    write(un_sys,*)'pKaNa       = ',pKa(2)
+!    write(un_sys,*)'pKaACa      = ',pKa(3)
+!    write(un_sys,*)'pKaA2Ca     = ',pKa(4)
+!    write(un_sys,*)'pKb         = ',pKb(1)      
+!    write(un_sys,*)'pKbNa       = ',pKb(2)
+!    write(un_sys,*)'pKbBCa      = ',pKb(3)
+!    write(un_sys,*)'pKbB2Ca     = ',pKb(4)
     write(un_sys,*)'KionNa      = ',KionNa
     write(un_sys,*)'KionK       = ',KionK
     write(un_sys,*)'K0ionNa     = ',K0ionNa
@@ -1177,7 +1183,6 @@ subroutine output_pafiber
     use volume
     use parameters
     use field
-    !use energy
     use surface 
     use myutils, only : newunit
   
@@ -1186,6 +1191,8 @@ subroutine output_pafiber
     character(len=90) :: sysfilename     
     character(len=90) :: xsolfilename 
     character(len=90) :: xNafilename
+    character(len=90) :: xRbfilename
+    character(len=90) :: xImfilename
     character(len=90) :: xKfilename
     character(len=90) :: xCafilename
     character(len=90) :: xNaClfilename
@@ -1201,33 +1208,47 @@ subroutine output_pafiber
     character(len=100) :: fnamelabel
     character(len=20) :: rstr
     logical :: isopen
-    real(dp) :: epscKCl
+
 
     ! .. executable statements 
 
     ! .. make label filenames 
+    
 
-    epscKCl = 0.00001_dp
- 
-    write(rstr,'(F5.3)')cNaCl
-    fnamelabel="cNaCl"//trim(adjustl(rstr))
+    if(cNaCl>eps_salt) then 
+        write(rstr,'(F5.3)')cNaCl
+        fnamelabel="cNaCl"//trim(adjustl(rstr))
+    endif
 
-    if(cKCl>epscKCl) then 
+    if(cKCl>eps_salt) then 
         write(rstr,'(F5.3)')cKCl
         fnamelabel=trim(fnamelabel)//"cKCl"//trim(adjustl(rstr))
     endif 
     
-    write(rstr,'(F5.3)')cCaCl2
-    fnamelabel=trim(fnamelabel)//"cCaCl2"//trim(adjustl(rstr))
+    if(cCaCl2>eps_salt) then 
+        write(rstr,'(F5.3)')cCaCl2
+        fnamelabel=trim(fnamelabel)//"cCaCl2"//trim(adjustl(rstr))
+    endif 
+
+    if(cRbCl>eps_salt) then 
+        write(rstr,'(F5.3)')cRbCl
+        fnamelabel=trim(fnamelabel)//"cRbCl"//trim(adjustl(rstr))
+    endif
+
+    if(cImCl>eps_salt) then 
+        write(rstr,'(F5.3)')cImCl
+        fnamelabel=trim(fnamelabel)//"cImCl"//trim(adjustl(rstr))
+    endif 
+
     write(rstr,'(F7.3)')pHbulk
     fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))//".dat"
 
 
-    
-
     sysfilename='system.'//trim(fnamelabel)
     xsolfilename='xsol.'//trim(fnamelabel)
     xNafilename='xNaions.'//trim(fnamelabel)
+    xRbfilename='xRbions.'//trim(fnamelabel)
+    xImfilename='xImions.'//trim(fnamelabel)
     xKfilename='xKions.'//trim(fnamelabel)
     xCafilename='xCaions.'//trim(fnamelabel)
     xNaClfilename='xNaClionpair.'//trim(fnamelabel)
@@ -1247,6 +1268,8 @@ subroutine output_pafiber
   
     if(verboseflag=="yes") then    
         open(unit=newunit(un_xNa),file=xNafilename)
+        open(unit=newunit(un_xRb),file=xRbfilename)
+        open(unit=newunit(un_xIm),file=xImfilename)
         open(unit=newunit(un_xK),file=xKfilename)
         open(unit=newunit(un_xCa),file=xCafilename)
         open(unit=newunit(un_xNaCl),file=xNaClfilename)
@@ -1258,6 +1281,8 @@ subroutine output_pafiber
         open(unit=newunit(un_xOHmin),file=xOHminfilename)
     endif
     
+
+
     !   .. writting files   
 
     select case (geometry)
@@ -1281,6 +1306,8 @@ subroutine output_pafiber
     if(verboseflag=="yes") then 
         do i=1,nr
             write(un_xNa,*)rc(i),xNa(i)
+            write(un_xRb,*)rc(i),xRb(i)
+            write(un_xIm,*)rc(i),xIm(i)
             write(un_xK,*)rc(i),xK(i)
             write(un_xCa,*)rc(i),xCa(i)
             write(un_xNaCl,*)rc(i),xNaCl(i)
@@ -1293,7 +1320,7 @@ subroutine output_pafiber
         enddo    
     endif
 
-    write(un_sys,*)'system      = planar weakpolyelectrolyte brush'
+    write(un_sys,*)'system      = pafiber'
     write(un_sys,*)'version     = ',VERSION
     write(un_sys,*)'sysflag     = ',sysflag
     write(un_sys,*)'bcflag      = ',bcflag
@@ -1303,10 +1330,16 @@ subroutine output_pafiber
     write(un_sys,*)'vCl         = ',vCl*vsol
     write(un_sys,*)'vCa         = ',vCa*vsol
     write(un_sys,*)'vK          = ',vK*vsol
+    write(un_sys,*)'vRb         = ',vRb*vsol
+    write(un_sys,*)'vIm         = ',vIm*vsol
     write(un_sys,*)'vNaCl       = ',vNaCl*vsol
     write(un_sys,*)'vKCl        = ',vKCl*vsol
     write(un_sys,*)'cNaCl       = ',cNaCl
+    write(un_sys,*)'cRbCl       = ',cRbCl
+    write(un_sys,*)'cImCl       = ',cImCl
     write(un_sys,*)'cKCl        = ',cKCl
+    write(un_sys,*)'cRbCl       = ',cRbCl
+    write(un_sys,*)'cImCl       = ',cImCl
     write(un_sys,*)'cCaCl2      = ',cCaCl2
     write(un_sys,*)'pHbulk      = ',pHbulk
     write(un_sys,*)'KionNa      = ',KionNa
@@ -1330,13 +1363,22 @@ subroutine output_pafiber
     write(un_sys,*)'zNa         = ',zNa
     write(un_sys,*)'zCa         = ',zCa
     write(un_sys,*)'zK          = ',zK
-    write(un_sys,*)'zCl         = ',zCl
+    write(un_sys,*)'zRb         = ',zRb
+    write(un_sys,*)'zIm         = ',zIm
+    write(un_sys,*)'zpa         = ',zpa
     write(un_sys,*)'nr          = ',nr
+
     !write(un_sys,*)'free energy = ',FE
     !write(un_sys,*)'energy bulk = ',FEbulk 
     !write(un_sys,*)'deltafenergy = ',deltaFE
+    
     write(un_sys,*)'fnorm       = ',fnorm
+    write(un_sys,*)'totalcharge = ',totalcharge
+    write(un_sys,*)'totalEpa    = ',totalEpa
+     
+   
     !write(un_sys,*)'q residual  = ',qres
+    
     write(un_sys,*)'error       = ',error
     ! write(un_sys,*)'check phi   = ',checkphi 
     !write(un_sys,*)'FEq         = ',FEq 
@@ -1363,7 +1405,10 @@ subroutine output_pafiber
         enddo  
     endif
     write(un_sys,*)'nsize       = ',nsize  
+    write(un_sys,*)'geometry    = ',geometry  
     write(un_sys,*)'iterations  = ',iter
+    write(un_sys,*)'radius      = ',radius 
+    
    
     ! .. closing files
 
@@ -1373,7 +1418,9 @@ subroutine output_pafiber
 
     
     if(verboseflag=="yes") then 
-        close(un_xNa)   
+        close(un_xNa)
+        close(un_xRb)
+        close(un_xIm)
         close(un_xK)
         close(un_xCa)
         close(un_xNaCl)

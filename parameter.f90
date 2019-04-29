@@ -17,17 +17,21 @@ module parameters
     real(dp) :: vsol               ! volume of solvent  in nm^3       
 
     !  .. volume ions   
-    real(dp) :: vNa                ! volume positive ion in units of vsol
-    real(dp) :: vK                 ! volume positive ion in units of vsol
-    real(dp) :: vTB                ! volume positive ion in units of vsol
-    real(dp) :: vTM                ! volume positive ion in units of vsol
-    real(dp) :: vCl                ! volume negative ion in units of vsol
-    real(dp) :: vNO3               ! volume negative ion in units of vsol      
-    real(dp) :: vCa                ! volume positive divalent ion in units of vsol
-    real(dp) :: vNaCl
-    real(dp) :: vKCl
-    real(dp) :: vHplus
-    real(dp) :: vOHmin 
+    real(dp) :: vNa                ! volume Na+ ion in units of vsol
+    real(dp) :: vK                 ! volume K+ ion in units of vsol
+    real(dp) :: vTB                ! volume TBA+ ion in units of vsol
+    real(dp) :: vTM                ! volume TMA+ ion in units of vsol
+    real(dp) :: vCl                ! volume Cl- ion in units of vsol
+    real(dp) :: vNO3               ! volume NO3- ion in units of vsol      
+    real(dp) :: vCa                ! volume Ca2+ positive divalent ion in units of vsol
+    real(dp) :: vHplus             ! volume H+
+    real(dp) :: vOHmin             ! volume OH- 
+    real(dp) :: vRb                ! volume Rb+ ion in units of vsol
+    real(dp) :: vIm                ! volume Im+ ion in units of vsol
+    real(dp) :: vNaCl              ! volume ion pair NaCl 
+    real(dp) :: vKCl               ! volume ion pair KCl
+   
+
     ! .. volume ligand
     real(dp) :: vpp(5)             ! volume ligand 5 protonation states    
     real(dp) :: deltavpp(4)         
@@ -41,19 +45,26 @@ module parameters
     real(dp) :: RCl
     real(dp) :: RCa
     real(dp) :: RNO3
+    real(dp) :: RRb
+    real(dp) :: RIm
 
 
     ! .. segment length 
   
     ! .. valence charge 
 
-    integer :: zNa                 ! valence charge positive ion 
-    integer :: zK                  ! valence charge positive ion 
-    integer :: zCa                 ! valence charge divalent positive ion 
-    integer :: zCl                 ! valence charge negative ion 
+    integer :: zNa                 ! valence charge Na+ ion 
+    integer :: zK                  ! valence charge K+ ion 
+    integer :: zCa                 ! valence charge Ca2+ ion 
+    integer :: zCl                 ! valence charge Cl- ion 
     integer :: zTB               
     integer :: zTM              
     integer :: zNO3
+    integer :: zRb
+    integer :: zIm
+
+    integer :: zpa
+
     integer :: zpp(5)              ! valence protonantion states        
 
     real(dp) :: Temp               ! temperature in K
@@ -68,17 +79,17 @@ module parameters
     integer :: iter                ! counts number of iterations
   
     character(len=8) :: method           ! method="kinsol" or "zspow"  
-    character(len=3) ::  verboseflag     ! select input flag 
+    character(len=3) :: verboseflag      ! select input flag 
 
    
     !  .. equibrium constant
   
-    real(dp) :: K0A(4)              ! intrinsic equilibruim constant
-    real(dp) :: KA(4)               ! experimemtal equilibruim constant 
-    real(dp) :: pKA(4)              ! experimental equilibruim constant pKa= -log[Ka]
-    real(dp) :: K0B(4)              ! intrinsic equilibruim constant
-    real(dp) :: KB(4)               ! experimemtal equilibruim constant 
-    real(dp) :: pKB(4)              ! experimental equilibruim constant pKa= -log[Ka]
+    ! real(dp) :: K0A(4)              ! intrinsic equilibruim constant
+    ! real(dp) :: KA(4)               ! experimemtal equilibruim constant 
+    ! real(dp) :: pKA(4)              ! experimental equilibruim constant pKa= -log[Ka]
+    ! real(dp) :: K0B(4)              ! intrinsic equilibruim constant
+    ! real(dp) :: KB(4)               ! experimemtal equilibruim constant 
+    ! real(dp) :: pKB(4)              ! experimental equilibruim constant pKa= -log[Ka]
     
     real(dp) :: pKw                 ! water equilibruim constant pKw= -log[Kw] ,Kw=[H+][OH-] 
     real(dp) :: K0ionNa             ! intrinsic equilibruim constant
@@ -101,6 +112,8 @@ module parameters
 
     real(dp), target :: cNaCl      ! concentration of NaCl in bulk in mol/liter
     real(dp) :: cKCl               ! concentration of KCl in bulk in mol/liter
+    real(dp) :: cRbCl              ! concentration of RbCl in bulk in mol/liter
+    real(dp) :: cImCl              ! concentration of ImCl in bulk in mol/liter
     real(dp) :: cCaCl2             ! concentration of CaCl2 in bulk in mol/liter
     real(dp) :: cTBCl              ! concentration of TBCl in  bulk in mol/liter
     real(dp) :: cTMNO3             ! concentration of TMNO3 in  bulk in mol/liter
@@ -115,11 +128,11 @@ module parameters
 
     logical :: isBulkHCl           ! if true adjustment of pH with HCl if false HNO3
 
+    !  .. pafiber varialbes
+
+    real(dp) :: totalEpa
     real(dp) :: radiuspacore
-    real(dp) :: radiuspahgr 
-    real(dp) :: radiuspahgrend   
-    real(dp) :: rhohgr 
-    real(dp) :: xpalinker
+    real(dp) :: totalcharge        ! equal to qres !!
         
 contains
 
@@ -183,34 +196,43 @@ contains
         
         !  .. initializations of variables
  
-        pi=acos(-1.0_dp)          ! pi = arccos(-1)
-        itmax=2000                ! maximum number of iterations
-        nr=nsize                  ! size of lattice in z-direction 
+        pi=acos(-1.0_dp)             ! pi = arccos(-1)
+        itmax=2000                  ! maximum number of iterations
+        nr=nsize                    ! size of lattice in z-direction 
         
         !     .. charges
-        zNa   = 1                 ! valence positive charged ion
-        zK    = 1                 ! valence positive charged ion
-        zCa   = 2                 ! valence divalent positive charged ion
-        zCl   = -1                 ! valence negative charged ion
+        zNa   = 1                   ! valence positive charged ion
+        zK    = 1                   ! valence positive charged ion
+        zCa   = 2                   ! valence divalent positive charged ion
+        zCl   = -1                  ! valence negative charged ion
         zTB   = 1 
         zTM   = 1
         zNO3  = -1
+        zRb   = 1
+        zIm   = 1
+
+        zpa   = -1 
         
-        zpp(AH2BH) = 0       ! charged states ligand
+        zpp(AH2BH) = 0              ! charged states ligand
         zpp(AHBH)  = -1
         zpp(AHB)   = -2
         zpp(ABH)   = -2
         zpp(AB)    = -3
 
-        !     .. radii
+        !     .. ionic radii
+        !     .. https://www.chemguide.co.uk/atoms/properties/atradius.html and http://abulafia.mt.ic.ac.uk/shannon/ptable.php
         
-        RNa = 0.102_dp             ! radius of Na+ in nm
-        RK  = 0.138_dp             ! radius of K+ in nm
-        RCl = 0.181_dp             ! radius of Cl- in nm
-        RCa = 0.106_dp             ! radius of Ca2+ in nm
-        RTB = 0.50_dp              ! radius of TBA+ in nm  
-        RTM = 0.50_dp              ! radius of TMA+ in nm values from Wang, Nap et al in Jacs 133:2192, 2011
-        RNO3= 0.30_dp              ! radius of NO3- in nm values form Kieland Jacs 59:1675, 1937
+        RNa = 0.102_dp              ! radius of Na+ in nm
+        RK  = 0.138_dp              ! radius of K+ in nm
+        RCl = 0.181_dp              ! radius of Cl- in nm
+        RCa = 0.106_dp              ! radius of Ca2+ in nm
+        RRb = 0.152_dp              ! radius of Rb+ in nm 
+
+        RIm = 0.50_dp               ! radius of Imadazol ion in nm   
+        RTB = 0.50_dp               ! radius of TBA+ in nm  
+        RTM = 0.50_dp               ! radius of TMA+ in nm values from Wang, Nap et al in Jacs 133:2192, 2011
+        RNO3= 0.30_dp               ! radius of NO3- in nm values form Kieland Jacs 59:1675, 1937
+        
 
         !     .. volume
 
@@ -228,6 +250,12 @@ contains
         vK   = ((4.0_dp/3.0_dp)*pi*(RK)**3)/vsol 
         vCl  = ((4.0_dp/3.0_dp)*pi*(RCl)**3)/vsol 
         vCa  = ((4.0_dp/3.0_dp)*pi*(RCa)**3)/vsol 
+        vRb  = ((4.0_dp/3.0_dp)*pi*(RRb)**3)/vsol
+        vIm  = 0.09190_dp/vsol        
+        ! .. volume Im: based molecualr weight  and density of v= M/(rho Na)  
+
+
+        vIm  = ((4.0_dp/3.0_dp)*pi*(RIm)**3)/vsol 
         vTB  = ((4.0_dp/3.0_dp)*pi*(RTB)**3)/vsol
         vTM  = ((4.0_dp/3.0_dp)*pi*(RTM)**3)/vsol
         vNO3  = ((4.0_dp/3.0_dp)*pi*(RNO3)**3)/vsol
@@ -260,17 +288,17 @@ contains
         pKpp(3) =  5.4_dp         ! POHCOOH- <=> POCOOH2- + H+ !
         pKpp(4) =  6.9_dp         ! POCOOH2- <=> POCOO3- + H+ 
         pKpp(5) =  7.8_dp         ! POHCOO2- <=> POCOO3- + H+ !
-        pKw = 14.0_dp             ! water equilibruim constant
+        pKw     = 14.0_dp         ! water equilibruim constant
 
         ! .. other physical variables
 
-        Temp=298.0_dp                 ! temperature in Kelvin
-        dielectW=78.54_dp             ! dielectric constant water
+        Temp = 298.0_dp                 ! temperature in Kelvin
+        dielectW = 78.54_dp             ! dielectric constant water
         lb=BjerrumLenght(Temp)        ! bjerrum length in water in nm
         seed  = 435672                ! seed for random number generator
         constqW = delta*delta*4.0_dp*pi*lb/vsol ! multiplicative constant Poisson Eq. 
         
-        call set_ppa_properties()
+        call set_pa_properties()
 
 
     end subroutine init_constants
@@ -290,7 +318,7 @@ contains
         
         real(dp),  dimension(:), allocatable :: x         ! volume fraction solvent iteration vector 
         real(dp),  dimension(:), allocatable :: xguess  
-        real(dp) :: xNaClsalt, xKClsalt, xCaCl2salt, xTBClsalt           ! volume fraction of divalent salt in bulk
+        real(dp) :: xNaClsalt, xKClsalt, xCaCl2salt,xRbClsalt, xImClsalt      ! volume fraction of divalent salt in bulk
         integer :: i
         character(len=15) :: sysflag_old
 
@@ -309,6 +337,7 @@ contains
         xbulk%Hplus = (cHplus*Na/(1.0e24_dp))*(vsol) ! volume fraction H+ in bulk vH+=vsol
         xbulk%OHmin = (cOHmin*Na/(1.0e24_dp))*(vsol) ! volume fraction OH- in bulk vOH-=vsol
         
+        ! NaCl in solution 
         xNaClsalt = (cNaCl*Na/(1.0d24))*((vNa+vCl)*vsol) ! volume fraction NaCl salt in mol/l
         
         if(pHbulk<=7) then      ! pH<= 7
@@ -318,11 +347,23 @@ contains
             xbulk%Na=xNaClsalt*vNa/(vNa+vCl) +(xbulk%OHmin -xbulk%Hplus)*vNa ! NaCl+ NaOH  
             xbulk%Cl=xNaClsalt*vCl/(vNa+vCl)  
         endif
-        
+
+        ! RbCl in solution 
+        xRbClsalt = (cRbCl*Na/(1.0e24_dp))*((vRb+vCl)*vsol)
+        xbulk%Rb = xRbClsalt*vRb/(vRb+vCl)  
+        xbulk%Cl = xbulk%Cl+xRbClsalt*vCl/(vRb+vCl)  
+
+
+        ! ImCl in solution 
+        xImClsalt = (cImCl*Na/(1.0e24_dp))*((vIm+vCl)*vsol)
+        xbulk%Im = xImClsalt*vIm/(vIm+vCl)  
+        xbulk%Cl = xbulk%Cl+xImClsalt*vCl/(vIm+vCl)  
+
+        ! KCl in solution 
         xKClsalt = (cKCl*Na/(1.0e24_dp))*((vK+vCl)*vsol) ! volume fraction KCl salt in mol/l
         xbulk%K = xKClsalt*vK/(vK+vCl)  
         xbulk%Cl = xbulk%Cl+xKClsalt*vCl/(vK+vCl)  
-        
+        ! KCl in solution 
         xCaCl2salt = (cCaCl2*Na/(1.0e24_dp))*((vCa+2.0_dp*vCl)*vsol) ! volume fraction CaCl2 in mol/l
         xbulk%Ca=xCaCl2salt*vCa/(vCa+2.0_dp*vCl)
         xbulk%Cl=xbulk%Cl+ xCaCl2salt*2.0_dp*vCl/(vCa+2.0_dp*vCl)
@@ -330,16 +371,22 @@ contains
         xbulk%NaCl=0.0_dp    ! no ion pairing
         xbulk%KCl=0.0_dp     ! no ion pairing
         
-        xbulk%sol=1.0_dp -xbulk%Hplus -xbulk%OHmin -xbulk%Cl -xbulk%Na -xbulk%K-xbulk%NaCl-xbulk%KCl-xbulk%Ca   
+        xbulk%sol=1.0_dp -xbulk%Hplus -xbulk%OHmin -xbulk%Cl -xbulk%Na -xbulk%K-xbulk%NaCl-xbulk%KCl-xbulk%Ca &
+                -xbulk%Rb-xbulk%Im  
         
-        !     .. if Kion neq 0 ion pairing !
-        
+        !     .. ionpairing NaCl and KCl
+        !     .. only ionpairing if Kion neq 0 ion pairing !
         !     .. intrinstic equilibruim constant acid        
-        !     Kion  = 0.246_dp ! unit 1/M= liter per mol !!!
+        !     .. Kion unit 1/M= liter per mol !
+
+        if(sysflag=='pafiber') then   ! no ion pairing
+            KionNa=0.0_dp          
+            KionK =0.0_dp
+        endif  
+
         K0ionK  = KionK /(vsol*Na/1.0e24_dp) ! intrinstic equilibruim constant 
         K0ionNa = KionNa/(vsol*Na/1.0e24_dp) ! intrinstic equilibruim constant 
-       
-
+        
         if((KionNa.ne.0.0_dp).or.(KionK.ne.0.0_dp)) then  
             sysflag_old=sysflag 
             sysflag="bulk water"        ! set solver to fcnbulk
@@ -378,27 +425,19 @@ contains
 
         rhoqbulk = xbulk%Hplus -xbulk%OHmin +xbulk%Cl*zCl/vCl+xbulk%Na*zNa/vNa +xbulk%K*zK/vK+xbulk%Ca*zCa/vCa
         
-        !     .. intrinstic equilibruim constants      
-        !do i=1,4
-        !     Ka(i)  = 10.0_dp**(-pKa(i)) ! experimental equilibruim constant acid 
-        !     Kb(i)  = 10.0_dp**(-pKb(i)) ! experimental equilibruim constant acid
-        !      K0a(i) = (Ka(i)*vsol)*(Na/1.0e24_dp) ! intrinstic equilibruim constant 
-        !   K0b(i) = (Kb(i)*vsol)*(Na/1.0e24_dp) ! intrinstic equilibruim constant 
-        !enddo
-        !     .. rescale for i=4 2A- Ca <=> A2Ca
-          
-        !K0a(4) = (Ka(4)*vsol)*(Na/1.0e24_dp)
-        !K0b(4) = (Kb(4)*vsol)*(Na/1.0e24_dp)
-         
-
+       
         ! pibulk = -log(xbulk%sol)  ! pressure (pi) of bulk
         ! exp(beta mu_i) = (rhobulk_i v_i) / exp(- beta pibulk v_i) 
         expmu%Na    = xbulk%Na   /(xbulk%sol**vNa) 
         expmu%K     = xbulk%K    /(xbulk%sol**vK)
         expmu%Ca    = xbulk%Ca   /(xbulk%sol**vCa) 
         expmu%Cl    = xbulk%Cl   /(xbulk%sol**vCl)
+        expmu%Rb    = xbulk%Rb   /(xbulk%sol**vRb)
+
+        expmu%Im    = xbulk%Im   /(xbulk%sol**vIm)
         expmu%NaCl  = xbulk%NaCl /(xbulk%sol**vNaCl)
         expmu%KCl   = xbulk%KCl  /(xbulk%sol**vKCl)
+
         expmu%Hplus = xbulk%Hplus/xbulk%sol ! vsol = vHplus 
         expmu%OHmin = xbulk%OHmin/xbulk%sol ! vsol = vOHmin 
           
@@ -482,7 +521,7 @@ contains
 
         !     .. if Kion neq 0 ion pairing !
         !     .. intrinstic equilibruim constant acid        
-        !     Kion  = 0.246_dp ! unit 1/M= liter per mol !!!
+        !     .. unit 1/M= liter per mol !!!
         K0ionK  = KionK /(vsol*Na/1.0e24_dp) ! intrinstic equilibruim constant 
         K0ionNa = KionNa/(vsol*Na/1.0e24_dp) ! intrinstic equilibruim constant 
        
@@ -491,19 +530,7 @@ contains
            stop
         endif
 
-        !     .. intrinstic equilibruim constants      
-        do i=1,4
-             Ka(i)  = 10.0_dp**(-pKa(i)) ! experimental equilibruim constant acid 
-             Kb(i)  = 10.0_dp**(-pKb(i)) ! experimental equilibruim constant acid
-             K0a(i) = (Ka(i)*vsol)*(Na/1.0e24_dp) ! intrinstic equilibruim constant 
-             K0b(i) = (Kb(i)*vsol)*(Na/1.0e24_dp) ! intrinstic equilibruim constant 
-        enddo
-        !     .. rescale for i=4 2A- Ca <=> A2Ca
-          
-        K0a(4) = (Ka(4)*vsol)*(Na/1.0e24_dp)
-        K0b(4) = (Kb(4)*vsol)*(Na/1.0e24_dp)
-         
-
+        
         ! pibulk = -log(xbulk%sol)  ! pressure (pi) of bulk
         ! exp(beta mu_i) = (rhobulk_i v_i) / exp(- beta pibulk v_i) 
         expmu%Na    = xbulk%Na   /(xbulk%sol**vNa) 
@@ -627,15 +654,12 @@ contains
         xbulk%NaCl = 0.0_dp  
         xbulk%KCl = 0.0_dp   
     
-        !  .. no  ion pairing 
+        !  .. no ion pairing 
         KionNa = 0.0_dp
-        KionK = 0.0_dp
+        KionK  = 0.0_dp
         K0ionK = KionK /(vsol*Na/1.0e24_dp) ! intrinstic equilibruim constant 
         K0ionNa = KionNa/(vsol*Na/1.0e24_dp) ! intrinstic equilibruim constant 
-        
-        !K0ads=exp(-deltaG0ads)
-        !Kads = K0ads*(vsol*Na/1.0e24_dp)
-
+       
         !     .. intrinstic equilibruim constants      
         do i=1,5
             Kpp(i)  = 10.0_dp**(-pKpp(i)) ! experimental equilibruim constant acid 
@@ -761,20 +785,13 @@ contains
     end subroutine init_expmu
 
 
-    ! dimensions ppa_fiber
+    ! dimensions pa_fiber
     ! numbers are place holder values !!!!!!!!
     ! need to be called before make_geometry 
-    subroutine set_ppa_properties
+    subroutine set_pa_properties
 
-
-        radiuspacore   = 2.0_dp 
-        radius = radiuspacore    
-        ! important radius need be equal to radiuscore : important other volume elements are wrong !
-        radiuspahgr    = 3.5_dp
-        radiuspahgrend = 4.5_dp 
-        rhohgr         = 5.0_dp 
-        xpalinker      = 0.8_dp
-
+        radiuspacore   = radius   
+       
     end subroutine
 
 

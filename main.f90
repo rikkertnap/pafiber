@@ -69,7 +69,7 @@ program main
     
     if(sysflag=="pafiber") then 
         call init_xpa_elect_volume_dist
-        call init_rhoqpa_charge_dist
+        call init_rhoEpa_dist
     endif   
 
     !  .. computation starts
@@ -121,7 +121,6 @@ program main
                 ! isfirstguess= .true. ! debug remove latter
                
                 call init_expmu()
-                !call set_fcn()
                 call make_guess(x, xguess, isfirstguess)  
                 call solver(x, xguess, error, fnorm)  
                 call fcnptr(x,fvec,neq)
@@ -136,7 +135,7 @@ program main
                     enddo       
                 else 
                     ! call fcnenergy()        
-                    ! qres=charge_neutrality(rhoq,sigmaqSurf) 
+                    totalcharge=total_charge(rhoq,sigmaqSurf) 
                     call output()           ! writing of output
                     write(rstr,'(F7.3)')pH%val
                     text="solution pH="//trim(adjustl(rstr))

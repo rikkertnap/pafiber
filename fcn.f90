@@ -259,6 +259,8 @@ module listfcn
         integer :: i,t               ! dummy indices
         integer :: neq_bc           
 
+        real(dp) :: norm
+
         !     .. executable statements 
  
         n=nr                       ! size vector neq=5*nz x=(pi,psi,rhopolA,rhopolB,xpolC)
@@ -275,8 +277,11 @@ module listfcn
         endif 
     
         do i=1,n                  ! init volume fractions 
-            xNa(i)    = expmu%Na  *(xsol(i)**vNa)*exp(-psi(i)*zNa)  ! ion plus volume fraction
-            xK(i)     = expmu%K   *(xsol(i)**vK) *exp(-psi(i)*zK)   ! ion plus volume fraction
+            xNa(i)    = expmu%Na  *(xsol(i)**vNa)*exp(-psi(i)*zNa)  ! ion Na+ volume fraction
+            xK(i)     = expmu%K   *(xsol(i)**vK) *exp(-psi(i)*zK)   ! ion K+ volume fraction
+            xRb(i)    = expmu%Rb  *(xsol(i)**vRb) *exp(-psi(i)*zRb)  ! ion Rb+ volume fraction
+            xIm(i)    = expmu%Im  *(xsol(i)**vIm) *exp(-psi(i)*zIm)
+
             xCa(i)    = expmu%Ca  *(xsol(i)**vCa)*exp(-psi(i)*zCa)  ! ion divalent pos volume fraction
             xNaCl(i)  = expmu%NaCl*(xsol(i)**vNaCl)                  ! ion pair  volume fraction
             xKCl(i)   = expmu%KCl *(xsol(i)**vKCl)                   ! ion pair  volume fraction
@@ -288,8 +293,12 @@ module listfcn
         
         !   .. construction of fcn 
         do i=1,n
-              f(i)=xpa(i)+xsol(i)+xNa(i)+xCl(i)+xNaCl(i)+xK(i)+xKCl(i)+xCa(i)+xHplus(i)+xOHmin(i)-1.0_dp
-               rhoq(i)=rhoqpa(i)+zNa*xNa(i)/vNa+zCa*xCa(i)/vCa +zK*xK(i)/vK +zCl*xCl(i)/vCl+xHplus(i)-xOHmin(i)
+            f(i)=xpa(i)+xsol(i)+xNa(i)+xCl(i)+xNaCl(i)+xK(i)+xKCl(i)+xCa(i)+xHplus(i)+xOHmin(i) +&
+                    xRb(i)+ xIm(i)/vIm    -1.0_dp
+              
+            rhoq(i)=zpa*rhoEpa(i)*vsol+zNa*xNa(i)/vNa+zCa*xCa(i)/vCa +zK*xK(i)/vK +zCl*xCl(i)/vCl+&
+                    zRb*xRb(i)/vRb +zIm*xIm(i)/vIm  + xHplus(i)-xOHmin(i) 
+
             
             !   ..  total charge density in units of vsol
         enddo 
@@ -321,6 +330,10 @@ module listfcn
         endif   
        
         iter=iter+1 
+
+        n=neq
+        !norm=l2norm(f,n)
+        !print*,'iter=', iter ,'norm=',norm
 
     end subroutine fcnpafiber
 

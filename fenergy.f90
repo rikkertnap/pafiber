@@ -158,12 +158,12 @@ contains
         sumphiB = 0.0_dp
         sumphiC = 0.0_dp
 
-        FEq = 0.0_dp
+        FEq    = 0.0_dp
         FEbind = 0.0_dp
         FEchem = 0.0_dp
         FEVdWC = 0.0_dp
         FEVdWB = 0.0_dp     
-        qres = 0.0_dp
+        qres   = 0.0_dp
 
         do i=1,nr
             FEpi = FEpi  + dlog(xsol(i))
