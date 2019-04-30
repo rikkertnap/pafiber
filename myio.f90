@@ -163,11 +163,11 @@ subroutine read_inputfile(info)
             case ('delta')
                 read(buffer,*,iostat=ios) delta   
             case ('isbulkHCl')
-                read(buffer,*,iostat=ios) isbulkHCl      
-       !    case ('radiuspacore')                     ! only if sysflag=="pafiber"
-       !         read(buffer,*,iostat=ios) radiuspacore
-       !     case ('radiuspahgr') 
-       !         read(buffer,*,iostat=ios) radiuspahgr      
+                read(buffer,*,iostat=ios) isbulkHCl  
+            case ('isChargeRegularization')
+                read(buffer,*,iostat=ios) isChargeRegularization 
+            case ('pKa')
+                read(buffer,*,iostat=ios) pKa          !   AH   <=> A- + H+    
             case default
                 if(pos>1) then 
                     print *, 'Invalid label at line', line  ! empty lines are skipped
@@ -1203,6 +1203,7 @@ subroutine output_pafiber
     character(len=90) :: potentialfilename
     character(len=90) :: chargefilename
     character(len=90) :: densfracionpairfilename
+    character(len=90) :: fdispafilename
 
     integer :: i,j,k,t     ! dummy indexes
     character(len=100) :: fnamelabel
@@ -1259,14 +1260,16 @@ subroutine output_pafiber
     xHplusfilename='xHplus.'//trim(fnamelabel)
     xOHminfilename='xOHmin.'//trim(fnamelabel)
     densfracionpairfilename='densityfracionpair.'//trim(fnamelabel)
+    fdispafilename='fdispa.'//trim(fnamelabel)
     
     !     .. opening files        
     
     open(unit=newunit(un_sys),file=sysfilename)       
     open(unit=newunit(un_xsol),file=xsolfilename)
     open(unit=newunit(un_psi),file=potentialfilename)
-  
-    if(verboseflag=="yes") then    
+    
+
+    if(verboseflag=="yes") then   
         open(unit=newunit(un_xNa),file=xNafilename)
         open(unit=newunit(un_xRb),file=xRbfilename)
         open(unit=newunit(un_xIm),file=xImfilename)
@@ -1279,6 +1282,7 @@ subroutine output_pafiber
         open(unit=newunit(un_charge),file=chargefilename)
         open(unit=newunit(un_xHplus),file=xHplusfilename)
         open(unit=newunit(un_xOHmin),file=xOHminfilename)
+        open(unit=newunit(un_fdisA),file=fdispafilename)  
     endif
     
 
@@ -1317,6 +1321,7 @@ subroutine output_pafiber
             write(un_charge,*)rc(i),rhoq(i)
             write(un_xHplus,*)rc(i),xHplus(i)
             write(un_xOHmin,*)rc(i),xOHmin(i)    
+            write(un_fdisA,*)rc(i),fdispa(i)    
         enddo    
     endif
 
@@ -1430,7 +1435,7 @@ subroutine output_pafiber
         close(un_charge)
         close(un_xHplus)
         close(un_xOHmin)
-
+        close(un_fdisA)
     endif
         
 

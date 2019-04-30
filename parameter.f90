@@ -83,7 +83,7 @@ module parameters
 
    
     !  .. equibrium constant
-  
+
     ! real(dp) :: K0A(4)              ! intrinsic equilibruim constant
     ! real(dp) :: KA(4)               ! experimemtal equilibruim constant 
     ! real(dp) :: pKA(4)              ! experimental equilibruim constant pKa= -log[Ka]
@@ -130,10 +130,14 @@ module parameters
 
     !  .. pafiber varialbes
 
+    real(dp) :: K0A,KA,pKA          
+
     real(dp) :: totalEpa
     real(dp) :: radiuspacore
     real(dp) :: totalcharge        ! equal to qres !!
-        
+    logical  :: isChargeRegularization
+    real(dp) :: avfdispa   
+
 contains
 
     ! determine total number of non linear equations
@@ -380,8 +384,10 @@ contains
         !     .. Kion unit 1/M= liter per mol !
 
         if(sysflag=='pafiber') then   ! no ion pairing
-            KionNa=0.0_dp          
-            KionK =0.0_dp
+            KionNa =0.0_dp          
+            KionK  =0.0_dp
+            Ka     = 10.0_dp**(-pKa) ! experimental equilibruim constant acid 
+            K0a    = (Ka*vsol)*(Na/1.0e24_dp) ! intrinstic equilibruim constant 
         endif  
 
         K0ionK  = KionK /(vsol*Na/1.0e24_dp) ! intrinstic equilibruim constant 
@@ -425,6 +431,8 @@ contains
 
         rhoqbulk = xbulk%Hplus -xbulk%OHmin +xbulk%Cl*zCl/vCl+xbulk%Na*zNa/vNa +xbulk%K*zK/vK+xbulk%Ca*zCa/vCa
         
+
+
        
         ! pibulk = -log(xbulk%sol)  ! pressure (pi) of bulk
         ! exp(beta mu_i) = (rhobulk_i v_i) / exp(- beta pibulk v_i) 

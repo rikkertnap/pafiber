@@ -23,8 +23,8 @@ module field
     real(dp), dimension(:), allocatable :: xHplus  ! volume fraction of Hplus
     real(dp), dimension(:), allocatable :: xOHmin  ! volume fraction of OHmin 
     real(dp), dimension(:), allocatable :: rhoq    ! total charge density in units of vsol
-    !real(dp), dimension(:), allocatable :: rhoqpa  ! pa charge density in units of vsol
-    real(dp), dimension(:), allocatable :: rhoEpa  ! pa of E AA numbeer density in units of vsol
+    real(dp), dimension(:), allocatable :: fdispa  ! fraction pa  EE charged 
+    real(dp), dimension(:), allocatable :: rhoEpa  ! pa of E AA number density in units of vsol
     
     real(dp), dimension(:,:), allocatable :: xpp   ! volume fraction pp ligand
 
@@ -58,7 +58,7 @@ contains
         allocate(xHplus(N))
         allocate(xOHmin(N))
         allocate(rhoq(N))
-        !allocate(rhoqpa(N))
+        allocate(fdispa(N))
         allocate(rhoEpa(N))
         
         allocate(xpp(N,6))
@@ -88,7 +88,7 @@ contains
         deallocate(xHplus)
         deallocate(xOHmin)
         deallocate(rhoq)
-        !deallocate(rhoqpa)
+        deallocate(fdispa)
         deallocate(rhoEpa)
         
         deallocate(xpp)
@@ -287,7 +287,35 @@ contains
 
     end function total_charge
 
-        
+    function average_charge_pa() result(avfdispa)     ! .. post : return average charge of state of polymers
+
+        use volume, only : deltaG, nr
+        use globals, only : sysflag
+
+        implicit none 
+
+        real(dp) :: avfdispa
+
+        integer :: i
+        real(dp) :: sumpa
+
+        if(sysflag/="pa-fiber") then !
+            
+            avfdispa=0.0_dp
+            sumpa =0.0_dp
+
+            do i=1,nr
+                avfdispa=avfdispa+fdispa(i)*rhoEpa(i)*deltaG(i)
+                sumpa =sumpa  + rhoEpa(i)*deltaG(i)
+            enddo
+                
+            avfdispa=avfdispa/sumpa
+                
+        else
+            avfdispa=0.0_dp
+        endif    
+
+    end function average_charge_pa
 
     
 end module field

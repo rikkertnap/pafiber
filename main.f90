@@ -90,7 +90,7 @@ program main
         if(associated(list_val)) nullify(list_val) 
         num_concen=1
         allocate(list(1))
-        list_val => list_first ! need to poinr to a valid variable
+        list_val => list_first ! need to point to a valid variable
     endif    
 
     if(runflag/="rangenr") then  
@@ -135,7 +135,8 @@ program main
                     enddo       
                 else 
                     ! call fcnenergy()        
-                    totalcharge=total_charge(rhoq,sigmaqSurf) 
+                    totalcharge=total_charge(rhoq,sigmaqSurf)
+                    fdispa=average_charge_pa() 
                     call output()           ! writing of output
                     write(rstr,'(F7.3)')pH%val
                     text="solution pH="//trim(adjustl(rstr))

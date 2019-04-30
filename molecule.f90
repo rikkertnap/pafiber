@@ -17,7 +17,7 @@ module molecules
         real(dp) :: TB
         real(dp) :: TM
         real(dp) :: Rb 
-        real(dp) :: Im  ! Imidazole 
+        real(dp) :: Im  ! Imidazolium
         real(dp), dimension(5) :: pp
   end type moleclist
   

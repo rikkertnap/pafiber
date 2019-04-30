@@ -258,8 +258,8 @@ module listfcn
         integer :: n                 ! n=nr 
         integer :: i,t               ! dummy indices
         integer :: neq_bc           
-
         real(dp) :: norm
+        real(dp) :: xA
 
         !     .. executable statements 
  
@@ -279,27 +279,35 @@ module listfcn
         do i=1,n                  ! init volume fractions 
             xNa(i)    = expmu%Na  *(xsol(i)**vNa)*exp(-psi(i)*zNa)  ! ion Na+ volume fraction
             xK(i)     = expmu%K   *(xsol(i)**vK) *exp(-psi(i)*zK)   ! ion K+ volume fraction
-            xRb(i)    = expmu%Rb  *(xsol(i)**vRb) *exp(-psi(i)*zRb)  ! ion Rb+ volume fraction
+            xRb(i)    = expmu%Rb  *(xsol(i)**vRb) *exp(-psi(i)*zRb) ! ion Rb+ volume fraction
             xIm(i)    = expmu%Im  *(xsol(i)**vIm) *exp(-psi(i)*zIm)
-
-            xCa(i)    = expmu%Ca  *(xsol(i)**vCa)*exp(-psi(i)*zCa)  ! ion divalent pos volume fraction
+            xCa(i)    = expmu%Ca  *(xsol(i)**vCa)*exp(-psi(i)*zCa)   ! ion divalent pos volume fraction
             xNaCl(i)  = expmu%NaCl*(xsol(i)**vNaCl)                  ! ion pair  volume fraction
             xKCl(i)   = expmu%KCl *(xsol(i)**vKCl)                   ! ion pair  volume fraction
-            xCl(i)    = expmu%Cl  *(xsol(i)**vCl)*exp(-psi(i)*zCl)  ! ion neg volume fraction
-            xHplus(i) = expmu%Hplus*(xsol(i))*exp(-psi(i))          !mo H+  volume fraction
+            xCl(i)    = expmu%Cl  *(xsol(i)**vCl)*exp(-psi(i)*zCl)   ! ion neg volume fraction
+            xHplus(i) = expmu%Hplus*(xsol(i))*exp(-psi(i))           ! H+  volume fraction
             xOHmin(i) = expmu%OHmin*(xsol(i))*exp(+psi(i))           ! OH-  volume fraction    
-        enddo
-            
+        enddo   
+
+        if(isChargeRegularization) then 
+            do i=1,n
+                xA = xHplus(i)/(K0a*xsol(i))     ! AH/A-                                                       
+                fdispa(i)  = 1.0_dp/(1.0_dp+xA)               ! A-
+            enddo
+        else
+            do i=1,n
+                fdispa(i) = 1.0_dp 
+            enddo   
+        endif    
+
         
         !   .. construction of fcn 
         do i=1,n
             f(i)=xpa(i)+xsol(i)+xNa(i)+xCl(i)+xNaCl(i)+xK(i)+xKCl(i)+xCa(i)+xHplus(i)+xOHmin(i) +&
                     xRb(i)+ xIm(i)/vIm    -1.0_dp
               
-            rhoq(i)=zpa*rhoEpa(i)*vsol+zNa*xNa(i)/vNa+zCa*xCa(i)/vCa +zK*xK(i)/vK +zCl*xCl(i)/vCl+&
+            rhoq(i)=zpa*fdispa(i)*rhoEpa(i)*vsol+zNa*xNa(i)/vNa+zCa*xCa(i)/vCa +zK*xK(i)/vK +zCl*xCl(i)/vCl+&
                     zRb*xRb(i)/vRb +zIm*xIm(i)/vIm  + xHplus(i)-xOHmin(i) 
-
-            
             !   ..  total charge density in units of vsol
         enddo 
 
