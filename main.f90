@@ -40,7 +40,9 @@ program main
 
     integer :: i, c, info             ! dummy indices       
     logical :: use_xstored       
-    logical :: isfirstguess   
+    logical :: isfirstguess 
+    logical :: issolution  
+
     character(len=lenText) :: text
     character(len=20) :: rstr
     
@@ -68,9 +70,13 @@ program main
     call init_surface(bcflag)
     
     if(sysflag=="pafiber") then 
-        call init_xpa_elect_volume_dist
+        call init_xpa_volume_dist
         call init_rhoEpa_dist
     endif   
+
+    !do i=1,nsize
+    !    print*,i,xpa(i),rhoEpa(i)
+    !enddo
 
     !  .. computation starts
                      
@@ -106,7 +112,6 @@ program main
         iter = 0
 
 
-
         list_first= list(1)
 
         do c=1,num_concen        ! loop 
@@ -117,37 +122,47 @@ program main
             pH%val=pH%min    
 
             do while (pH%min<=pH%val.and.pH%val<=pH%max.and.(abs(pH%stepsize)>=pH%delta)) 
-               
-                ! isfirstguess= .true. ! debug remove latter
-               
+                          
                 call init_expmu()
-                call make_guess(x, xguess, isfirstguess)  
-                call solver(x, xguess, error, fnorm)  
+                call make_guess(x, xguess, isfirstguess)     
+                call solver(x, xguess, error, fnorm, issolution)
                 call fcnptr(x,fvec,neq)
                 
-                if(myIsNaN(fnorm)) then  
-                    text="no solution: backstep"
-                    call print_to_log(LogUnit,text)
-                    pH%stepsize=pH%stepsize/2.0_dp ! smaller 
-                    pH%val=pH%val-pH%stepsize ! step back
-                    do i=1,neq
-                        x(i)=xguess(i)
-                    enddo       
-                else 
-                    ! call fcnenergy()        
+                if(isSolution) then
+
+                     ! call fcnenergy()        
                     totalcharge=total_charge(rhoq,sigmaqSurf)
-                    fdispa=average_charge_pa() 
+                    avfdispa=average_charge_pa() 
                     call output()           ! writing of output
                     write(rstr,'(F7.3)')pH%val
                     text="solution pH="//trim(adjustl(rstr))
+
                     pH%val=pH%val+pH%stepsize
+
+                else
+               
+                    text="no solution: backstep"
+                    call print_to_log(LogUnit,text)
+                    pH%stepsize=pH%stepsize/2.0_dp  ! smaller 
+                    pH%val=pH%val-pH%stepsize       ! sttep back
+                    do i=1,neq
+                        x(i)=xguess(i)
+                    enddo       
+               
                 endif 
+
                 isfirstguess= .false.
                 iter  = 0              ! reset of iteration counter 
 
             enddo 
 
         enddo
+
+        deallocate(x)
+        deallocate(xguess)   
+        deallocate(fvec)   
+
+
 
     else  ! runflag==rangenr
 
@@ -180,7 +195,8 @@ program main
 
             deallocate(x)   
             deallocate(xguess)
-        enddo   
+        enddo  
+
 
     endif    
  
@@ -188,6 +204,7 @@ program main
 
 
     deallocate(xstored)
+
     call deallocate_field()
 
     text="program end"

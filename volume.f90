@@ -73,8 +73,8 @@ subroutine  make_geometry()
                 rc(i)= (i-0.5_dp) * delta + radius      ! radial coordinate 
                 G(i) =  (rc(i) /radius)**2              ! geometrical factor 
                 deltaG(i) = G(i) + (delta*delta/(12.0_dp*radius*radius)) ! delta G(i)= (1/delta) \int dr G(r) 
-                Fplus(i)=1.0_dp+ delta/rc(i)
-                Fmin(i) = 2.0_dp-Fplus(i)               ! factors in Poisson Equation
+                Fplus(i)  = 1.0_dp+  delta/rc(i)
+                Fmin(i)   = 2.0_dp - Fplus(i)               ! factors in Poisson Equation
                 vol=vol+ deltaG(i)
             enddo
             Asurf=4.0_dp*pi*(radius**2)  

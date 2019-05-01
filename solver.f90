@@ -1,5 +1,4 @@
-subroutine solver(x, xguess, accuracy, residual)
-  
+subroutine solver(x, xguess, accuracy, residual, issolution)
     use globals
     use parameters
     use listfcn
@@ -12,24 +11,15 @@ subroutine solver(x, xguess, accuracy, residual)
     real(dp) :: xguess(neq)  
     real(dp) :: accuracy
     real(dp) :: residual
-
-
-!    character(len=80) :: fcnname
-   
-!    write(fcnname,'(A6)')'solver'
-!    call set_size_neq()
-!    call check_value_sysflag(fcnname)
+    logical  :: issolution
     
     call set_size_neq  
     call set_fcn
     
     if(method.eq."kinsol") then
      
-        call kinsol_gmres_solver(x, xguess, neq, accuracy, residual)
-     
-    !  elseif (method.eq."zspow") then 
-    !     call zspow_solver(x, xguess, neq, accuracy, residual)
-     
+        call kinsol_gmres_solver(x, xguess, error, fnorm, issolution)
+ 
     else  
         print*,"Solver method incorrect"
         stop

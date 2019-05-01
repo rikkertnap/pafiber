@@ -1215,6 +1215,7 @@ subroutine output_pafiber
 
     ! .. make label filenames 
     
+    fnamelabel=""
 
     if(cNaCl>eps_salt) then 
         write(rstr,'(F5.3)')cNaCl
@@ -1380,6 +1381,7 @@ subroutine output_pafiber
     write(un_sys,*)'fnorm       = ',fnorm
     write(un_sys,*)'totalcharge = ',totalcharge
     write(un_sys,*)'totalEpa    = ',totalEpa
+    write(un_sys,*)'avfdispa    = ',avfdispa
      
    
     !write(un_sys,*)'q residual  = ',qres

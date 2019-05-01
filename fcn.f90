@@ -304,10 +304,10 @@ module listfcn
         !   .. construction of fcn 
         do i=1,n
             f(i)=xpa(i)+xsol(i)+xNa(i)+xCl(i)+xNaCl(i)+xK(i)+xKCl(i)+xCa(i)+xHplus(i)+xOHmin(i) +&
-                    xRb(i)+ xIm(i)/vIm    -1.0_dp
+                    xRb(i)+ xIm(i)/vIm  -1.0_dp
               
-            rhoq(i)=zpa*fdispa(i)*rhoEpa(i)*vsol+zNa*xNa(i)/vNa+zCa*xCa(i)/vCa +zK*xK(i)/vK +zCl*xCl(i)/vCl+&
-                    zRb*xRb(i)/vRb +zIm*xIm(i)/vIm  + xHplus(i)-xOHmin(i) 
+            rhoq(i)=zpa*fdispa(i)*rhoEpa(i)*vsol+zNa*xNa(i)/vNa+zCa*xCa(i)/vCa +zK*xK(i)/vK +& 
+                zCl*xCl(i)/vCl+zRb*xRb(i)/vRb +zIm*xIm(i)/vIm  + xHplus(i)-xOHmin(i) 
             !   ..  total charge density in units of vsol
         enddo 
 
@@ -340,8 +340,8 @@ module listfcn
         iter=iter+1 
 
         n=neq
-        !norm=l2norm(f,n)
-        !print*,'iter=', iter ,'norm=',norm
+        norm=l2norm(f,n)
+        print*,'iter=', iter ,'norm=',norm
 
     end subroutine fcnpafiber
 
@@ -718,6 +718,67 @@ module listfcn
        ! print*,'iter=', iter ,'norm=',norm
 
     end subroutine fcnbulkligandHCl
+
+
+    !     set constrains on vector x  depending on systype value
+
+    subroutine set_contraints(constr)
+
+        use precision_definition
+        use globals, only : sysflag, neq, nsize ,bcflag 
+
+        implicit none
+            
+        real(dp), intent(inout):: constr(:)
+
+        integer :: i, neqint ,neq_bc 
+
+        neqint=int(neq,kind(neqint))     ! explict conversion from integer(8) to integer
+          
+        neq_bc=0 
+        if(bcflag/="cc") neq_bc=neq_bc+1
+        
+        select case (sysflag)
+        case ("electnopoly")     
+            do i=1,nsize
+                constr(i)=1.0_dp
+                constr(i+nsize)=0.0_dp   !  electrostatic potential
+            enddo
+            do i=1,neq_bc                  ! surface electrostatic potential if bcflag/=cc
+                constr(i+2*nsize)=0.0_dp
+            enddo    
+        case ("electligand")     
+            do i=1,nsize
+                constr(i)=1.0_dp
+                constr(i+nsize)=0.0_dp   !  electrostatic potential
+            enddo   
+            do i=1,neq_bc                  ! surface electrostatic potential if bcflag/=cc
+                constr(i+2*nsize)=0.0_dp
+            enddo 
+        case ("pafiber")     
+            do i=1,nsize
+                constr(i)=1.0_dp
+                constr(i+nsize)=0.0_dp   !  electrostatic potential
+            enddo  
+            do i=1,neq_bc                  ! surface electrostatic potential if bcflag/=cc
+                constr(i+2*nsize)=0.0_dp
+            enddo  
+
+        case ("bulk water")             
+            do i=1,nsize
+                constr(i)=1.0_dp     
+            enddo     
+        case ("bulk ligand")                 !  neutral polymers
+            do i=1,neqint
+                constr(i)=1.0_dp
+            enddo 
+        case default
+            do i=1,neqint
+                constr(i)=1.0_dp
+            enddo 
+        end select  
+
+    end subroutine set_contraints
 
 
     subroutine set_fcn

@@ -33,6 +33,13 @@ subroutine init_guess_electnopoly(x, xguess)
         x(i+nr)=0.000_dp
     enddo
 
+    if(sysflag=="pafiber") then 
+        do i=1,18
+            x(i)=abs(1.0_dp-xpa(i))
+            x(i+nr)=0.000_dp
+        enddo
+    endif    
+
     neq_bc=0
     if(bcflag/="cc") then
         neq_bc=1 

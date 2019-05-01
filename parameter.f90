@@ -155,6 +155,8 @@ contains
         if(bcflag/="cc") neq_bc=neq_bc+1
 
         select case (sysflag)
+            case ("electnopoly") 
+                neq = 2 * nr  + neq_bc  
             case ("electligand") 
                 neq = 2 * nr  + neq_bc  
             case ("pafiber") 
@@ -215,7 +217,7 @@ contains
         zRb   = 1
         zIm   = 1
 
-        zpa   = -1 
+        zpa   = -1
         
         zpp(AH2BH) = 0              ! charged states ligand
         zpp(AHBH)  = -1
@@ -384,8 +386,8 @@ contains
         !     .. Kion unit 1/M= liter per mol !
 
         if(sysflag=='pafiber') then   ! no ion pairing
-            KionNa =0.0_dp          
-            KionK  =0.0_dp
+            KionNa = 0.0_dp          
+            KionK  = 0.0_dp
             Ka     = 10.0_dp**(-pKa) ! experimental equilibruim constant acid 
             K0a    = (Ka*vsol)*(Na/1.0e24_dp) ! intrinstic equilibruim constant 
         endif  

@@ -101,7 +101,7 @@ contains
     ! split pa fiber in tree core-shell region 
     ! r< R=radius is 
 
-    subroutine init_xpa_elect_volume_dist
+    subroutine init_xpa_volume_dist
         
 
         use volume, only : nr
@@ -120,10 +120,11 @@ contains
     
     
 
+    ! computes total line density of Glu residues
 
     subroutine init_rhoEpa_dist
         
-        use volume, only : nr, deltaG, Asurf
+        use volume, only : nr, deltaG, Asurf, delta
         use parameters, only : totalEpa
         
         integer :: i 
@@ -140,12 +141,12 @@ contains
             totalEpa=totalEpa+deltaG(i)*rhoEpa(i)
         enddo
 
-        totalEpa=totalEpa*Asurf
+        totalEpa=totalEpa*Asurf*delta  ! Asurf = pi*r*L 
 
     end subroutine
 
 
-    ! read file rhoqpa.dat assumed to start at postion 
+    ! read file rhoEpa.dat assumed to start at postion
     ! first element at r=delta/2 second element r=delta3/2 etc
 
     subroutine read_rhoEpa_dist(info)
@@ -181,7 +182,7 @@ contains
                 read(un_input, * , iostat=ios) rcoor, rhoEpa_value
                 line=line+1
                 if(rcoor>radius) then
-                    rhoEpa(i)=rhoEpa_value
+                    rhoEpa(i)=1.0_dp*rhoEpa_value
                     i=i+1
                 endif    
                 if(line==(nr+nradius)) ios=1 ! do not read beyond line nr+nradius
@@ -194,13 +195,14 @@ contains
             do while (ios == 0)
                 read(un_input, * , iostat=ios) rcoor, rhoEpa_value
                 line=line+1
-                rhoEpa(i)=rhoEpa_value
+                rhoEpa(i)=1.0_dp*rhoEpa_value
                 i=i+1
                 if(line==nr) ios=1 ! do not read beyond line nradius
             enddo
 
         endif    
 
+        close(un_input)
 
     end subroutine
 
@@ -213,7 +215,6 @@ contains
         
         use volume, only : nr, radius, isPACore, delta
         use myutils
-        use parameters, only : zpa
 
         integer, intent(out), optional :: info
 
@@ -242,7 +243,7 @@ contains
                 read(un_input, * , iostat=ios) rcoor, xpa_value
                 line=line+1
                 if(rcoor>radius) then
-                    xpa(i)=xpa_value
+                    xpa(i)=1.0_dp*xpa_value
                     i=i+1
                 endif    
                 if(line==(nr+nradius)) ios=1 ! do not read beyond line nr+nradius
@@ -255,12 +256,15 @@ contains
             do while (ios == 0)
                 read(un_input, * , iostat=ios) rcoor, xpa_value
                 line=line+1
-                xpa(i)=xpa_value
+                xpa(i)=1.0_dp*xpa_value
+                i=i+1
                 if(line==nr) ios=1 ! do not read beyond line nradius
             enddo
 
-        endif    
-            
+        endif       
+           
+        close(un_input)    
+
     end subroutine
 
 

@@ -1,7 +1,7 @@
 #Unix makefile for fortran-file	
 
 # put the name of the target program here
-TARGET = pbgen.pb # the list of source file
+TARGET = pbgen # the list of source file
 SRC =  precision.f90  mathconst.f90 physconst.f90 globals.f90 myutils.f90 molecule.f90 loop.f90  volume.f90 L2norm.f90 rands.f90 parameter.f90  field.f90  surface.f90   myio.f90 fcn.f90  init.f90 kinsolsolver.f90  solver.f90  main.f90 # fenergy.f90
 #
 # some definitions
@@ -86,7 +86,7 @@ else ifeq ($(shell hostname),quser10)
 else 
 
 
-FFLAGS= -std=f2008 -cpp -DVERSION=\"$(GIT_VERSION)\" -O3 #-fbounds-check -Warray-bounds -Wall -fbacktrace
+FFLAGS= -std=f2008 -cpp -DVERSION=\"$(GIT_VERSION)\"  -O3 #-fbounds-check -Warray-bounds -Wall -fbacktrace
 
 
 LDFLAGS=-lm -L/opt/local/kinsol-2.8.2-stat/lib -lsundials_fkinsol -lsundials_kinsol -lsundials_fnvecserial -lsundials_nvecserial     -Wl,-rpath,/opt/local/kinsol-2.8.2-stat/lib
