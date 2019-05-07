@@ -234,7 +234,7 @@ contains
         RCa = 0.106_dp              ! radius of Ca2+ in nm
         RRb = 0.152_dp              ! radius of Rb+ in nm 
 
-        RIm = 0.50_dp               ! radius of Imadazol ion in nm   
+        !RIm = 0.50_dp               ! radius of Imadazol ion in nm   
         RTB = 0.50_dp               ! radius of TBA+ in nm  
         RTM = 0.50_dp               ! radius of TMA+ in nm values from Wang, Nap et al in Jacs 133:2192, 2011
         RNO3= 0.30_dp               ! radius of NO3- in nm values form Kieland Jacs 59:1675, 1937
@@ -257,11 +257,12 @@ contains
         vCl  = ((4.0_dp/3.0_dp)*pi*(RCl)**3)/vsol 
         vCa  = ((4.0_dp/3.0_dp)*pi*(RCa)**3)/vsol 
         vRb  = ((4.0_dp/3.0_dp)*pi*(RRb)**3)/vsol
-        vIm  = 0.09190_dp/vsol        
-        ! .. volume Im: based molecualr weight  and density of v= M/(rho Na)  
+        ! vIm  = 0.09190_dp/vsol Im= C3H4N2       
+        ! .. volume Im: based molecular weight  and density of v= M/(rho Na)  
 
+        vIm  = 0.2648_dp/vsol ! Im=1-Ethyl-3-methyll imidazolium = EMIM                                                                                                       
+        ! .. volume Im: based molecular weight  and density of EMIM.Cl vIM=vEMIM=vEMIMCl -vCl
 
-        vIm  = ((4.0_dp/3.0_dp)*pi*(RIm)**3)/vsol 
         vTB  = ((4.0_dp/3.0_dp)*pi*(RTB)**3)/vsol
         vTM  = ((4.0_dp/3.0_dp)*pi*(RTM)**3)/vsol
         vNO3  = ((4.0_dp/3.0_dp)*pi*(RNO3)**3)/vsol
