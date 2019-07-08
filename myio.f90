@@ -168,6 +168,9 @@ subroutine read_inputfile(info)
                 read(buffer,*,iostat=ios) isChargeRegularization 
             case ('pKa')
                 read(buffer,*,iostat=ios) pKa          !   AH   <=> A- + H+    
+            case ('epsIm')
+                read(buffer,*,iostat=ios) epsIm         
+
             case default
                 if(pos>1) then 
                     print *, 'Invalid label at line', line  ! empty lines are skipped
@@ -186,7 +189,7 @@ subroutine read_inputfile(info)
           
      ! set geometry and bcflag for pa fiber
 
-    if(sysflag=="pafiber") then 
+    if(sysflag=="pafiber".or.sysflag=="pafiberIm") then 
         geometry="cylindrical"
         bcflag="cc" 
     endif    
@@ -224,6 +227,8 @@ subroutine read_inputfile(info)
     endif
 
 
+
+
 end subroutine read_inputfile
  
 
@@ -232,7 +237,7 @@ subroutine check_value_sysflag(sysflag,info)
     character(len=15), intent(in) :: sysflag
     integer, intent(out),optional :: info
 
-    character(len=15) :: sysflagstr(4)
+    character(len=15) :: sysflagstr(5)
     integer :: i
     logical :: flag
 
@@ -242,7 +247,7 @@ subroutine check_value_sysflag(sysflag,info)
     sysflagstr(2)="electnopoly"
     sysflagstr(3)="electligand"
     sysflagstr(4)="pafiber"
-
+    sysflagstr(5)="pafiberIm"
 
     flag=.FALSE.
 
@@ -451,6 +456,8 @@ subroutine output()
     elseif(sysflag=="electligand") then
         call output_ligand
     else if(sysflag=="pafiber") then
+        call output_pafiber
+    else if(sysflag=="pafiberIm") then
         call output_pafiber
     else
         print*,"Error in output subroutine"
@@ -1242,6 +1249,11 @@ subroutine output_pafiber
         fnamelabel=trim(fnamelabel)//"cImCl"//trim(adjustl(rstr))
     endif 
 
+    if(sysflag=="pafiberIm") then 
+        write(rstr,'(F5.3)')epsIm
+        fnamelabel=trim(fnamelabel)//"epsIm"//trim(adjustl(rstr))
+    endif 
+
     write(rstr,'(F7.3)')pHbulk
     fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))//".dat"
 
@@ -1382,6 +1394,8 @@ subroutine output_pafiber
     write(un_sys,*)'totalcharge = ',totalcharge
     write(un_sys,*)'totalEpa    = ',totalEpa
     write(un_sys,*)'avfdispa    = ',avfdispa
+    write(un_sys,*)'epsIm       = ',epsIm
+    
      
    
     !write(un_sys,*)'q residual  = ',qres

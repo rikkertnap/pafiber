@@ -86,6 +86,85 @@ end subroutine init_guess_electnopoly
 !     purpose: initalize x and xguess
 
 
+subroutine init_guess_pafiberIm(x, xguess)
+      
+    use parameters, only : xbulk
+      
+    implicit none
+  
+    real(dp), intent(inout) :: x(:)       ! volume fraction solvent iteration vector 
+    real(dp), intent(out) :: xguess(:)  ! guess fraction  solvent 
+  
+    !     ..local variables 
+    integer :: n, i
+    character(len=8) :: fname(2)
+    integer :: ios,nfile(4)
+    integer :: neq_bc 
+    real(dp) :: rhoIm_bulk
+  
+    ! .. init guess all xbulk     
+
+
+    rhoIm_bulk=xbulk%Im/(vIm*vsol)
+
+    do i=1,nr
+        x(i)=xbulk%sol
+        x(i+nr)=0.000_dp
+        x(i+2*nr)=rhoIm_bulk
+    enddo
+
+    if(sysflag=="pafiber") then 
+        do i=1,18
+            x(i)=abs(1.0_dp-xpa(i))
+            x(i+nr)=0.000_dp
+        enddo
+    endif    
+
+    neq_bc=0
+    if(bcflag/="cc") then
+        neq_bc=1 
+        x(2*nr+neq_bc)=0.00_dp
+    endif        
+
+    if (infile.eq.1) then   ! infile is read in from file/stdio  
+    
+        write(fname(1),'(A7)')'xsol.in'
+        write(fname(2),'(A6)')'psi.in'
+     
+        nfile(1)=100
+        nfile(2)=200
+     
+        do i=1,2 ! loop files
+            open(unit=nfile(i),file=fname(i),iostat=ios,status='old')
+            if(ios >0 ) then    
+                print*, 'file num ber =',nfile(i),' file name =',fname(i)
+                print*, 'Error opening file : iostat =', ios
+                stop
+            endif
+        enddo
+     
+        if(bcflag/="cc") read(200,*)psisurf     ! surface potential 
+        do i=1,nr
+            read(100,*)xsol(i)    ! solvent
+            read(200,*)psi(i)     ! potential 
+            x(i)      = xsol(i)    ! placing xsol  in vector x
+            x(i+nr)   = psi(i)     ! placing xsol  in vector x
+        enddo
+
+        do i=1,2
+            close(nfile(i))
+        enddo
+
+    endif
+    !     .. end init from file 
+  
+    do i=1,neq
+        xguess(i)=x(i)
+    enddo
+
+end subroutine init_guess_pafiberIm
+!     purpose: initalize x and xguess
+
 
 
 !     .. copy solution of previous solution ( distance ) to create new guess
@@ -166,6 +245,8 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
 
                 if(sysflag=="electnopoly".or.sysflag=="electligand".or.sysflag=="pafiber") then 
                     call init_guess_electnopoly(x,xguess)
+                else if(sysflag=="pafiberIm") then 
+                    call init_guess_pafiberIm(x,xguess)   
                 else     
                     print*,"make_guess: wrong value sysflag : ", sysflag
                 endif
@@ -182,7 +263,9 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
     else if(isfirstguess) then       ! first guess
 
         if(sysflag=="electnopoly".or.sysflag=="electligand".or.sysflag=="pafiber") then 
-            call init_guess_electnopoly(x,xguess)  
+            call init_guess_electnopoly(x,xguess)   
+        else if(sysflag=="pafiberIm") then 
+            call init_guess_pafiberIm(x,xguess)       
         else
             print*,"make_guess: wrong value sysflag : ", sysflag
         endif

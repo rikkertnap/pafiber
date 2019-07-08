@@ -137,6 +137,7 @@ module parameters
     real(dp) :: totalcharge        ! equal to qres !!
     logical  :: isChargeRegularization
     real(dp) :: avfdispa   
+    real(dp) :: epsIm ! van der Waals interaction Im 
 
 contains
 
@@ -160,7 +161,9 @@ contains
             case ("electligand") 
                 neq = 2 * nr  + neq_bc  
             case ("pafiber") 
-                neq = 2 * nr  + neq_bc    
+                neq = 2 * nr  + neq_bc 
+            case ("pafiberIm") 
+                neq = 3 * nr  + neq_bc         
             case ("bulk water") 
                 neq = 5 
             case ("bulk ligand") 
@@ -308,6 +311,13 @@ contains
         call set_pa_properties()
 
 
+        !  scaling of Van der Waals of Imidazolium
+        if(sysflag=="pafiberIm") then 
+            epsIm= epsIm *((vIm*vsol)**2/vsol) 
+        else
+            epsIm=0.0_dp
+        endif        
+
     end subroutine init_constants
    
    
@@ -453,7 +463,10 @@ contains
         expmu%OHmin = xbulk%OHmin/xbulk%sol ! vsol = vOHmin 
           
         !     .. end init electrostatic part 
-            
+        
+        if(sysflag=="pafiberIm") then 
+            expmu%Im    = xbulk%Im/( exp(epsIM*(xbulk%Im/(vIm*vsol) )) * ( xbulk%sol**vIm))
+        endif    
     
         deallocate(x)
         deallocate(xguess)    
@@ -785,8 +798,14 @@ contains
 
             call init_expmu_elect_ligand()   
        
-        elseif(sysflag=="pafiber") then 
+        elseif(sysflag=="pafiber" ) then 
+            
             call init_expmu_elect()
+
+        elseif(sysflag=="pafiberIm" ) then 
+            
+            call init_expmu_elect()    
+
         else
             print*,"Error in call to init_expmu subroutine"    
             print*,"Wrong value sysflag : ", sysflag
