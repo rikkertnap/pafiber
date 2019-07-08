@@ -305,7 +305,7 @@ module listfcn
         !   .. construction of fcn 
         do i=1,n
             f(i)=xpa(i)+xsol(i)+xNa(i)+xCl(i)+xNaCl(i)+xK(i)+xKCl(i)+xCa(i)+xHplus(i)+xOHmin(i) +&
-                    xRb(i)+ xIm(i)/vIm  -1.0_dp
+                    xRb(i)+ xIm(i) -1.0_dp
               
             rhoq(i)=zpa*fdispa(i)*rhoEpa(i)*vsol+zNa*xNa(i)/vNa+zCa*xCa(i)/vCa +zK*xK(i)/vK +& 
                 zCl*xCl(i)/vCl+zRb*xRb(i)/vRb +zIm*xIm(i)/vIm  + xHplus(i)-xOHmin(i) 
@@ -422,7 +422,7 @@ module listfcn
         !   .. construction of fcn 
         do i=1,n
             f(i)=xpa(i)+xsol(i)+xNa(i)+xCl(i)+xNaCl(i)+xK(i)+xKCl(i)+xCa(i)+xHplus(i)+xOHmin(i) +&
-                    xRb(i)+ xIm(i)/vIm  -1.0_dp
+                    xRb(i)+ xIm(i) -1.0_dp
               
             rhoq(i)=zpa*fdispa(i)*rhoEpa(i)*vsol+zNa*xNa(i)/vNa+zCa*xCa(i)/vCa +zK*xK(i)/vK +& 
                 zCl*xCl(i)/vCl+zRb*xRb(i)/vRb +zIm*xIm(i)/vIm  + xHplus(i)-xOHmin(i) 
@@ -445,7 +445,7 @@ module listfcn
   
         do i=2,n
             f(n+i)= -0.5_dp*(Fplus(i)*psi(i+1)-2.0_dp*psi(i) + Fmin(i)*psi(i-1) +rhoq(i)*constqW)
-            f(2*n+i) = xIm(i)-rhoIm(i)*vIm*vsol
+            f(2*n+i) = xIm(i)/(vIm*vsol)-rhoIm(i)
         enddo
 
 
@@ -454,7 +454,7 @@ module listfcn
         ! self consistent boundary conditions
 
         if(bcflag/='cc') then 
-            f(2*n+neq_bc)=psi(1)-psisurf+sigmaqSurf/2.0_dp
+            f(3*n+neq_bc)=psi(1)-psisurf+sigmaqSurf/2.0_dp
         else    
             psisurf=psi(1)+sigmaqSurf/2.0_dp
         endif   
@@ -882,8 +882,7 @@ module listfcn
             do i=1,nsize
                 constr(i)=1.0_dp
                 constr(i+nsize)=0.0_dp   !  electrostatic potential
-                constr(i+2*nsize)=0.0_dp   !  electrostatic potential
-                
+                constr(i+2*nsize)=1.0_dp   !  Im density
             enddo  
             do i=1,neq_bc                  ! surface electrostatic potential if bcflag/=cc
                 constr(i+3*nsize)=0.0_dp
@@ -925,7 +924,7 @@ module listfcn
             case ("pafiber")
                 fcnptr => fcnpafiber
             case ("pafiberIm")
-                fcnptr => fcnpafiber
+                fcnptr => fcnpafiberInt
             case default
                 print*,"Error in call to solver subroutine"    
                 print*,"Wrong value sysflag : ", sysflag
