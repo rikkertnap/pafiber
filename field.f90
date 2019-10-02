@@ -1,8 +1,6 @@
 module field
   
-  !     .. variables
     use precision_definition
-
     implicit none
    
     real(dp), dimension(:), allocatable :: xsol    ! volume fraction solvent
@@ -11,7 +9,6 @@ module field
     real(dp), dimension(:), allocatable :: xNa     ! volume fraction of positive Na+ ion
     real(dp), dimension(:), allocatable :: xRb     ! volume fraction of positive Rb+ ion
     real(dp), dimension(:), allocatable :: xIm     ! volume fraction of positive Imadozolium +ion
-
     real(dp), dimension(:), allocatable :: xK      ! volume fraction of positive K+ ion
     real(dp), dimension(:), allocatable :: xTB     ! volume fraction of psitive TB (tetra butyl ammonium) ion
     real(dp), dimension(:), allocatable :: xTM     ! volume fraction of psitive TB (tetra methyl ammonium) ion
@@ -24,22 +21,21 @@ module field
     real(dp), dimension(:), allocatable :: xOHmin  ! volume fraction of OHmin 
     real(dp), dimension(:), allocatable :: rhoq    ! total charge density in units of vsol
     real(dp), dimension(:), allocatable :: fdispa  ! fraction pa  EE charged 
-    real(dp), dimension(:), allocatable :: rhoEpa  ! pa of E AA number density in units of vsol
-    
+    real(dp), dimension(:,:), allocatable :: fdisA  ! fraction pa  EE charged
+    real(dp), dimension(:), allocatable :: rhoEpa  ! pa of E AA number density in units of vsol 
     real(dp), dimension(:,:), allocatable :: xpp   ! volume fraction pp ligand
-
     !real(dp) :: qAB             ! normalization partion fnc polymer 
     !real(dp) :: qC              ! normalization partion fnc polymer 
-
-    
+    real(dp),dimension(:), allocatable :: epsfcn    ! dielectric constant 
+    real(dp),dimension(:), allocatable :: Depsfcn   ! derivative dielectric constant
   
 contains
 
     subroutine allocate_field(N)
-        implicit none
-
+        
         integer, intent(in) :: N
 
+        integer :: ier
        
         allocate(xsol(N))
         allocate(xpa(N))
@@ -60,9 +56,18 @@ contains
         allocate(rhoq(N))
         allocate(fdispa(N))
         allocate(rhoEpa(N))
-        
+        allocate(fdisA(N,5))
+
         allocate(xpp(N,6))
-        
+  
+        allocate(epsfcn(N),stat=ier)    ! relative dielectric constant
+        allocate(Depsfcn(N),stat=ier)   ! derivate relative dielectric constant
+
+        if( ier/=0 ) then
+            print*, 'Allocation error : stat =', ier
+            stop
+        endif
+
     end subroutine allocate_field
 
 
@@ -72,7 +77,6 @@ contains
         
         deallocate(xsol)
         deallocate(xpa)
-        
         deallocate(psi)
         deallocate(xNa)
         deallocate(xRb)
@@ -90,8 +94,10 @@ contains
         deallocate(rhoq)
         deallocate(fdispa)
         deallocate(rhoEpa)
-        
+        deallocate(fdisA)
         deallocate(xpp)
+        deallocate(epsfcn)
+        deallocate(Depsfcn)
         
     end subroutine deallocate_field
 
@@ -303,7 +309,7 @@ contains
         integer :: i
         real(dp) :: sumpa
 
-        if(sysflag/="pa-fiber") then !
+        if(sysflag=="pafiber".or.sysflag=="pafiberIm") then !
             
             avfdispa=0.0_dp
             sumpa =0.0_dp
@@ -312,14 +318,67 @@ contains
                 avfdispa=avfdispa+fdispa(i)*rhoEpa(i)*deltaG(i)
                 sumpa =sumpa  + rhoEpa(i)*deltaG(i)
             enddo
-                
+                    
             avfdispa=avfdispa/sumpa
-                
         else
             avfdispa=0.0_dp
         endif    
 
     end function average_charge_pa
+
+    
+    function average_charge_pa_Ca() result(avfdispa)     ! .. post : return average charge of state of polymers
+
+        use volume, only : deltaG, nr
+        use globals, only : sysflag
+        use parameters, only : isCabinding
+
+        implicit none 
+
+        real(dp) :: avfdispa(5)
+
+        integer :: i, k
+        real(dp) :: sumpa
+
+    
+        if(sysflag=="pafiber".or.sysflag=="pafiberIm") then !
+            
+            if(.not.isCabinding) then
+                sumpa =0.0_dp
+                avfdispa(k)=0.0_dp
+                
+                do i=1,nr
+                    avfdispa(1)=avfdispa(1)+fdispa(i)*rhoEpa(i)*deltaG(i)
+                    sumpa =sumpa  + rhoEpa(i)*deltaG(i)
+                enddo
+                    
+                avfdispa(1)=avfdispa(1)/sumpa
+            
+            else
+               
+                do k=1,5
+                    avfdispa(k)=0.0_dp
+                    do i=1,nr
+                        avfdispa(k)=avfdispa(k)+fdisA(i,k)*rhoEpa(i)*deltaG(i)
+                    enddo
+                enddo
+
+                 sumpa =0.0_dp
+                do i=1,nr     
+                    sumpa =sumpa  + rhoEpa(i)*deltaG(i)
+                enddo
+                 
+                do k=1,5    
+                    avfdispa(k)=avfdispa(k)/sumpa
+                enddo
+            
+            endif
+                
+        else
+            avfdispa=0.0_dp
+        endif    
+
+    end function average_charge_pa_Ca
 
     
 end module field

@@ -69,7 +69,7 @@ program main
     call init_expmu()
     call init_surface(bcflag)
     
-    if(sysflag=="pafiber") then 
+    if(sysflag=="pafiber".or.sysflag=="pafiberIm") then 
         call init_xpa_volume_dist
         call init_rhoEpa_dist
     endif   
@@ -133,6 +133,7 @@ program main
                      ! call fcnenergy()        
                     totalcharge=total_charge(rhoq,sigmaqSurf)
                     avfdispa=average_charge_pa() 
+                    avfdisA=average_charge_pa_Ca()
                     call output()           ! writing of output
                     write(rstr,'(F7.3)')pH%val
                     text="solution pH="//trim(adjustl(rstr))

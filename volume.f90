@@ -19,10 +19,11 @@ module volume
     integer :: nrstep             ! nzstep number of lattice sites stepped over or reduced 
 
     real(dp), dimension(:), allocatable :: rc ! z-coordinate
-    real(dp), dimension(:), allocatable :: G ! geometrical factor 
+    !real(dp), dimension(:), allocatable :: G ! geometrical factor 
     real(dp), dimension(:), allocatable :: deltaG ! geometrical factor
     real(dp), dimension(:), allocatable :: Fplus ! factor in Poisson Eq  
     real(dp), dimension(:), allocatable :: Fmin
+    real(dp), dimension(:), allocatable :: gplus,gmin,g0
 
 
     character(len=14) :: geometry
@@ -43,10 +44,13 @@ subroutine allocate_geometry(N)
     implicit none
     integer, intent(in) :: N
     allocate(rc(N))
-    allocate(G(N))
+    !allocate(G(N))
     allocate(deltaG(N+1))
     allocate(Fplus(N))
     allocate(Fmin(N))
+    allocate(gplus(N))
+    allocate(gmin(N))        
+    allocate(g0(N))
     
 end subroutine allocate_geometry
   
@@ -61,7 +65,10 @@ subroutine  make_geometry()
     real(dp)  ::  vol
     real(dp)  ::  Vtest
     character(len=lenText) :: text
+    real(dp), dimension(:), allocatable :: G        ! geometrical facto
 
+    allocate(G(nsize))
+    
     vol=0.0_dp
 
     if(radius > epsradius) then  
@@ -75,6 +82,11 @@ subroutine  make_geometry()
                 deltaG(i) = G(i) + (delta*delta/(12.0_dp*radius*radius)) ! delta G(i)= (1/delta) \int dr G(r) 
                 Fplus(i)  = 1.0_dp+  delta/rc(i)
                 Fmin(i)   = 2.0_dp - Fplus(i)               ! factors in Poisson Equation
+
+                gplus(i)=((rc(i)+delta/2.0_dp)**2)/(rc(i)**2+delta**2/12.0_dp) ! use box integration 
+                gmin(i)= ((rc(i)-delta/2.0_dp)**2)/(rc(i)**2+delta**2/12.0_dp)
+                g0(i)=   gplus(i)+gmin(i)
+
                 vol=vol+ deltaG(i)
             enddo
             Asurf=4.0_dp*pi*(radius**2)  
@@ -86,6 +98,11 @@ subroutine  make_geometry()
                 deltaG(i) = G(i)                    ! delta G(i)= (1/delta) \int dr G(r) 
                 Fplus(i)=1.0_dp+ delta/(2.0_dp*rc(i))
                 Fmin(i) =2.0_dp-Fplus(i)            ! factors in Poisson Equation
+               
+                gplus(i)=(1.0_dp+delta/(2.0_dp*rc(i)) ) ! r_(i+1/2)/r_i= (r_i +delta/2)/r_i=(1+delta/(2*r_i))  
+                gmin(i)= (1.0_dp-delta/(2.0_dp*rc(i)) )  ! using finite difference , idem for box intergration 
+                g0(i)=   gplus(i)+gmin(i)
+
                 vol=vol+ deltaG(i)
             enddo
             Asurf=2.0_dp*pi*(radius)  
@@ -108,6 +125,11 @@ subroutine  make_geometry()
                 deltaG(i) = 1.0_dp                   ! delta G(i)= (1/delta) \int dr G(r) 
                 Fplus(i)=1.0_dp
                 Fmin(i) =1.0_dp                      ! factors in Poisson Equation
+
+                gplus(i) =1.0_dp
+                gmin(i)  =1.0_dp
+                g0(i)    =2.0_dp
+
                 vol=vol+ deltaG(i) 
             enddo
             Asurf=1.0_dp
@@ -130,10 +152,16 @@ subroutine  make_geometry()
                 G(i) =  4.0_dp*pi*rc(i)**2       ! geometrical factor 
                 deltaG(i) = G(i) + (4.0_dp*pi*delta*delta/12.0_dp) ! delta G(i)= (1/delta) \int dr G(r) 
          
-            Fplus(i)=1.0d0+ delta/rc(i)
-            Fmin(i) = 2.0d0-Fplus(i)      ! factors in Poisson Equation
-            vol=vol+ deltaG(i)
+                Fplus(i)=1.0d0+ delta/rc(i)
+                Fmin(i) = 2.0d0-Fplus(i)      ! factors in Poisson Equation
+                
+                gplus(i)=((rc(i)+delta/2.0_dp)**2)/(rc(i)**2+delta**2/12.0_dp) ! use box integration 
+                gmin(i)= ((rc(i)-delta/2.0_dp)**2)/(rc(i)**2+delta**2/12.0_dp)
+                g0(i)=   gplus(i)+gmin(i)
+
+                vol=vol+ deltaG(i)
             enddo
+
             Asurf=1.0_dp
             vol=vol*delta
             Vtest=(4.0/3.0)*pi*((nr*delta)**3)
@@ -145,6 +173,11 @@ subroutine  make_geometry()
                 deltaG(i) = G(i)                    ! delta G(i)= (1/delta) \int dr G(r) 
                 Fplus(i)=1.0_dp+ delta/(2.0_dp*rc(i))
                 Fmin(i) = 2.0_dp-Fplus(i)            ! factors in Poisson Equation
+
+                gplus(i)=(1.0_dp+delta/(2.0_dp*rc(i)) ) ! r_(i+1/2)/r_i= (r_i +delta/2)/r_i=(1+delta/(2*r_i))  
+                gmin(i)= (1.0_dp-delta/(2.0_dp*rc(i)) )  ! using finite difference , idem fro box intergration 
+                g0(i)=   gplus(i)+gmin(i)
+
                 vol=vol+ deltaG(i)
             enddo 
             Asurf=1.0_dp
@@ -159,6 +192,11 @@ subroutine  make_geometry()
                 deltaG(i) = 1.0_dp                   ! delta G(i)= (1/delta) \int dr G(r) 
                 Fplus(i)=1.0_dp
                 Fmin(i) =1.0_dp                      ! factors in Poisson Equation
+
+                gplus(i) =1.0_dp
+                gmin(i)  =1.0_dp
+                g0(i)    =2.0_dp
+
                 vol=vol+ deltaG(i) 
             enddo
             Asurf=1.0_dp
@@ -181,6 +219,8 @@ subroutine  make_geometry()
         print*,"Error: volume incorrect"
         print*,"vol=",vol,"vtest=",vtest
     endif
+
+    deallocate(G) ! do not need it anymore
 
 end subroutine make_geometry
 

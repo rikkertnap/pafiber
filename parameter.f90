@@ -12,7 +12,7 @@ module parameters
     !  .. list of parameters
 
     type(moleclist) :: xbulk,expmu
-
+    type(bornmoleclist) :: bornrad,bornbulk   
     !  .. volume 
     real(dp) :: vsol               ! volume of solvent  in nm^3       
 
@@ -31,6 +31,8 @@ module parameters
     real(dp) :: vNaCl              ! volume ion pair NaCl 
     real(dp) :: vKCl               ! volume ion pair KCl
    
+     ! .. volume carboxylic acid 
+    real(dp) :: vAA(5)  
 
     ! .. volume ligand
     real(dp) :: vpp(5)             ! volume ligand 5 protonation states    
@@ -69,9 +71,12 @@ module parameters
 
     real(dp) :: Temp               ! temperature in K
     real(dp) :: dielectW           ! dielectric constant of water 
+    real(dp) :: dielectP           ! dielectric constant of hydrocarbons/PA
+
     real(dp) :: lb                 ! Bjerrum length	   
     real(dp) :: constqW            ! constant in Poisson eq dielectric constant of water 
-
+    real(dp) :: constqE            ! electrostatic pre-factor in pdf 
+   
     integer :: itmax               ! maximum number of iterations
     real(dp) :: error              ! error imposed accuaracy
     real(dp) :: fnorm              ! L2 norm of residual vector function fcn  
@@ -135,9 +140,14 @@ module parameters
     real(dp) :: totalEpa
     real(dp) :: radiuspacore
     real(dp) :: totalcharge        ! equal to qres !!
-    logical  :: isChargeRegularization
-    real(dp) :: avfdispa   
+    logical  :: isChargeRegularization, isCabinding
+    real(dp) :: avfdispa
+    real(dp) :: avfdisA(5)
     real(dp) :: epsIm ! van der Waals interaction Im 
+
+    !  constant for acrylic acid 
+    real(dp) :: K0AA(4),pKaAA(4)
+    real(dp) :: deltavA(4)
 
 contains
 
@@ -270,7 +280,6 @@ contains
         vTM  = ((4.0_dp/3.0_dp)*pi*(RTM)**3)/vsol
         vNO3  = ((4.0_dp/3.0_dp)*pi*(RNO3)**3)/vsol
 
-
         vHplus = 1.0_dp
         vOHmin = 1.0_dp 
 
@@ -300,14 +309,25 @@ contains
         pKpp(5) =  7.8_dp         ! POHCOO2- <=> POCOO3- + H+ !
         pKw     = 14.0_dp         ! water equilibruim constant
 
+        bornrad%Na  = RNa
+        bornrad%Cl  = RCl
+        bornrad%K   = RK             
+        bornrad%Ca  = RCa
+        bornrad%Hplus = radiussphere(vsol)
+        bornrad%OHmin = radiussphere(vsol)
+        bornrad%Rb = RRb
+
         ! .. other physical variables
 
         Temp = 298.0_dp                 ! temperature in Kelvin
         dielectW = 78.54_dp             ! dielectric constant water
+        dielectP =  2.0_dp
         lb=BjerrumLenght(Temp)        ! bjerrum length in water in nm
         seed  = 435672                ! seed for random number generator
         constqW = delta*delta*4.0_dp*pi*lb/vsol ! multiplicative constant Poisson Eq. 
-        
+        constqE = 1.0_dp /( 8.0_dp *constqW)      ! factor in PDF    
+
+
         call set_pa_properties()
 
 
@@ -320,7 +340,26 @@ contains
 
     end subroutine init_constants
    
-   
+    function volumesphere(radius)result(volume)
+
+        real(dp), intent(in) :: radius
+        real(dp) :: volume
+
+        volume=(4.0_dp/3.0_dp)*pi*(radius**3)
+    
+    end function
+      
+
+    function radiussphere(volume)result(radius)
+
+        real(dp), intent(in) :: volume
+        real(dp) :: radius
+
+        radius=(volume*3.0_dp/(4.0_dp*pi))**(1.0_dp/3.0_dp)
+    
+    end function
+
+
     !     purpose: initialize expmu needed by fcn 
     !     pre: first read_inputfile has to be called
 
@@ -396,7 +435,7 @@ contains
         !     .. intrinstic equilibruim constant acid        
         !     .. Kion unit 1/M= liter per mol !
 
-        if(sysflag=='pafiber') then   ! no ion pairing
+        if(sysflag=="pafiber".or.sysflag=="pafiberIm") then   ! no ion pairing
             KionNa = 0.0_dp          
             KionK  = 0.0_dp
             Ka     = 10.0_dp**(-pKa) ! experimental equilibruim constant acid 
@@ -442,8 +481,9 @@ contains
             
         endif
 
-        rhoqbulk = xbulk%Hplus -xbulk%OHmin +xbulk%Cl*zCl/vCl+xbulk%Na*zNa/vNa +xbulk%K*zK/vK+xbulk%Ca*zCa/vCa
-        
+        rhoqbulk = xbulk%Hplus -xbulk%OHmin +xbulk%Cl*zCl/vCl+xbulk%Na*zNa/vNa +xbulk%K*zK/vK+xbulk%Ca*zCa/vCa +&
+            xbulk%Rb*zRb/vRb+ xbulk%Im*zIm/vIm
+
 
 
        
@@ -465,8 +505,9 @@ contains
         !     .. end init electrostatic part 
         
         if(sysflag=="pafiberIm") then 
-            expmu%Im    = xbulk%Im/( exp(epsIM*(xbulk%Im/(vIm*vsol) )) * ( xbulk%sol**vIm))
-        endif    
+            expmu%Im    = xbulk%Im/( exp(epsIm*(xbulk%Im/(vIm*vsol) )) * ( xbulk%sol**vIm))
+        endif  
+
     
         deallocate(x)
         deallocate(xguess)    
@@ -538,7 +579,7 @@ contains
         xbulk%KCl=0.0_dp   
         
         xbulk%sol=1.0_dp -xbulk%Hplus -xbulk%OHmin -xbulk%Cl -xbulk%Na -xbulk%K-xbulk%NaCl-xbulk%KCl-xbulk%Ca&
-            -xbulk%TB   -xbulk%TM - xbulk%NO3       
+            -xbulk%TB -xbulk%TM - xbulk%NO3       
         
         rhoqbulk = xbulk%Hplus -xbulk%OHmin +xbulk%Cl*zCl/vCl +xbulk%Na*zNa/vNa +xbulk%K*zK/vK+&
             xbulk%TB*zTB/vTB + xbulk%Ca*zCa/vCa + xbulk%TM*zTM/vTM+xbulk%NO3*zNO3/vNO3
@@ -820,8 +861,40 @@ contains
     ! need to be called before make_geometry 
     subroutine set_pa_properties
 
+        integer :: i
+        real(dp) :: KAA(4)
+        real(dp) :: vA
+ 
         radiuspacore   = radius   
+
+        ! set equilbrium constant for acrylic acid 
+        pKaAA(1)=5.0_dp
+        pKaAA(2)=-0.4_dp
+        pKaAA(3)=1.0_dp
+        pKaAA(4)=4.0_dp
+        
+        do i=1,4 
+            KAA(i)=10.0_dp**(-pKaAA(i))  
+            K0AA(i) = (KAA(i)*vsol)*(Na/1.0e24_dp)
+        enddo
+        K0AA(4) = (KAA(4)*vsol)*(Na/1.0e24_dp)
        
+        deltavA(1)=1.0_dp ! vA- + vH+ - vAH
+        deltavA(2)=0.0_dp ! vA- + vNa+ - vANa+
+        deltavA(3)=0.0_dp ! vA- + vCa2+ - vACa+
+        deltavA(4)=0.0_dp ! 2vA- + vCa2+ -vA2Ca    
+        
+        vA=  0.07448_dp/vsol  ! size Aacrylic acid monomer !!!!
+        vAA(1)= vA              ! vA-
+        vAA(2)= vA              ! vAH
+        vAA(3)= vA+vNa          ! vANa
+        vAA(4)= vA+vCa          ! vACa
+        vAA(5)= 2.0_dp*vA+vCa   ! vA2Ca     
+
+        bornrad%AA   = radiussphere(vAA(1)*vsol)
+        bornrad%AACa = radiussphere(vAA(4)*vsol) 
+        
+
     end subroutine
 
 

@@ -20,7 +20,7 @@ module myio
     ! unit number 
     integer :: un_sys,un_xpolAB,un_xpolC,un_xsol,un_xNa,un_xCl,un_xK,un_xCa,un_xNaCl,un_xKCl,un_xNO3
     integer :: un_xOHmin,un_xHplus,un_fdisA,un_fdisB,un_psi,un_charge, un_xpair, un_rhopolAB, un_xTB, un_xTM
-    integer :: un_xpp, un_cpp, un_xRb, un_xIm
+    integer :: un_xpp, un_cpp, un_xRb, un_xIm, un_fdispa
    
     ! format specifiers 
     character(len=80), parameter  :: fmt = "(A8,I1,A5,ES25.16)"
@@ -166,6 +166,8 @@ subroutine read_inputfile(info)
                 read(buffer,*,iostat=ios) isbulkHCl  
             case ('isChargeRegularization')
                 read(buffer,*,iostat=ios) isChargeRegularization 
+            case ('isCabinding')
+                read(buffer,*,iostat=ios) isCabinding 
             case ('pKa')
                 read(buffer,*,iostat=ios) pKa          !   AH   <=> A- + H+    
             case ('epsIm')
@@ -1211,6 +1213,8 @@ subroutine output_pafiber
     character(len=90) :: chargefilename
     character(len=90) :: densfracionpairfilename
     character(len=90) :: fdispafilename
+    character(len=90) :: fdisAfilename
+
 
     integer :: i,j,k,t     ! dummy indexes
     character(len=100) :: fnamelabel
@@ -1274,6 +1278,7 @@ subroutine output_pafiber
     xOHminfilename='xOHmin.'//trim(fnamelabel)
     densfracionpairfilename='densityfracionpair.'//trim(fnamelabel)
     fdispafilename='fdispa.'//trim(fnamelabel)
+    fdisAfilename='fdisA.'//trim(fnamelabel)
     
     !     .. opening files        
     
@@ -1308,7 +1313,7 @@ subroutine output_pafiber
         case ("cylindrical")
             write(un_psi,*)radius,psiSurf
         case ("planar")
-                write(un_psi,*)0.0,psiSurf 
+            write(un_psi,*)0.0,psiSurf 
         ! case invcylinder append at end file (un_psi) not begining
     end select  
 
@@ -1334,7 +1339,8 @@ subroutine output_pafiber
             write(un_charge,*)rc(i),rhoq(i)
             write(un_xHplus,*)rc(i),xHplus(i)
             write(un_xOHmin,*)rc(i),xOHmin(i)    
-            write(un_fdisA,*)rc(i),fdispa(i)    
+            write(un_fdispa,*)rc(i),fdispa(i) 
+            write(un_fdisA,*)rc(i),(fdisA(i,k),k=1,5)    
         enddo    
     endif
 
@@ -1374,6 +1380,9 @@ subroutine output_pafiber
     write(un_sys,*)'xbulk%Ca    = ',xbulk%Ca
     write(un_sys,*)'xbulk%Hplus = ',xbulk%Hplus
     write(un_sys,*)'xbulk%OHmin = ',xbulk%OHmin
+    write(un_sys,*)'xbulk%Rb    = ',xbulk%Rb
+    write(un_sys,*)'xbulk%Im    = ',xbulk%Im
+    
     write(un_sys,*)'dielectW    = ',dielectW
     write(un_sys,*)'lb          = ',lb
     write(un_sys,*)'T           = ',Temp
@@ -1395,7 +1404,7 @@ subroutine output_pafiber
     write(un_sys,*)'totalEpa    = ',totalEpa
     write(un_sys,*)'avfdispa    = ',avfdispa
     write(un_sys,*)'epsIm       = ',epsIm
-    
+    write(un_sys,*)'avfdisA     = ',(avfdisA(i),i=1,5)
      
    
     !write(un_sys,*)'q residual  = ',qres
@@ -1451,7 +1460,9 @@ subroutine output_pafiber
         close(un_charge)
         close(un_xHplus)
         close(un_xOHmin)
+        close(un_fdispa)
         close(un_fdisA)
+        
     endif
         
 

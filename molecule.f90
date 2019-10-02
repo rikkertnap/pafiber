@@ -19,6 +19,20 @@ module molecules
         real(dp) :: Rb 
         real(dp) :: Im  ! Imidazolium
         real(dp), dimension(5) :: pp
-  end type moleclist
+    end type moleclist
   
+
+    type bornmoleclist
+        real(dp) :: AA
+        real(dp) :: AACa
+        real(dp) :: Na
+        real(dp) :: Cl
+        real(dp) :: K
+        real(dp) :: Ca
+        real(dp) :: Hplus
+        real(dp) :: OHmin
+        real(dp) :: Rb 
+        real(dp) :: Im  
+    end type bornmoleclist 
+
 end module molecules

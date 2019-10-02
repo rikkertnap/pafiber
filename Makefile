@@ -2,7 +2,7 @@
 
 # put the name of the target program here
 TARGET = pbgen # the list of source file
-SRC =  precision.f90  mathconst.f90 physconst.f90 globals.f90 myutils.f90 molecule.f90 loop.f90  volume.f90 L2norm.f90 rands.f90 parameter.f90  field.f90  surface.f90   myio.f90 fcn.f90  init.f90 kinsolsolver.f90  solver.f90  main.f90 # fenergy.f90
+SRC =  precision.f90  mathconst.f90 physconst.f90 globals.f90 myutils.f90 molecule.f90 dielectfcn.f90 loop.f90  volume.f90 L2norm.f90 rands.f90 parameter.f90  field.f90  surface.f90   myio.f90 fcn.f90  init.f90 kinsolsolver.f90  solver.f90  main.f90 # fenergy.f90
 #
 # some definitions
 SHELL = /bin/bash
