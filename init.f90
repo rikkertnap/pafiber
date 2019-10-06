@@ -163,10 +163,105 @@ subroutine init_guess_pafiberIm(x, xguess)
     enddo
 
 end subroutine init_guess_pafiberIm
+
+
+
+subroutine init_guess_pafiberborn(x, xguess)
+      
+    use parameters, only : xbulk
+      
+    implicit none
+  
+    real(dp), intent(inout) :: x(:)       ! volume fraction solvent iteration vector 
+    real(dp), intent(out) :: xguess(:)  ! guess fraction  solvent 
+  
+    !     ..local variables 
+    integer :: n, i
+    character(len=8) :: fname(5)
+    integer :: ios,nfile(5)
+    integer :: neq_bc 
+    real(dp) :: rhoIm_bulk,rhoIM,xAA,xAACa
+  
+    ! .. init guess all xbulk     
+
+
+    rhoIm_bulk=xbulk%Im/(vIm*vsol)
+
+    do i=1,nr
+        x(i)=xbulk%sol
+        x(i+nr)=0.0_dp
+        x(i+2*nr)=0.0_dp
+        x(i+3*nr)=0.0_dp
+        x(i+4*nr)=xbulk%Im/vIm
+    enddo
+
+    
+    do i=1,18
+        x(i)=abs(1.0_dp-xpa(i)) 
+    enddo
+        
+
+    neq_bc=0
+    if(bcflag/="cc") then
+        neq_bc=1 
+        x(5*nr+neq_bc)=0.00_dp
+    endif        
+
+    if (infile.eq.1) then   ! infile is read in from file/stdio  
+    
+        write(fname(1),'(A7)')'xsol.in'
+        write(fname(2),'(A6)')'psi.in'
+        write(fname(3),'(A6)')'xAA.in'
+        write(fname(4),'(A8)')'xAACa.in' 
+        write(fname(5),'(A8)')'rhoIm.in'
+        
+        nfile(1)=100
+        nfile(2)=200
+        nfile(3)=300
+        nfile(4)=400
+        nfile(5)=500
+     
+        do i=1,5 ! loop files
+            open(unit=nfile(i),file=fname(i),iostat=ios,status='old')
+            if(ios >0 ) then    
+                print*, 'file num ber =',nfile(i),' file name =',fname(i)
+                print*, 'Error opening file : iostat =', ios
+                stop
+            endif
+        enddo
+     
+        if(bcflag/="cc") read(200,*)psisurf     ! surface potential 
+        do i=1,nr
+            read(100,*)xsol(i)    ! solvent
+            read(200,*)psi(i)     ! potential 
+            read(300,*)xAA        
+            read(400,*)xAACa      
+            read(500,*)rhoIm    
+
+            x(i)      = xsol(i)   
+            x(i+n)    = psi(i)   
+            x(i+2*n)  = xAA   
+            x(i+3*n)  = xAACa
+            x(i+4*n)  = rhoIm  
+        enddo
+            
+        do i=1,5
+            close(nfile(i))
+        enddo
+
+    endif
+    !     .. end init from file 
+  
+    do i=1,neq
+        xguess(i)=x(i)
+    enddo
+
+end subroutine init_guess_pafiberborn
+
+
+
+
 !     purpose: initalize x and xguess
-
-
-
 !     .. copy solution of previous solution ( distance ) to create new guess
 !     .. data x=(pi,psi) and pi and psi order and split into  blocks
 !     .. of size (nptso,nptsi,nptsb,nptss) =( outside, inside, boundary, on sphere )
@@ -245,8 +340,11 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
 
                 if(sysflag=="electnopoly".or.sysflag=="electligand".or.sysflag=="pafiber") then 
                     call init_guess_electnopoly(x,xguess)
-                else if(sysflag=="pafiberIm") then 
-                    call init_guess_pafiberIm(x,xguess)   
+                else if(sysflag=="pafiberIm".or.sysflag=="pafibervarelec") then 
+                    call init_guess_pafiberIm(x,xguess)
+                else if(sysflag=="pafiberborn") then 
+                    call init_guess_pafiberborn(x,xguess)
+                             
                 else     
                     print*,"make_guess: wrong value sysflag : ", sysflag
                 endif
@@ -264,8 +362,10 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
 
         if(sysflag=="electnopoly".or.sysflag=="electligand".or.sysflag=="pafiber") then 
             call init_guess_electnopoly(x,xguess)   
-        else if(sysflag=="pafiberIm") then 
-            call init_guess_pafiberIm(x,xguess)       
+        else if(sysflag=="pafiberIm".or.sysflag=="pafibervarelec") then 
+            call init_guess_pafiberIm(x,xguess)  
+        else if(sysflag=="pafiberborn") then 
+            call init_guess_pafiberborn(x,xguess)                                   
         else
             print*,"make_guess: wrong value sysflag : ", sysflag
         endif

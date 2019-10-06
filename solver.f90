@@ -1,10 +1,10 @@
 subroutine solver(x, xguess, accuracy, residual, issolution)
-    use globals
-    use parameters
-    use listfcn
-    use fcnpointer
-
-    implicit none
+    
+    use precision_definition
+    use globals, only : neq    
+    use parameters, only : method, set_size_neq
+    use listfcn, only : set_fcn
+  
   
     !     .. arguments
     real(dp) :: x(neq)
@@ -18,7 +18,7 @@ subroutine solver(x, xguess, accuracy, residual, issolution)
     
     if(method.eq."kinsol") then
      
-        call kinsol_gmres_solver(x, xguess, error, fnorm, issolution)
+        call kinsol_gmres_solver(x, xguess, accuracy, residual, issolution)
  
     else  
         print*,"Solver method incorrect"

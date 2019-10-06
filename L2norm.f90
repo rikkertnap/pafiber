@@ -25,4 +25,23 @@ contains
         
     end function l2norm
 
-end module vectornorm      
+    function l2norm_part(f,n,m,k)result(norm)
+      
+        implicit none
+
+        integer, intent(in)  :: n,m,k 
+        real(dp), intent(in) :: f(n)
+        real(dp)             :: norm ! output
+
+        integer :: i ! dummy index
+
+        norm=0.0_dp
+        do i=m,k
+            norm = norm + f(i)*f(i)
+        enddo
+        norm=sqrt(norm)
+        
+    end function l2norm_part
+
+end module vectornorm
+

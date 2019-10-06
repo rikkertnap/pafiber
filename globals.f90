@@ -13,7 +13,8 @@ module globals
     integer  :: nsize         ! size lattice, numer of layers
     integer(8)  :: neq        ! number of non-linear equations
     integer(8)  :: neqmax     ! maximum number of non-linear equations
-  
+    integer  :: neqint        ! number of non-linear equations, integer instead of integer(8)
+
     character(len=15) :: sysflag   ! sysflag selects fcn    
     character(len=15) :: runflag   ! runflag
     character(len=2)  :: bcflag    ! bcflag selects bc surface 

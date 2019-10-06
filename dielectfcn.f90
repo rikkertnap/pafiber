@@ -18,13 +18,13 @@ contains
 
 subroutine dielectfcn(phi,epsfcn,Depsfcn,dielectP,dielectW,n) 
     
-    integer  , intent(in) :: n
+    integer, intent(in) :: n
     real(dp), intent(in) ::  dielectP, dielectW 
     real(dp), intent(inout) :: epsfcn(:),Depsfcn(:)
     real(dp), intent(in)  :: phi(:)
 
-   call dielectfcnAV(phi,epsfcn,Depsfcn,dielectP,dielectW,n) 
-!    call dielectfcnConst(epsfcn,Depsfcn,n) 
+    call dielectfcnAV(phi,epsfcn,Depsfcn,dielectP,dielectW,n) 
+ !   call dielectfcnConst(epsfcn,Depsfcn,n) 
 
 end subroutine
 

@@ -56,7 +56,7 @@ contains
         allocate(rhoq(N))
         allocate(fdispa(N))
         allocate(rhoEpa(N))
-        allocate(fdisA(N,5))
+        allocate(fdisA(N,6))
 
         allocate(xpp(N,6))
   
@@ -309,7 +309,7 @@ contains
         integer :: i
         real(dp) :: sumpa
 
-        if(sysflag=="pafiber".or.sysflag=="pafiberIm") then !
+        if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafiberborn") then !
             
             avfdispa=0.0_dp
             sumpa =0.0_dp
@@ -335,17 +335,17 @@ contains
 
         implicit none 
 
-        real(dp) :: avfdispa(5)
+        real(dp) :: avfdispa(6)
 
         integer :: i, k
         real(dp) :: sumpa
 
     
-        if(sysflag=="pafiber".or.sysflag=="pafiberIm") then !
+        if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafiberborn".or.sysflag=="pafibervarelec") then !
             
             if(.not.isCabinding) then
                 sumpa =0.0_dp
-                avfdispa(k)=0.0_dp
+                avfdispa=0.0_dp
                 
                 do i=1,nr
                     avfdispa(1)=avfdispa(1)+fdispa(i)*rhoEpa(i)*deltaG(i)
@@ -356,7 +356,7 @@ contains
             
             else
                
-                do k=1,5
+                do k=1,6
                     avfdispa(k)=0.0_dp
                     do i=1,nr
                         avfdispa(k)=avfdispa(k)+fdisA(i,k)*rhoEpa(i)*deltaG(i)
@@ -368,7 +368,7 @@ contains
                     sumpa =sumpa  + rhoEpa(i)*deltaG(i)
                 enddo
                  
-                do k=1,5    
+                do k=1,6    
                     avfdispa(k)=avfdispa(k)/sumpa
                 enddo
             

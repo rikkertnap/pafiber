@@ -32,7 +32,7 @@ module parameters
     real(dp) :: vKCl               ! volume ion pair KCl
    
      ! .. volume carboxylic acid 
-    real(dp) :: vAA(5)  
+    real(dp) :: vAA(6)  
 
     ! .. volume ligand
     real(dp) :: vpp(5)             ! volume ligand 5 protonation states    
@@ -117,7 +117,7 @@ module parameters
 
     real(dp), target :: cNaCl      ! concentration of NaCl in bulk in mol/liter
     real(dp) :: cKCl               ! concentration of KCl in bulk in mol/liter
-    real(dp) :: cRbCl              ! concentration of RbCl in bulk in mol/liter
+    real(dp), target :: cRbCl      ! concentration of RbCl in bulk in mol/liter
     real(dp) :: cImCl              ! concentration of ImCl in bulk in mol/liter
     real(dp) :: cCaCl2             ! concentration of CaCl2 in bulk in mol/liter
     real(dp) :: cTBCl              ! concentration of TBCl in  bulk in mol/liter
@@ -131,8 +131,9 @@ module parameters
 
     type (looplist), target :: pH
 
-    logical :: isBulkHCl           ! if true adjustment of pH with HCl if false HNO3
-
+    logical :: isBulkHCl           ! if true adjustment of pH with HCl if false HNO3 : for ligand 
+    logical :: isBulkRbOH          ! if true adjustment of pH with RbOH if false NaOH : for pa   
+    
     !  .. pafiber varialbes
 
     real(dp) :: K0A,KA,pKA          
@@ -142,12 +143,12 @@ module parameters
     real(dp) :: totalcharge        ! equal to qres !!
     logical  :: isChargeRegularization, isCabinding
     real(dp) :: avfdispa
-    real(dp) :: avfdisA(5)
+    real(dp) :: avfdisA(6)
     real(dp) :: epsIm ! van der Waals interaction Im 
 
     !  constant for acrylic acid 
-    real(dp) :: K0AA(4),pKaAA(4)
-    real(dp) :: deltavA(4)
+    real(dp) :: K0AA(5),pKaAA(5)
+    real(dp) :: deltavA(5)
 
 contains
 
@@ -173,7 +174,11 @@ contains
             case ("pafiber") 
                 neq = 2 * nr  + neq_bc 
             case ("pafiberIm") 
-                neq = 3 * nr  + neq_bc         
+                neq = 3 * nr  + neq_bc   
+            case ("pafiberborn") 
+                neq = 5 * nr  + neq_bc  
+            case ("pafibervarelec") 
+                neq = 3 * nr  + neq_bc                 
             case ("bulk water") 
                 neq = 5 
             case ("bulk ligand") 
@@ -182,6 +187,8 @@ contains
                 print*,"set_size_neq: wrong value sysflag:  ",sysflag
                 stop
         end select  
+
+        neqint=int(neq)
          
     end subroutine set_size_neq
 
@@ -211,7 +218,7 @@ contains
         
         implicit none      
         
-        real(dp) :: vA,vB, vAA, vAMPS, v3pp
+        real(dp) :: vAA, vAMPS, v3pp
         
         !  .. initializations of variables
  
@@ -316,6 +323,8 @@ contains
         bornrad%Hplus = radiussphere(vsol)
         bornrad%OHmin = radiussphere(vsol)
         bornrad%Rb = RRb
+        bornrad%Im = radiussphere(vIm) 
+
 
         ! .. other physical variables
 
@@ -332,7 +341,7 @@ contains
 
 
         !  scaling of Van der Waals of Imidazolium
-        if(sysflag=="pafiberIm") then 
+        if(sysflag=="pafiberIm".or.sysflag=="pafiberborn".or.sysflag=="pafibervarelec") then 
             epsIm= epsIm *((vIm*vsol)**2/vsol) 
         else
             epsIm=0.0_dp
@@ -367,6 +376,7 @@ contains
  
         use globals
         use physconst
+        use dielectric_const, only : born
         
         implicit none 
         
@@ -375,7 +385,6 @@ contains
         real(dp),  dimension(:), allocatable :: x         ! volume fraction solvent iteration vector 
         real(dp),  dimension(:), allocatable :: xguess  
         real(dp) :: xNaClsalt, xKClsalt, xCaCl2salt,xRbClsalt, xImClsalt      ! volume fraction of divalent salt in bulk
-        integer :: i
         character(len=15) :: sysflag_old
 
         
@@ -393,22 +402,28 @@ contains
         xbulk%Hplus = (cHplus*Na/(1.0e24_dp))*(vsol) ! volume fraction H+ in bulk vH+=vsol
         xbulk%OHmin = (cOHmin*Na/(1.0e24_dp))*(vsol) ! volume fraction OH- in bulk vOH-=vsol
         
+
         ! NaCl in solution 
         xNaClsalt = (cNaCl*Na/(1.0d24))*((vNa+vCl)*vsol) ! volume fraction NaCl salt in mol/l
+        xbulk%Na=xNaClsalt*vNa/(vNa+vCl)  
+        xbulk%Cl=xNaClsalt*vCl/(vNa+vCl)
         
-        if(pHbulk<=7) then      ! pH<= 7
-            xbulk%Na=xNaClsalt*vNa/(vNa+vCl)  
-            xbulk%Cl=xNaClsalt*vCl/(vNa+vCl) +(xbulk%Hplus -xbulk%OHmin)*vCl  ! NaCl+ HCl
-        else                      ! pH >7
-            xbulk%Na=xNaClsalt*vNa/(vNa+vCl) +(xbulk%OHmin -xbulk%Hplus)*vNa ! NaCl+ NaOH  
-            xbulk%Cl=xNaClsalt*vCl/(vNa+vCl)  
-        endif
-
         ! RbCl in solution 
         xRbClsalt = (cRbCl*Na/(1.0e24_dp))*((vRb+vCl)*vsol)
         xbulk%Rb = xRbClsalt*vRb/(vRb+vCl)  
         xbulk%Cl = xbulk%Cl+xRbClsalt*vCl/(vRb+vCl)  
 
+        print*,"pHbulk=",pHbulk
+        if(pHbulk<=7) then      ! pH<= 7 
+            xbulk%Cl=xbulk%Cl +(xbulk%Hplus -xbulk%OHmin)*vCl  ! NaCl+ HCl
+        else     
+            print*,"isbulkRbOH=",isbulkRbOH                         ! pH >7
+            if(.not.isbulkRbOH) then         
+                xbulk%Na=xbulk%Na +(xbulk%OHmin -xbulk%Hplus)*vNa ! NaCl+ NaOH    
+            else
+                xbulk%Rb = xbulk%Rb+ (xbulk%OHmin -xbulk%Hplus)*vRb ! RbCl +RbOH
+            endif
+        endif    
 
         ! ImCl in solution 
         xImClsalt = (cImCl*Na/(1.0e24_dp))*((vIm+vCl)*vsol)
@@ -435,7 +450,7 @@ contains
         !     .. intrinstic equilibruim constant acid        
         !     .. Kion unit 1/M= liter per mol !
 
-        if(sysflag=="pafiber".or.sysflag=="pafiberIm") then   ! no ion pairing
+        if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafiberborn".or.sysflag=="pafibervarelec") then   ! no ion pairing
             KionNa = 0.0_dp          
             KionK  = 0.0_dp
             Ka     = 10.0_dp**(-pKa) ! experimental equilibruim constant acid 
@@ -504,10 +519,35 @@ contains
           
         !     .. end init electrostatic part 
         
-        if(sysflag=="pafiberIm") then 
+        if(sysflag=="pafiberIm".or.sysflag=="pafibervarelec") then 
             expmu%Im    = xbulk%Im/( exp(epsIm*(xbulk%Im/(vIm*vsol) )) * ( xbulk%sol**vIm))
         endif  
 
+        if(sysflag=="pafiberborn") then
+
+            bornbulk%AA   = born(lb,bornrad%AA,-1)
+            bornbulk%AACa = born(lb,bornrad%AACa,1)
+            
+            bornbulk%Hplus = born(lb,bornrad%Hplus,1)
+            bornbulk%Na    = born(lb,bornrad%Na,zNa)
+            bornbulk%K     = born(lb,bornrad%K,zK)
+            bornbulk%Ca    = born(lb,bornrad%Ca,zCa)
+            bornbulk%Cl    = born(lb,bornrad%Cl,zCl)
+            bornbulk%Rb    = born(lb,bornrad%Rb,zRb)
+            bornbulk%OHmin = born(lb,bornrad%OHmin,-1)
+            bornbulk%Im    = born(lb,bornrad%Im,zIm)
+
+            expmu%Na    = (xbulk%Na   /(xbulk%sol**vNa))*exp(bornbulk%Na) 
+            expmu%Cl    = (xbulk%Cl   /(xbulk%sol**vCl))*exp(bornbulk%Cl) 
+            expmu%K     = (xbulk%K    /(xbulk%sol**vK) )*exp(bornbulk%K) 
+            expmu%Ca    = (xbulk%Ca   /(xbulk%sol**vCa))*exp(bornbulk%Ca) 
+            expmu%Rb    = (xbulk%Rb   /(xbulk%sol**vRb))*exp(bornbulk%Rb) 
+            expmu%Hplus = (xbulk%Hplus/xbulk%sol) *      exp(bornbulk%Hplus)  
+            expmu%OHmin = (xbulk%OHmin/xbulk%sol) *      exp(bornbulk%OHmin)  
+
+            expmu%Im    = xbulk%Im/( exp(epsIm*(xbulk%Im/(vIm*vsol) )) * ( xbulk%sol**vIm)) *exp(bornbulk%Im) 
+        
+        endif  
     
         deallocate(x)
         deallocate(xguess)    
@@ -524,7 +564,6 @@ contains
         
         !     .. local variable
         
-        integer :: i
         real(dp) :: xNaClsalt, xKClsalt, xCaCl2salt, xTBClsalt, xTMNO3salt            ! volume fraction of divalent salt in bulk
 
 
@@ -628,8 +667,6 @@ contains
         real(dp) :: fpp(5)
     
         ! .. local variable
-
-        integer :: i
         real(dp) :: xA, xB, xBprime, xE, sumx, phisol
 
         phisol=1.0_dp
@@ -836,17 +873,15 @@ contains
                 call init_expmu_elect()
             endif    
         elseif(sysflag=="electligand") then
-
             call init_expmu_elect_ligand()   
-       
         elseif(sysflag=="pafiber" ) then 
-            
             call init_expmu_elect()
-
         elseif(sysflag=="pafiberIm" ) then 
-            
             call init_expmu_elect()    
-
+        elseif(sysflag=="pafiberborn" ) then 
+            call init_expmu_elect()  
+        elseif(sysflag=="pafibervarelec" ) then 
+            call init_expmu_elect()        
         else
             print*,"Error in call to init_expmu subroutine"    
             print*,"Wrong value sysflag : ", sysflag
@@ -862,7 +897,7 @@ contains
     subroutine set_pa_properties
 
         integer :: i
-        real(dp) :: KAA(4)
+        real(dp) :: KAA(5)
         real(dp) :: vA
  
         radiuspacore   = radius   
@@ -872,24 +907,28 @@ contains
         pKaAA(2)=-0.4_dp
         pKaAA(3)=1.0_dp
         pKaAA(4)=4.0_dp
-        
-        do i=1,4 
+        pKaAA(5)=-0.6_dp
+
+        do i=1,5
             KAA(i)=10.0_dp**(-pKaAA(i))  
             K0AA(i) = (KAA(i)*vsol)*(Na/1.0e24_dp)
         enddo
-        K0AA(4) = (KAA(4)*vsol)*(Na/1.0e24_dp)
+        K0AA(4) = (K0AA(4)*vsol)*(Na/1.0e24_dp)
        
         deltavA(1)=1.0_dp ! vA- + vH+ - vAH
         deltavA(2)=0.0_dp ! vA- + vNa+ - vANa+
         deltavA(3)=0.0_dp ! vA- + vCa2+ - vACa+
-        deltavA(4)=0.0_dp ! 2vA- + vCa2+ -vA2Ca    
+        deltavA(4)=0.0_dp ! 2vA- + vCa2+ -vA2Ca 
+        deltavA(5)=0.0_dp ! vA- + vRb+ -vARb     
         
-        vA=  0.07448_dp/vsol  ! size Aacrylic acid monomer !!!!
+        vA=  0.07448_dp/vsol    ! size acrylic acid monomer !!!!
+        vA=  0.038_dp/vsol      ! size COOH 
         vAA(1)= vA              ! vA-
         vAA(2)= vA              ! vAH
         vAA(3)= vA+vNa          ! vANa
         vAA(4)= vA+vCa          ! vACa
         vAA(5)= 2.0_dp*vA+vCa   ! vA2Ca     
+        vAA(6)= vA+vRb          ! vARb 
 
         bornrad%AA   = radiussphere(vAA(1)*vsol)
         bornrad%AACa = radiussphere(vAA(4)*vsol) 

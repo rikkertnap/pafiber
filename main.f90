@@ -69,7 +69,9 @@ program main
     call init_expmu()
     call init_surface(bcflag)
     
-    if(sysflag=="pafiber".or.sysflag=="pafiberIm") then 
+    call set_fcn
+
+    if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafiberborn".or.sysflag=="pafibervarelec") then 
         call init_xpa_volume_dist
         call init_rhoEpa_dist
     endif   
@@ -82,7 +84,7 @@ program main
                      
     ! .. select variable with which list_array associated
     
-    if (runflag=="rangepHcpp" .or. runflag=="rangepHcNaCl") then
+    if (runflag=="rangepHcpp"  .or. runflag=="rangepHcNaCl" .or. runflag=="rangepHcRbCl") then
         call set_value_concen(runflag,info)
         if(info/=0) then
             print*,"Error in input file: info = ",info," : end program." 
@@ -90,7 +92,9 @@ program main
         endif
         list=>concen_array 
         if(runflag=="rangepHcpp")   list_val => cpp    
-        if(runflag=="rangepHcNaCl") list_val => cNaCl        
+        if(runflag=="rangepHcNaCl") list_val => cNaCl
+        if(runflag=="rangepHcRbCl") list_val => cRbCl
+                
     else
         if(associated(list)) nullify(list) 
         if(associated(list_val)) nullify(list_val) 
@@ -129,27 +133,24 @@ program main
                 call fcnptr(x,fvec,neq)
                 
                 if(isSolution) then
-
-                     ! call fcnenergy()        
+                    ! call fcnenergy()        
                     totalcharge=total_charge(rhoq,sigmaqSurf)
                     avfdispa=average_charge_pa() 
                     avfdisA=average_charge_pa_Ca()
                     call output()           ! writing of output
                     write(rstr,'(F7.3)')pH%val
                     text="solution pH="//trim(adjustl(rstr))
-
                     pH%val=pH%val+pH%stepsize
-
                 else
-               
+                     call output() 
                     text="no solution: backstep"
                     call print_to_log(LogUnit,text)
                     pH%stepsize=pH%stepsize/2.0_dp  ! smaller 
                     pH%val=pH%val-pH%stepsize       ! sttep back
+
                     do i=1,neq
                         x(i)=xguess(i)
                     enddo       
-               
                 endif 
 
                 isfirstguess= .false.
@@ -163,7 +164,7 @@ program main
         deallocate(xguess)   
         deallocate(fvec)   
 
-
+        
 
     else  ! runflag==rangenr
 
@@ -201,8 +202,7 @@ program main
 
     endif    
  
-
-
+   
 
     deallocate(xstored)
 

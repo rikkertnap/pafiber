@@ -20,7 +20,7 @@ module myio
     ! unit number 
     integer :: un_sys,un_xpolAB,un_xpolC,un_xsol,un_xNa,un_xCl,un_xK,un_xCa,un_xNaCl,un_xKCl,un_xNO3
     integer :: un_xOHmin,un_xHplus,un_fdisA,un_fdisB,un_psi,un_charge, un_xpair, un_rhopolAB, un_xTB, un_xTM
-    integer :: un_xpp, un_cpp, un_xRb, un_xIm, un_fdispa
+    integer :: un_xpp, un_cpp, un_xRb, un_xIm, un_fdispa, unfdisA
    
     ! format specifiers 
     character(len=80), parameter  :: fmt = "(A8,I1,A5,ES25.16)"
@@ -164,6 +164,8 @@ subroutine read_inputfile(info)
                 read(buffer,*,iostat=ios) delta   
             case ('isbulkHCl')
                 read(buffer,*,iostat=ios) isbulkHCl  
+            case ('isbulkRbOH')
+                read(buffer,*,iostat=ios) isbulkRbOH      
             case ('isChargeRegularization')
                 read(buffer,*,iostat=ios) isChargeRegularization 
             case ('isCabinding')
@@ -239,7 +241,7 @@ subroutine check_value_sysflag(sysflag,info)
     character(len=15), intent(in) :: sysflag
     integer, intent(out),optional :: info
 
-    character(len=15) :: sysflagstr(5)
+    character(len=15) :: sysflagstr(7)
     integer :: i
     logical :: flag
 
@@ -250,10 +252,12 @@ subroutine check_value_sysflag(sysflag,info)
     sysflagstr(3)="electligand"
     sysflagstr(4)="pafiber"
     sysflagstr(5)="pafiberIm"
+    sysflagstr(6)="pafiberborn"
+    sysflagstr(7)="pafibervarelec"
 
     flag=.FALSE.
 
-    do i=1,4
+    do i=1,7
         if(sysflag==sysflagstr(i)) flag=.TRUE.
     enddo
 
@@ -274,7 +278,7 @@ subroutine check_value_runflag(runflag,info)
     character(len=15), intent(in) :: runflag
     integer, intent(out),optional :: info
 
-    character(len=15) :: runflagstr(4)
+    character(len=15) :: runflagstr(5)
     integer :: i
     logical :: flag
 
@@ -283,11 +287,12 @@ subroutine check_value_runflag(runflag,info)
     runflagstr(1)="rangepH"
     runflagstr(2)="rangepHcpp"
     runflagstr(3)="rangepHcNaCl"
-    runflagstr(4)="rangenr"
+    runflagstr(4)="rangepHcRbCl"
+    runflagstr(5)="rangenr"
 
     flag=.FALSE.
 
-    do i=1,4
+    do i=1,5
         if(runflag==runflagstr(i)) flag=.TRUE.
     enddo
 
@@ -419,9 +424,9 @@ subroutine set_value_concen(runflag,info)
     
     if (present(info)) info = 0
 
-    if(runflag=="rangepHcpp".or.runflag=="rangepHcNaCl") then
+    if(runflag=="rangepHcpp".or.runflag=="rangepHcNaCl".or.runflag=="rangepHcRbCl") then
 
-       !     .. read concentrations of cpp or NaCl from file
+       !     .. read concentrations of cpp or NaCl or RbCl from file
         write(fname,'(A9)')'concen.in'
         open(unit=newunit(un_cs),file=fname,iostat=ios,status='old')
         if(ios > 0 ) then
@@ -460,6 +465,10 @@ subroutine output()
     else if(sysflag=="pafiber") then
         call output_pafiber
     else if(sysflag=="pafiberIm") then
+        call output_pafiber
+    else if(sysflag=="pafiberborn") then
+        call output_pafiber
+    else if(sysflag=="pafibervarelec") then
         call output_pafiber
     else
         print*,"Error in output subroutine"
@@ -1300,7 +1309,9 @@ subroutine output_pafiber
         open(unit=newunit(un_charge),file=chargefilename)
         open(unit=newunit(un_xHplus),file=xHplusfilename)
         open(unit=newunit(un_xOHmin),file=xOHminfilename)
-        open(unit=newunit(un_fdisA),file=fdispafilename)  
+        open(unit=newunit(un_fdispa),file=fdispafilename)
+        open(unit=newunit(un_fdisA),file=fdisAfilename)
+
     endif
     
 
@@ -1382,8 +1393,20 @@ subroutine output_pafiber
     write(un_sys,*)'xbulk%OHmin = ',xbulk%OHmin
     write(un_sys,*)'xbulk%Rb    = ',xbulk%Rb
     write(un_sys,*)'xbulk%Im    = ',xbulk%Im
-    
+
+
+    write(un_sys,*)'bornbulk%Na    = ',bornbulk%Na
+    write(un_sys,*)'bornbulk%Cl    = ',bornbulk%Cl
+    write(un_sys,*)'bornbulk%K     = ',bornbulk%K
+    write(un_sys,*)'bornbulk%Ca    = ',bornbulk%Ca
+    write(un_sys,*)'bornbulk%Hplus = ',bornbulk%Hplus
+    write(un_sys,*)'bornbulk%OHmin = ',bornbulk%OHmin
+    write(un_sys,*)'bornbulk%Rb    = ',bornbulk%Rb
+    write(un_sys,*)'bornbulk%Im    = ',bornbulk%Im
+
     write(un_sys,*)'dielectW    = ',dielectW
+    write(un_sys,*)'dielectW    = ',dielectW
+
     write(un_sys,*)'lb          = ',lb
     write(un_sys,*)'T           = ',Temp
    
@@ -1404,8 +1427,8 @@ subroutine output_pafiber
     write(un_sys,*)'totalEpa    = ',totalEpa
     write(un_sys,*)'avfdispa    = ',avfdispa
     write(un_sys,*)'epsIm       = ',epsIm
-    write(un_sys,*)'avfdisA     = ',(avfdisA(i),i=1,5)
-     
+    write(un_sys,*)'avfdisA     = ',(avfdisA(i),i=1,6)
+    write(un_sys,*)'pKaAA       = ',(pKaAA(i),i=1,5) 
    
     !write(un_sys,*)'q residual  = ',qres
     
