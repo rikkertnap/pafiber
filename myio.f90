@@ -11,7 +11,7 @@ module myio
     integer, parameter ::  myio_err_runflag   = 2
     integer, parameter ::  myio_err_geometry  = 3
     integer, parameter ::  myio_err_method    = 4
-    integer, parameter ::  myio_err_chaintype = 5
+    !integer, parameter ::  myio_err_chaintype = 5
     integer, parameter ::  myio_err_domain    = 6
     integer, parameter ::  myio_err_inputfile = 7
     integer, parameter ::  myio_err_input     = 8
@@ -19,8 +19,8 @@ module myio
 
     ! unit number 
     integer :: un_sys,un_xpolAB,un_xpolC,un_xsol,un_xNa,un_xCl,un_xK,un_xCa,un_xNaCl,un_xKCl,un_xNO3
-    integer :: un_xOHmin,un_xHplus,un_fdisA,un_fdisB,un_psi,un_charge, un_xpair, un_rhopolAB, un_xTB, un_xTM
-    integer :: un_xpp, un_cpp, un_xRb, un_xIm, un_fdispa, unfdisA
+    integer :: un_xOHmin,un_xHplus,un_fdisA,un_fdisB,un_psi,un_charge, un_xpair, un_xTB, un_xTM
+    integer :: un_xpp, un_xRb, un_xIm, un_fdispa
    
     ! format specifiers 
     character(len=80), parameter  :: fmt = "(A8,I1,A5,ES25.16)"
@@ -172,12 +172,16 @@ subroutine read_inputfile(info)
                 read(buffer,*,iostat=ios) isCabinding 
             case ('pKa')
                 read(buffer,*,iostat=ios) pKa          !   AH   <=> A- + H+    
+            case ('pKdRb')
+                read(buffer,*,iostat=ios) pKdRb         !   ARb   <=> A- + Rb+    
             case ('epsIm')
                 read(buffer,*,iostat=ios) epsIm         
-
+            case ('chiIm')
+                read(buffer,*,iostat=ios) chiIm   
             case default
                 if(pos>1) then 
                     print *, 'Invalid label at line', line  ! empty lines are skipped
+                    stop
                 endif
             end select
         endif
@@ -205,7 +209,7 @@ subroutine read_inputfile(info)
         return
     endif
 
-    call check_value_runflag(runflag,info_sys) 
+    call check_value_runflag(runflag,info_run) 
     if (info_sys == myio_err_runflag) then
         if (present(info)) info = info_run
         return
@@ -350,7 +354,7 @@ subroutine check_value_geometry(geometry,info)
     integer, intent(out),optional :: info
 
     logical :: flag
-    character(len=11) :: geometrystr(4) 
+    character(len=11) :: geometrystr(3) 
     integer :: i
 
     ! permissible values of geometry
@@ -358,12 +362,10 @@ subroutine check_value_geometry(geometry,info)
     geometrystr(1)="planar"
     geometrystr(2)="spherical"
     geometrystr(3)="cylindrical"
-    geometrystr(4)="invcylindrical"
-    
     
     flag=.FALSE.
 
-    do i=1,4
+    do i=1,3
         if(geometry==geometrystr(i)) flag=.TRUE.
     enddo
         
@@ -386,7 +388,6 @@ subroutine check_value_method(method,info)
     integer, intent(out),optional :: info
 
     character(len=8) :: methodstr
-    integer :: i
     logical :: flag
 
     ! permissible values of runflag
@@ -880,7 +881,7 @@ subroutine output_ligand
     character(len=90) :: xTBfilename
     character(len=90) :: xTMfilename
     character(len=90) :: xppfilename
-    character(len=90) :: xppfdisfilename
+!    character(len=90) :: xppfdisfilename
     character(len=90) :: xCafilename
     character(len=90) :: xClfilename
     character(len=90) :: xNO3filename
@@ -889,11 +890,11 @@ subroutine output_ligand
     character(len=90) :: xHplusfilename
     character(len=90) :: xOHminfilename
 
-    integer :: i,j,k,t     ! dummy indexes
+    integer :: i,t     ! dummy indexes
     character(len=100) :: fnamelabel
-    character(len=20) :: rstr
-    logical :: isopen
-    real(dp) :: xppfdis(5),cppfdis(5)
+    character(len=20)  :: rstr
+    !real(dp) :: xppfdis(5)
+    real(dp) :: cppfdis(5)
     real(dp) :: cppbulk
     real(dp) :: eta, sigmaSurf0
 
@@ -1223,14 +1224,11 @@ subroutine output_pafiber
     character(len=90) :: densfracionpairfilename
     character(len=90) :: fdispafilename
     character(len=90) :: fdisAfilename
-
-
-    integer :: i,j,k,t     ! dummy indexes
+   
+    integer :: i,k     ! dummy indexes
     character(len=100) :: fnamelabel
     character(len=20) :: rstr
-    logical :: isopen
-
-
+   
     ! .. executable statements 
 
     ! .. make label filenames 
@@ -1429,6 +1427,7 @@ subroutine output_pafiber
     write(un_sys,*)'epsIm       = ',epsIm
     write(un_sys,*)'avfdisA     = ',(avfdisA(i),i=1,6)
     write(un_sys,*)'pKaAA       = ',(pKaAA(i),i=1,5) 
+    write(un_sys,*)'isbulkRbOH  = ',isbulkRbOH
    
     !write(un_sys,*)'q residual  = ',qres
     

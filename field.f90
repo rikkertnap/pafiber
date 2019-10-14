@@ -21,13 +21,11 @@ module field
     real(dp), dimension(:), allocatable :: xOHmin  ! volume fraction of OHmin 
     real(dp), dimension(:), allocatable :: rhoq    ! total charge density in units of vsol
     real(dp), dimension(:), allocatable :: fdispa  ! fraction pa  EE charged 
-    real(dp), dimension(:,:), allocatable :: fdisA  ! fraction pa  EE charged
+    real(dp), dimension(:,:), allocatable :: fdisA ! fraction pa  EE charged
     real(dp), dimension(:), allocatable :: rhoEpa  ! pa of E AA number density in units of vsol 
     real(dp), dimension(:,:), allocatable :: xpp   ! volume fraction pp ligand
-    !real(dp) :: qAB             ! normalization partion fnc polymer 
-    !real(dp) :: qC              ! normalization partion fnc polymer 
-    real(dp),dimension(:), allocatable :: epsfcn    ! dielectric constant 
-    real(dp),dimension(:), allocatable :: Depsfcn   ! derivative dielectric constant
+    real(dp), dimension(:), allocatable :: epsfcn  ! dielectric constant 
+    real(dp), dimension(:), allocatable :: Depsfcn ! derivative dielectric constant
   
 contains
 
@@ -57,9 +55,7 @@ contains
         allocate(fdispa(N))
         allocate(rhoEpa(N))
         allocate(fdisA(N,6))
-
         allocate(xpp(N,6))
-  
         allocate(epsfcn(N),stat=ier)    ! relative dielectric constant
         allocate(Depsfcn(N),stat=ier)   ! derivate relative dielectric constant
 
@@ -71,9 +67,7 @@ contains
     end subroutine allocate_field
 
 
-    subroutine deallocate_field()
-        implicit none
-        
+    subroutine deallocate_field()        
         
         deallocate(xsol)
         deallocate(xpa)
@@ -109,7 +103,6 @@ contains
 
     subroutine init_xpa_volume_dist
         
-
         use volume, only : nr
 
         integer ::i 
@@ -120,7 +113,6 @@ contains
         enddo    
        
         call read_xpa_dist
-
 
     end subroutine
     
@@ -158,7 +150,6 @@ contains
     subroutine read_rhoEpa_dist(info)
         
         use volume, only : nr, radius, isPACore, delta
-        use parameters, only :zpa
         use myutils
 
         integer, intent(out), optional :: info

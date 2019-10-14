@@ -145,10 +145,12 @@ module parameters
     real(dp) :: avfdispa
     real(dp) :: avfdisA(6)
     real(dp) :: epsIm ! van der Waals interaction Im 
+    real(dp) :: chiIm ! Flory-Huggins parameter between PA and Im
 
     !  constant for acrylic acid 
     real(dp) :: K0AA(5),pKaAA(5)
     real(dp) :: deltavA(5)
+    real(dp) :: pKdRb 
 
 contains
 
@@ -174,9 +176,9 @@ contains
             case ("pafiber") 
                 neq = 2 * nr  + neq_bc 
             case ("pafiberIm") 
-                neq = 3 * nr  + neq_bc   
+                neq = 2 * nr  + neq_bc   
             case ("pafiberborn") 
-                neq = 5 * nr  + neq_bc  
+                neq = 4 * nr  + neq_bc  
             case ("pafibervarelec") 
                 neq = 3 * nr  + neq_bc                 
             case ("bulk water") 
@@ -218,11 +220,11 @@ contains
         
         implicit none      
         
-        real(dp) :: vAA, vAMPS, v3pp
+        real(dp) :: v3pp
         
         !  .. initializations of variables
  
-        pi=acos(-1.0_dp)             ! pi = arccos(-1)
+        pi=acos(-1.0_dp)            ! pi = arccos(-1)
         itmax=2000                  ! maximum number of iterations
         nr=nsize                    ! size of lattice in z-direction 
         
@@ -343,8 +345,10 @@ contains
         !  scaling of Van der Waals of Imidazolium
         if(sysflag=="pafiberIm".or.sysflag=="pafiberborn".or.sysflag=="pafibervarelec") then 
             epsIm= epsIm *((vIm*vsol)**2/vsol) 
+            chiIm=chiIm*vIm
         else
             epsIm=0.0_dp
+            chiIm=0.0_dp
         endif        
 
     end subroutine init_constants
@@ -418,10 +422,10 @@ contains
             xbulk%Cl=xbulk%Cl +(xbulk%Hplus -xbulk%OHmin)*vCl  ! NaCl+ HCl
         else     
             print*,"isbulkRbOH=",isbulkRbOH                         ! pH >7
-            if(.not.isbulkRbOH) then         
-                xbulk%Na=xbulk%Na +(xbulk%OHmin -xbulk%Hplus)*vNa ! NaCl+ NaOH    
+            if(isbulkRbOH) then         
+                xbulk%Rb = xbulk%Rb+ (xbulk%OHmin -xbulk%Hplus)*vRb ! RbCl +RbOH  
             else
-                xbulk%Rb = xbulk%Rb+ (xbulk%OHmin -xbulk%Hplus)*vRb ! RbCl +RbOH
+                xbulk%Na=xbulk%Na +(xbulk%OHmin -xbulk%Hplus)*vNa ! NaCl+ NaOH    
             endif
         endif    
 
@@ -520,7 +524,8 @@ contains
         !     .. end init electrostatic part 
         
         if(sysflag=="pafiberIm".or.sysflag=="pafibervarelec") then 
-            expmu%Im    = xbulk%Im/( exp(epsIm*(xbulk%Im/(vIm*vsol) )) * ( xbulk%sol**vIm))
+           ! expmu%Im    = xbulk%Im/( exp(epsIm*(xbulk%Im/(vIm*vsol) )) * ( xbulk%sol**vIm))
+            expmu%Im    = xbulk%Im/(xbulk%sol**vIm)
         endif  
 
         if(sysflag=="pafiberborn") then
@@ -545,8 +550,9 @@ contains
             expmu%Hplus = (xbulk%Hplus/xbulk%sol) *      exp(bornbulk%Hplus)  
             expmu%OHmin = (xbulk%OHmin/xbulk%sol) *      exp(bornbulk%OHmin)  
 
-            expmu%Im    = xbulk%Im/( exp(epsIm*(xbulk%Im/(vIm*vsol) )) * ( xbulk%sol**vIm)) *exp(bornbulk%Im) 
-        
+            !expmu%Im    = xbulk%Im/( exp(epsIm*(xbulk%Im/(vIm*vsol) )) * ( xbulk%sol**vIm)) *exp(bornbulk%Im) 
+          
+            expmu%Im    = (xbulk%Im/(xbulk%sol**vIm)) *exp(bornbulk%Im) 
         endif  
     
         deallocate(x)
@@ -900,6 +906,8 @@ contains
         real(dp) :: KAA(5)
         real(dp) :: vA
  
+
+
         radiuspacore   = radius   
 
         ! set equilbrium constant for acrylic acid 
@@ -907,7 +915,7 @@ contains
         pKaAA(2)=-0.4_dp
         pKaAA(3)=1.0_dp
         pKaAA(4)=4.0_dp
-        pKaAA(5)=-0.6_dp
+        pKaAA(5)=pKdRb ! -0.6_dp
 
         do i=1,5
             KAA(i)=10.0_dp**(-pKaAA(i))  

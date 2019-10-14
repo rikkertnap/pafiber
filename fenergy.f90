@@ -82,14 +82,14 @@ contains
     
         if(sysflag.eq."elect") then 
             call fcnenergy_elect()
-        elseif(sysflag.eq."electdouble") then 
-        !    print*,"fcnenergy sysflag=electdouble"    
+        elseif(sysflag.eq."electdouble") then    
             call fcnenergy_elect()
         elseif(sysflag.eq."electnopoly") then 
             call fcnenergy_elect()
             call fcnenergy_elect_alternative()
         elseif(sysflag.eq."neutral") then 
             call fcnenergy_neutral()
+
         else
             print*,"Error in fcnenergy"
             print*,"Wrong value sysflag : ",sysflag

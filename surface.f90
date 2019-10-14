@@ -541,7 +541,7 @@ contains
 
         use physconst
         use mathconst
-        use parameters, only : deltaG0ads,expmu,vpp,zpp,xbulk
+        use parameters, only : deltaG0ads,expmu,vpp,xbulk
 
         real(dp), intent(in) :: psiS
         real(dp) :: surface_charge
@@ -593,7 +593,7 @@ contains
         use physconst
         use mathconst
         use parameters, only : deltaG0ads,deltaG0adsSuOH,deltaG0adsSuCl,deltaG0adsSuNO3
-        use parameters, only : expmu,vpp,zpp,xbulk,vCl,vNO3
+        use parameters, only : expmu,vpp,xbulk,vCl,vNO3
 
         real(dp), intent(in) :: psiS
         real(dp) :: surface_charge

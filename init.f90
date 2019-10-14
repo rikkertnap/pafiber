@@ -20,7 +20,7 @@ subroutine init_guess_electnopoly(x, xguess)
     real(dp), intent(out) :: xguess(:)  ! guess fraction  solvent 
   
     !     ..local variables 
-    integer :: n, i
+    integer :: i
     character(len=8) :: fname(2)
     integer :: ios,nfile(4)
     integer :: neq_bc 
@@ -78,7 +78,7 @@ subroutine init_guess_electnopoly(x, xguess)
     endif
     !     .. end init from file 
   
-    do i=1,neq
+    do i=1,neqint
         xguess(i)=x(i)
     enddo
 
@@ -96,7 +96,7 @@ subroutine init_guess_pafiberIm(x, xguess)
     real(dp), intent(out) :: xguess(:)  ! guess fraction  solvent 
   
     !     ..local variables 
-    integer :: n, i
+    integer :: i
     character(len=8) :: fname(2)
     integer :: ios,nfile(4)
     integer :: neq_bc 
@@ -158,7 +158,7 @@ subroutine init_guess_pafiberIm(x, xguess)
     endif
     !     .. end init from file 
   
-    do i=1,neq
+    do i=1,neqint
         xguess(i)=x(i)
     enddo
 
@@ -176,23 +176,20 @@ subroutine init_guess_pafiberborn(x, xguess)
     real(dp), intent(out) :: xguess(:)  ! guess fraction  solvent 
   
     !     ..local variables 
-    integer :: n, i
+    integer :: i
     character(len=8) :: fname(5)
     integer :: ios,nfile(5)
     integer :: neq_bc 
-    real(dp) :: rhoIm_bulk,rhoIM,xAA,xAACa
+    real(dp) :: xAA,xAACa
   
     ! .. init guess all xbulk     
-
-
-    rhoIm_bulk=xbulk%Im/(vIm*vsol)
 
     do i=1,nr
         x(i)=xbulk%sol
         x(i+nr)=0.0_dp
         x(i+2*nr)=0.0_dp
         x(i+3*nr)=0.0_dp
-        x(i+4*nr)=xbulk%Im/vIm
+    !    x(i+4*nr)=xbulk%Im/vIm
     enddo
 
     
@@ -213,15 +210,15 @@ subroutine init_guess_pafiberborn(x, xguess)
         write(fname(2),'(A6)')'psi.in'
         write(fname(3),'(A6)')'xAA.in'
         write(fname(4),'(A8)')'xAACa.in' 
-        write(fname(5),'(A8)')'rhoIm.in'
+        !write(fname(5),'(A8)')'rhoIm.in'
         
         nfile(1)=100
         nfile(2)=200
         nfile(3)=300
         nfile(4)=400
-        nfile(5)=500
+        !nfile(5)=500
      
-        do i=1,5 ! loop files
+        do i=1,4 ! loop files
             open(unit=nfile(i),file=fname(i),iostat=ios,status='old')
             if(ios >0 ) then    
                 print*, 'file num ber =',nfile(i),' file name =',fname(i)
@@ -235,30 +232,25 @@ subroutine init_guess_pafiberborn(x, xguess)
             read(100,*)xsol(i)    ! solvent
             read(200,*)psi(i)     ! potential 
             read(300,*)xAA        
-            read(400,*)xAACa      
-            read(500,*)rhoIm    
-
+            read(400,*)xAACa 
             x(i)      = xsol(i)   
-            x(i+n)    = psi(i)   
-            x(i+2*n)  = xAA   
-            x(i+3*n)  = xAACa
-            x(i+4*n)  = rhoIm  
+            x(i+nr)   = psi(i)   
+            x(i+2*nr) = xAA   
+            x(i+3*nr) = xAACa
         enddo
             
-        do i=1,5
+        do i=1,4
             close(nfile(i))
         enddo
 
     endif
     !     .. end init from file 
   
-    do i=1,neq
+    do i=1,neqint
         xguess(i)=x(i)
     enddo
 
 end subroutine init_guess_pafiberborn
-
-
 
 
 !     purpose: initalize x and xguess
@@ -343,14 +335,13 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
                 else if(sysflag=="pafiberIm".or.sysflag=="pafibervarelec") then 
                     call init_guess_pafiberIm(x,xguess)
                 else if(sysflag=="pafiberborn") then 
-                    call init_guess_pafiberborn(x,xguess)
-                             
+                    call init_guess_pafiberborn(x,xguess)           
                 else     
                     print*,"make_guess: wrong value sysflag : ", sysflag
                 endif
 
             else  
-                do i=1,neq
+                do i=1,neqint
                     xguess(i)=x(i)      ! volume fraction solvent 
                 enddo
             endif
@@ -370,7 +361,7 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
             print*,"make_guess: wrong value sysflag : ", sysflag
         endif
     else      
-        do i=1,neq
+        do i=1,neqint
             xguess(i)=x(i)      ! volume fraction solvent 
         enddo
     endif

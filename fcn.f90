@@ -54,7 +54,7 @@ module listfcn
         !     .. declare local variables
 
         integer :: n                 ! n=nr
-        integer :: i,j,k,c,s         ! dummy indices
+        integer :: i                 ! dummy indices
         integer :: neq_bc           
 
         !     .. executable statements 
@@ -256,7 +256,7 @@ module listfcn
         !     .. declare local variables
 
         integer :: n                 ! n=nr 
-        integer :: i,t               ! dummy indices
+        integer :: i                 ! dummy indices
         integer :: neq_bc           
         real(dp) :: norm
         real(dp) :: xA
@@ -340,9 +340,8 @@ module listfcn
        
         iter=iter+1 
 
-        n=neq
-        norm=l2norm(f,n)
-        print*,'iter=', iter ,'norm=',norm
+!        norm=l2norm(f,n)
+!       print*,'iter=', iter ,'norm=',norm
 
     end subroutine fcnpafiber
 
@@ -368,9 +367,8 @@ module listfcn
 
         !     .. declare local variables
  
-        real(dp) :: rhoIm(nsize)
         integer :: n                 ! n=nr 
-        integer :: i,t               ! dummy indices
+        integer :: i                 ! dummy indices
         integer :: neq_bc           
         real(dp) :: norm
         real(dp) :: xAA, xA(4), constA, sgxA, qAD, deltaxpa
@@ -382,20 +380,19 @@ module listfcn
         do i=1,n                   ! init x 
             xsol(i)= x(i)          ! solvent volume fraction 
             psi(i) = x(i+n)        ! potential
-            rhoIm(i) = x(i+2*n)    ! imidazolium density
         enddo
         
 
         if(bcflag/="cc") then
             neq_bc=1 
-            psiSurf =x(3*n+neq_bc) ! surface potential
+            psiSurf =x(2*n+neq_bc) ! surface potential
         endif 
     
         do i=1,n                  ! init volume fractions 
             xNa(i)    = expmu%Na  *(xsol(i)**vNa)*exp(-psi(i)*zNa)  ! ion Na+ volume fraction
             xK(i)     = expmu%K   *(xsol(i)**vK) *exp(-psi(i)*zK)   ! ion K+ volume fraction
             xRb(i)    = expmu%Rb  *(xsol(i)**vRb) *exp(-psi(i)*zRb) ! ion Rb+ volume fraction
-            xIm(i)    = expmu%Im  *(xsol(i)**vIm) *exp(-psi(i)*zIm)*exp(rhoIm(i)*epsIm)
+            xIm(i)    = expmu%Im  *(xsol(i)**vIm) *exp(-psi(i)*zIm)*exp(xpa(i)*chiIm)
             xCa(i)    = expmu%Ca  *(xsol(i)**vCa)*exp(-psi(i)*zCa)   ! ion divalent pos volume fraction
             xNaCl(i)  = expmu%NaCl*(xsol(i)**vNaCl)                  ! ion pair  volume fraction
             xKCl(i)   = expmu%KCl *(xsol(i)**vKCl)                   ! ion pair  volume fraction
@@ -449,9 +446,6 @@ module listfcn
 
             f(i)=xpa(i)+deltaxpa+ xsol(i)+xNa(i)+xCl(i)+xNaCl(i)+xK(i)+xKCl(i)+xCa(i)+xHplus(i)+xOHmin(i) +&
                     xRb(i)+ xIm(i) -1.0_dp
-        
-            f(2*n+i) = xIm(i)/(vIm*vsol)-rhoIm(i) ! self consitent Im density 
-
         enddo 
 
         !   ..  total charge density in units of vsol
@@ -492,7 +486,7 @@ module listfcn
         ! self consistent boundary conditions
 
         if(bcflag/='cc') then 
-            f(3*n+neq_bc)=psi(1)-psisurf+sigmaqSurf/2.0_dp
+            f(2*n+neq_bc)=psi(1)-psisurf+sigmaqSurf/2.0_dp
         else    
             psisurf=psi(1)+sigmaqSurf/2.0_dp
         endif   
@@ -501,7 +495,7 @@ module listfcn
 
         n=neq
         norm=l2norm(f,n)
-        print*,'iter=', iter ,'norm=',norm
+        !print*,'iter=', iter ,'norm=',norm
 
     end subroutine fcnpafiberIm
 
@@ -517,7 +511,7 @@ module listfcn
         use parameters
         use surface 
         use vectornorm
-        use dielectric_const, only : dielectfcn, born
+        use dielectric_const, only : dielectfcn
 
         ! .. array arguments
 
@@ -527,31 +521,27 @@ module listfcn
 
         ! .. local variables
  
-        real(dp) :: rhoIm(nsize),phi(nsize)
+        real(dp) :: phi(nsize)
         integer :: n                 ! n=nr 
-        integer :: i,t,k,k1,k2,k3,k4               ! dummy indices
+        integer :: i            ! dummy indices
         integer :: neq_bc           
         real(dp) :: norm
-        real(dp) :: xAA, xA(3), constA, sgxA, qAD
+        real(dp) :: xAA, xA(4), constA, sgxA, qAD
         real(dp) :: expsqrgradpsi,expdeltaGAA(nsize,5),Eself
-        real(dp) :: lbr,deltaxpa
-        real(dp) :: rhopolA(nsize),rhopolACa(nsize)
+        real(dp) :: deltaxpa
         
         ! .. executable statements 
  
         n=nr                       ! size vector neq=5*nz x=(pi,psi,rhopolA,rhopolB,xpolC)
-        k1=n
-        k2=2*n
         
         do i=1,n                   ! init x 
             xsol(i)      = x(i)          ! solvent volume fraction 
-            psi(i)       = x(i+k1)        ! potential 
-            rhoIm(i)     = x(i+k2)    ! imidazolium density
+            psi(i)       = x(i+n)        ! potential 
         enddo
         
         if(bcflag/="cc") then
             neq_bc=1 
-            psiSurf =x(3*n+neq_bc) ! surface potential
+            psiSurf =x(2*n+neq_bc) ! surface potential
         endif 
 
 
@@ -565,7 +555,7 @@ module listfcn
             xNa(i)    = expmu%Na  *(xsol(i)**vNa)*exp(-psi(i)*zNa)  ! ion Na+ volume fraction
             xK(i)     = expmu%K   *(xsol(i)**vK) *exp(-psi(i)*zK)   ! ion K+ volume fraction
             xRb(i)    = expmu%Rb  *(xsol(i)**vRb) *exp(-psi(i)*zRb) ! ion Rb+ volume fraction
-            xIm(i)    = expmu%Im  *(xsol(i)**vIm) *exp(-psi(i)*zIm)*exp(rhoIm(i)*epsIm)
+            xIm(i)    = expmu%Im  *(xsol(i)**vIm) *exp(-psi(i)*zIm)*exp(xpa(i)*chiIm)
             xCa(i)    = expmu%Ca  *(xsol(i)**vCa)*exp(-psi(i)*zCa)   ! ion divalent pos volume fraction
             xNaCl(i)  = expmu%NaCl*(xsol(i)**vNaCl)                  ! ion pair  volume fraction
             xKCl(i)   = expmu%KCl *(xsol(i)**vKCl)                   ! ion pair  volume fraction
@@ -594,12 +584,10 @@ module listfcn
             expdeltaGAA(i,4)= exp(-Eself*(deltavA(4)-vCa ))    ! 2.0_dp*vpolAA(1)-vpolAA(5)             A2Ca <=> 2A- +Ca++ 
             expdeltaGAA(i,5)= exp(-Eself*(deltavA(5)-vRb ))    ! vpolAA(1)-vpolAA(5)                    ARb  <=> A- + Rb- 
 
-        !    print*,i,expdeltaGAA(i,1)
-        enddo
+        enddo    
 
 
         if(isChargeRegularization) then
-
 
             if(.not.isCabinding) then 
                 do i=1,n
@@ -640,18 +628,13 @@ module listfcn
 
         !   .. construction of fcn 
         do i=1,n
-            ! add volume of Calcium binding etc .....!!!
+            ! volume change due to Calcium binding 
 
             deltaxpa=rhoEpa(i)*( fdisA(i,2)*(vAA(2)-vAA(1))+fdisA(i,3)*(vAA(3)-vAA(1)) +& 
                 fdisA(i,4)*(vAA(4)-vAA(1))+fdisA(i,5)*(vAA(5)-vAA(1))/2.0_dp +fdisA(i,6)*(vAA(6)-vAA(1)) ) *vsol
 
-
             f(i)=xpa(i)+deltaxpA+xsol(i)+xNa(i)+xCl(i)+xNaCl(i)+xK(i)+xKCl(i)+xCa(i)+xHplus(i)+xOHmin(i) +&
                     xRb(i)+ xIm(i) -1.0_dp
-        
-            f(i+k2) = xIm(i)/(vIm*vsol)-rhoIm(i) ! self consistent Im density 
-           
-
         enddo 
 
         !   ..  total charge density in units of vsol
@@ -659,7 +642,7 @@ module listfcn
         if(.not.isCabinding) then 
             do i=1,n
                 rhoq(i)=zpa*fdispa(i)*rhoEpa(i)*vsol+zNa*xNa(i)/vNa+zCa*xCa(i)/vCa +zK*xK(i)/vK +& 
-                    zCl*xCl(i)/vCl+zRb*xRb(i)/vRb +zIm*xIm(i)/vIm  + xHplus(i)-xOHmin(i) 
+                    zCl*xCl(i)/vCl+zRb*xRb(i)/vRb +zIm*xIm(i)/vIm +xHplus(i)-xOHmin(i) 
             enddo
         else
             do i=1,n
@@ -686,31 +669,28 @@ module listfcn
         !    f(n+i)= -0.5_dp*(Fplus(i)*psi(i+1)-2.0_dp*psi(i) + Fmin(i)*psi(i-1) +rhoq(i)*constqW)
         !enddo
 
-        f(k1+1) = gplus(1)*(epsfcn(2)+epsfcn(1))*(psi(2)-psi(1))/2.0_dp+ rhoq(1)*constqW     
+        f(n+1) = gplus(1)*(epsfcn(2)+epsfcn(1))*(psi(2)-psi(1))/2.0_dp+ rhoq(1)*constqW     
         do i=2,n-1
-            f(k1+i) = (gplus(i)*(epsfcn(i+1)+epsfcn(i) )*( psi(i+1) - psi(i)) &
+            f(n+i) = (gplus(i)*(epsfcn(i+1)+epsfcn(i) )*( psi(i+1) - psi(i)) &
                       -gmin(i)*(epsfcn(i)+epsfcn(i-1) )*( psi(i)   - psi(i-1)) )/2.0_dp+rhoq(i)*constqW                           
         enddo
-        f(k1+n)= -gmin(n)*(epsfcn(n)+epsfcn(n-1))*(psi(n)-psi(n-1))/2.0_dp+ rhoq(n)*constqW      
+        f(2*n)= -gmin(n)*(epsfcn(n)+epsfcn(n-1))*(psi(n)-psi(n-1))/2.0_dp+ rhoq(n)*constqW      
            
-    
 
         ! self consistent boundary conditions
 
         if(bcflag/='cc') then 
-            f(5*n+neq_bc)=psi(1)-psisurf+sigmaqSurf/2.0_dp
+            f(3*n+neq_bc)=psi(1)-psisurf+sigmaqSurf/2.0_dp
         else    
             psisurf=psi(1)+sigmaqSurf/2.0_dp
         endif   
        
         iter=iter+1 
 
-        n=neq
-        norm=l2norm(f,n)
-        print*,'iter=', iter ,'norm=',norm
-        do i=1,neq
-            print*,i,f(i)
-        enddo
+        ! n=neq
+        ! norm=l2norm(f,n)
+        ! print*,'iter=', iter ,'norm=',norm
+        
             
     end subroutine fcnpafibervarelec
 
@@ -734,9 +714,8 @@ module listfcn
 
         ! .. local variables
  
-        real(dp) :: rhoIm(nsize)
         integer  :: n                 ! n=nr 
-        integer  :: i,t,k,k1,k2,k3,k4               ! dummy indices
+        integer  :: i,t,k1,k2,k3               ! dummy indices
         integer  :: neq_bc           
         real(dp) :: norm, normpart(5)
         real(dp) :: xAA, xA(4), constA, sgxA, qAD
@@ -747,22 +726,21 @@ module listfcn
 
         ! .. executable statements 
  
-        n=nsize                      ! size vector neq=5*nz x=(pi,psi,rhopolA,rhopolB,xpolC)
+        n=nsize                      ! size vector neq=4*nz         
         k1=n
         k2=2*n
         k3=3*n
-        k4=4*n
-        do i=1,n                   ! init x 
-            xsol(i)      = x(i)          ! solvent volume fraction 
-            psi(i)       = x(i+n)        ! potential
+
+        do i=1,n                     ! init x 
+            xsol(i)      = x(i)      ! solvent volume fraction 
+            psi(i)       = x(i+n)    ! potential
             rhopolA(i)   = x(i+k2) 
             rhopolACa(i) = x(i+k3) 
-            rhoIm(i)     = x(i+k4)    ! imidazolium density
         enddo
         
         if(bcflag/="cc") then
             neq_bc=1 
-            psiSurf =x(5*n+neq_bc) ! surface potential
+            psiSurf =x(4*n+neq_bc) ! surface potential
         endif 
       
         if(runflag=="rangenr") then
@@ -780,7 +758,7 @@ module listfcn
             xNa(i)    = expmu%Na  *(xsol(i)**vNa)*exp(-born(lbr,bornrad%Na,zNa)-psi(i)*zNa)  ! ion Na+ volume fraction
             xK(i)     = expmu%K   *(xsol(i)**vK) *exp(-born(lbr,bornrad%K ,zK )-psi(i)*zK)   ! ion K+ volume fraction
             xRb(i)    = expmu%Rb  *(xsol(i)**vRb)*exp(-born(lbr,bornrad%Rb,zRb)-psi(i)*zRb)  ! ion Rb+ volume fraction
-            xIm(i)    = expmu%Im  *(xsol(i)**vIm)*exp(-born(lbr,bornrad%Im,zIm)-psi(i)*zIm)*exp(rhoIm(i)*epsIm)
+            xIm(i)    = expmu%Im  *(xsol(i)**vIm)*exp(-born(lbr,bornrad%Im,zIm)-psi(i)*zIm)*exp(xpa(i)*chiIm)
             xCa(i)    = expmu%Ca  *(xsol(i)**vCa)*exp(-born(lbr,bornrad%Ca,zCa)-psi(i)*zCa)   ! ion divalent pos volume fraction
             xNaCl(i)  = expmu%NaCl*(xsol(i)**vNaCl)                  ! ion pair  volume fraction
             xKCl(i)   = expmu%KCl *(xsol(i)**vKCl)                   ! ion pair  volume fraction
@@ -824,7 +802,6 @@ module listfcn
 
        
         if(isChargeRegularization) then
-
 
             if(.not.isCabinding) then 
                 do i=1,n
@@ -876,7 +853,6 @@ module listfcn
         
             f(i+k2) = rhopolA(i)   -fdisA(i,1)*rhoEpa(i)
             f(i+k3) = rhopolACa(i) -fdisA(i,4)*rhoEpa(i) 
-            f(i+k4) = xIm(i)/(vIm*vsol)-rhoIm(i) ! self consistent Im density 
 
         enddo 
 
@@ -924,17 +900,15 @@ module listfcn
         ! self consistent boundary conditions
 
         if(bcflag/='cc') then 
-            f(5*n+neq_bc)=psi(1)-psisurf+sigmaqSurf/2.0_dp
+            f(4*n+neq_bc)=psi(1)-psisurf+sigmaqSurf/2.0_dp
         else    
             psisurf=psi(1)+sigmaqSurf/2.0_dp
         endif   
        
         iter=iter+1 
 
-        norm=l2norm(f,neqint)
-        print*,'iter=', iter ,'norm=',norm
-        
-        
+        ! norm=l2norm(f,neqint)
+        ! print*,'iter=', iter ,'norm=',norm
         ! do i=1,5
         !     normpart(i)=l2norm_part(f,neqint,(i-1)*nsize+1,i*nsize)
         ! enddo
@@ -978,7 +952,6 @@ module listfcn
 
         !     .. executable statements 
 
-
         deltavolNaCl=(vNaCl-vNa-vCl)
         deltavolKCl=(vKCl-vNa-vCl)
 
@@ -1018,7 +991,6 @@ module listfcn
     end subroutine fcnbulk
 
 
-
     !     .. function solves for bulk volume fraction 
 
     subroutine fcnbulkligand(x,f,nn)   
@@ -1050,7 +1022,7 @@ module listfcn
         real(dp) :: xppbulkin, rhoqppbulkin
         real(dp) :: xppbulkout, rhoqppbulkout
         real(dp) :: phisol,phiKin,phiClin,phiClout,phiKout
-        real(dp) :: xA,xB,xBprime,xE,xF
+        real(dp) :: xA,xB,xBprime,xE
         real(dp) :: sumx, sumfpp, deltacharge
         integer :: t
         real(dp) :: norm
@@ -1186,9 +1158,9 @@ module listfcn
         real(dp) :: xppbulkout, rhoqppbulkout
         real(dp) :: phisol,phiKin,phiClin,phiClout,phiKout
         real(dp) :: phiNO3in,phiNO3out
-        real(dp) :: xA,xB,xBprime,xE,xF
+        real(dp) :: xA,xB,xBprime,xE
         real(dp) :: sumx, sumfpp, deltacharge
-        integer :: t
+        integer  :: t
         real(dp) :: norm
 
         !     .. executable statements 
@@ -1344,7 +1316,7 @@ module listfcn
                 constr(i)=1.0_dp
                 constr(i+nsize)=0.0_dp   !  electrostatic potential
             enddo
-            do i=1,neq_bc                  ! surface electrostatic potential if bcflag/=cc
+            do i=1,neq_bc                ! surface electrostatic potential if bcflag/=cc
                 constr(i+2*nsize)=0.0_dp
             enddo    
         case ("electligand")     
@@ -1352,7 +1324,7 @@ module listfcn
                 constr(i)=1.0_dp
                 constr(i+nsize)=0.0_dp   !  electrostatic potential
             enddo   
-            do i=1,neq_bc                  ! surface electrostatic potential if bcflag/=cc
+            do i=1,neq_bc                ! surface electrostatic potential if bcflag/=cc
                 constr(i+2*nsize)=0.0_dp
             enddo 
         case ("pafiber")     
@@ -1360,17 +1332,16 @@ module listfcn
                 constr(i)=1.0_dp
                 constr(i+nsize)=0.0_dp   !  electrostatic potential
             enddo  
-            do i=1,neq_bc                  ! surface electrostatic potential if bcflag/=cc
+            do i=1,neq_bc                ! surface electrostatic potential if bcflag/=cc
                 constr(i+2*nsize)=0.0_dp
             enddo  
         case ("pafibervarelec")     
             do i=1,nsize
                 constr(i)=1.0_dp
                 constr(i+nsize)=0.0_dp   !  electrostatic potential
-                constr(i+2*nsize)=1.0_dp   !  Im density
             enddo  
-            do i=1,neq_bc                  ! surface electrostatic potential if bcflag/=cc
-                constr(i+3*nsize)=0.0_dp
+            do i=1,neq_bc                ! surface electrostatic potential if bcflag/=cc
+                constr(i+2*nsize)=0.0_dp
             enddo 
 
         case ("pafiberborn")     
@@ -1379,25 +1350,23 @@ module listfcn
                 constr(i+nsize)=0.0_dp   !  electrostatic potential
                 constr(i+2*nsize)=0.0_dp 
                 constr(i+3*nsize)=0.0_dp
+            enddo    
+            do i=1,neq_bc                ! surface electrostatic potential if bcflag/=cc
                 constr(i+4*nsize)=0.0_dp
-            enddo  
-            do i=1,neq_bc                  ! surface electrostatic potential if bcflag/=cc
-                constr(i+5*nsize)=0.0_dp
             enddo      
         case ("pafiberIm")     
             do i=1,nsize
-                constr(i)=1.0_dp          ! volume fraction water
-                constr(i+nsize)=0.0_dp     !  electrostatic potential
-                constr(i+2*nsize)=1.0_dp   !  Im density
+                constr(i)=1.0_dp         ! volume fraction water
+                constr(i+nsize)=0.0_dp   !  electrostatic potential
             enddo  
-            do i=1,neq_bc                  ! surface electrostatic potential if bcflag/=cc
-                constr(i+3*nsize)=0.0_dp
+            do i=1,neq_bc                ! surface electrostatic potential if bcflag/=cc
+                constr(i+2*nsize)=0.0_dp
             enddo  
         case ("bulk water")             
             do i=1,nsize
                 constr(i)=1.0_dp     
             enddo     
-        case ("bulk ligand")                 !  neutral polymers
+        case ("bulk ligand")            
             do i=1,neqint
                 constr(i)=1.0_dp
             enddo 

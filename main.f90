@@ -76,10 +76,6 @@ program main
         call init_rhoEpa_dist
     endif   
 
-    !do i=1,nsize
-    !    print*,i,xpa(i),rhoEpa(i)
-    !enddo
-
     !  .. computation starts
                      
     ! .. select variable with which list_array associated
@@ -105,7 +101,6 @@ program main
 
     if(runflag/="rangenr") then  
 
-
         allocate(xstored(neq))
         allocate(x(neq))
         allocate(xguess(neq))   
@@ -114,16 +109,14 @@ program main
         isfirstguess = .true.    
         use_xstored = .false.             
         iter = 0
-
-
-        list_first= list(1)
+        list_first = list(1)
 
         do c=1,num_concen        ! loop 
 
             iter = 0                  ! iteration counter 
-            list_val=list(c)
-            isfirstguess= .true.
-            pH%val=pH%min    
+            list_val = list(c)
+            isfirstguess = .true.
+            pH%val = pH%min    
 
             do while (pH%min<=pH%val.and.pH%val<=pH%max.and.(abs(pH%stepsize)>=pH%delta)) 
                           
@@ -148,7 +141,7 @@ program main
                     pH%stepsize=pH%stepsize/2.0_dp  ! smaller 
                     pH%val=pH%val-pH%stepsize       ! sttep back
 
-                    do i=1,neq
+                    do i=1,neqint
                         x(i)=xguess(i)
                     enddo       
                 endif 
@@ -163,8 +156,6 @@ program main
         deallocate(x)
         deallocate(xguess)   
         deallocate(fvec)   
-
-        
 
     else  ! runflag==rangenr
 
@@ -191,7 +182,7 @@ program main
             use_xstored = .true.
             iter = 0                ! reset of iteration counter 
             nr = nr-nrstep          ! reduce distance 
-            do i=1,neq
+            do i=1,neqint
                 xstored(i)=x(i)
             enddo
 
@@ -199,11 +190,8 @@ program main
             deallocate(xguess)
         enddo  
 
-
     endif    
  
-   
-
     deallocate(xstored)
 
     call deallocate_field()

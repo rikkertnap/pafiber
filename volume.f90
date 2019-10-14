@@ -107,17 +107,19 @@ subroutine  make_geometry()
             enddo
             Asurf=2.0_dp*pi*(radius)  
             Vtest=pi*((nr*delta+radius)**2-radius**2)/(2.0_dp*pi*radius*delta)
-        case("invcylindrical")
-            do i=1,nr
-                rc(i)= (i-0.5_dp) * delta           ! radial coordinate 
-                G(i) =  (rc(i) /radius)             ! geometrical factor 
-                deltaG(i) = G(i)                    ! delta G(i)= (1/delta) \int dr G(r) 
-                Fplus(i)=1.0_dp+ delta/(2.0_dp*rc(i))
-                Fmin(i) =2.0_dp-Fplus(i)            ! factors in Poisson Equation
-                vol=vol+ deltaG(i)
-            enddo
-            Asurf=2.0_dp*pi*(radius) 
-            Vtest=pi*((nr*delta)**2)/(2.0_dp*pi*radius*delta)
+        
+        ! case("invcylindrical")
+        !     do i=1,nr
+        !         rc(i)= (i-0.5_dp) * delta           ! radial coordinate 
+        !         G(i) =  (rc(i) /radius)             ! geometrical factor 
+        !         deltaG(i) = G(i)                    ! delta G(i)= (1/delta) \int dr G(r) 
+        !         Fplus(i)=1.0_dp+ delta/(2.0_dp*rc(i))
+        !         Fmin(i) =2.0_dp-Fplus(i)            ! factors in Poisson Equation
+        !         vol=vol+ deltaG(i)
+        !     enddo
+        !     Asurf=2.0_dp*pi*(radius) 
+        !     Vtest=pi*((nr*delta)**2)/(2.0_dp*pi*radius*delta)
+        
         case("planar")
             do i=1,nr
                 rc(i)= (i-0.5_dp) * delta            ! coordinate 
@@ -140,7 +142,7 @@ subroutine  make_geometry()
             stop
         end select
     else 
-         isPACore=.false.  
+        isPACore=.false.  
 
         select case (geometry) 
         case ("spherical")
