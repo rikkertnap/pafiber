@@ -118,7 +118,7 @@ module parameters
     real(dp), target :: cNaCl      ! concentration of NaCl in bulk in mol/liter
     real(dp) :: cKCl               ! concentration of KCl in bulk in mol/liter
     real(dp), target :: cRbCl      ! concentration of RbCl in bulk in mol/liter
-    real(dp) :: cImCl              ! concentration of ImCl in bulk in mol/liter
+    real(dp), target :: cImCl      ! concentration of ImCl in bulk in mol/liter
     real(dp) :: cCaCl2             ! concentration of CaCl2 in bulk in mol/liter
     real(dp) :: cTBCl              ! concentration of TBCl in  bulk in mol/liter
     real(dp) :: cTMNO3             ! concentration of TMNO3 in  bulk in mol/liter

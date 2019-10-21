@@ -81,7 +81,7 @@ program main
                      
     ! .. select variable with which list_array associated
     
-    if (runflag=="rangepHcpp"  .or. runflag=="rangepHcNaCl" .or. runflag=="rangepHcRbCl") then
+    if (runflag=="rangepHcpp"  .or. runflag=="rangepHcNaCl" .or. runflag=="rangepHcRbCl".or.runflag=="rangepHcImCl") then
         call set_value_concen(runflag,info)
         if(info/=0) then
             print*,"Error in input file: info = ",info," : end program." 
@@ -91,7 +91,7 @@ program main
         if(runflag=="rangepHcpp")   list_val => cpp    
         if(runflag=="rangepHcNaCl") list_val => cNaCl
         if(runflag=="rangepHcRbCl") list_val => cRbCl
-                
+        if(runflag=="rangepHcImCl") list_val => cImCl       
     else
         if(associated(list)) nullify(list) 
         if(associated(list_val)) nullify(list_val) 

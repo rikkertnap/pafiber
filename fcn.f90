@@ -806,7 +806,8 @@ module listfcn
 
             if(.not.isCabinding) then 
                 do i=1,n
-                    xAA = xHplus(i)/(K0a*xsol(i))     ! AH/A-                                                       
+                    ! xAA = xHplus(i)/(K0a*xsol(i))     ! AH/A-   
+                    xAA = xHplus(i)/(expdeltaGAA(i,1)*K0AA(1)*(xsol(i)**deltavA(1)))      ! AH/A-                                                    
                     fdispa(i)  = 1.0_dp/(1.0_dp+xAA)              ! A-
                     fdisA(i,1) = fdispa(i)              ! extra assignment 
                 enddo

@@ -284,7 +284,7 @@ subroutine check_value_runflag(runflag,info)
     character(len=15), intent(in) :: runflag
     integer, intent(out),optional :: info
 
-    character(len=15) :: runflagstr(5)
+    character(len=15) :: runflagstr(6)
     integer :: i
     logical :: flag
 
@@ -294,11 +294,12 @@ subroutine check_value_runflag(runflag,info)
     runflagstr(2)="rangepHcpp"
     runflagstr(3)="rangepHcNaCl"
     runflagstr(4)="rangepHcRbCl"
-    runflagstr(5)="rangenr"
+    runflagstr(5)="rangepHcImCl"
+    runflagstr(6)="rangenr"
 
     flag=.FALSE.
 
-    do i=1,5
+    do i=1,6
         if(runflag==runflagstr(i)) flag=.TRUE.
     enddo
 
@@ -1353,7 +1354,7 @@ subroutine output_pafiber
             write(un_xHplus,*)rc(i),xHplus(i)
             write(un_xOHmin,*)rc(i),xOHmin(i)    
             write(un_fdispa,*)rc(i),fdispa(i) 
-            write(un_fdisA,*)rc(i),(fdisA(i,k),k=1,5)    
+            write(un_fdisA,*)rc(i),(fdisA(i,k),k=1,6)    
         enddo    
     endif
 
