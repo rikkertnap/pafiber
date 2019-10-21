@@ -71,7 +71,8 @@ program main
     
     call set_fcn
 
-    if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafiberborn".or.sysflag=="pafibervarelec") then 
+    if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafiberborn".or. &
+        sysflag=="pafibervarelec".or.sysflag=="pafiberbornscf") then 
         call init_xpa_volume_dist
         call init_rhoEpa_dist
     endif   

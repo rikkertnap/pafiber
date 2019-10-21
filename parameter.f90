@@ -179,6 +179,8 @@ contains
                 neq = 2 * nr  + neq_bc   
             case ("pafiberborn") 
                 neq = 4 * nr  + neq_bc  
+            case ("pafiberbornscf") 
+                neq = 5 * nr  + neq_bc  
             case ("pafibervarelec") 
                 neq = 3 * nr  + neq_bc                 
             case ("bulk water") 
@@ -343,7 +345,8 @@ contains
 
 
         !  scaling of Van der Waals of Imidazolium
-        if(sysflag=="pafiberIm".or.sysflag=="pafiberborn".or.sysflag=="pafibervarelec") then 
+        if(sysflag=="pafiberIm".or.sysflag=="pafiberborn".or.sysflag=="pafibervarelec".or.&
+            sysflag=="pafiberbornscf") then 
             epsIm= epsIm *((vIm*vsol)**2/vsol) 
             chiIm=chiIm*vIm
         else
@@ -454,7 +457,8 @@ contains
         !     .. intrinstic equilibruim constant acid        
         !     .. Kion unit 1/M= liter per mol !
 
-        if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafiberborn".or.sysflag=="pafibervarelec") then   ! no ion pairing
+        if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafiberborn".or.sysflag=="pafibervarelec"&
+            .or.sysflag=="pafiberbornscf") then   ! no ion pairing
             KionNa = 0.0_dp          
             KionK  = 0.0_dp
             Ka     = 10.0_dp**(-pKa) ! experimental equilibruim constant acid 
@@ -528,7 +532,7 @@ contains
             expmu%Im    = xbulk%Im/(xbulk%sol**vIm)
         endif  
 
-        if(sysflag=="pafiberborn") then
+        if(sysflag=="pafiberborn".or.sysflag=="pafiberbornscf") then
 
             bornbulk%AA   = born(lb,bornrad%AA,-1)
             bornbulk%AACa = born(lb,bornrad%AACa,1)
@@ -887,7 +891,9 @@ contains
         elseif(sysflag=="pafiberborn" ) then 
             call init_expmu_elect()  
         elseif(sysflag=="pafibervarelec" ) then 
-            call init_expmu_elect()        
+            call init_expmu_elect()    
+        elseif(sysflag=="pafiberbornscf" ) then 
+            call init_expmu_elect()          
         else
             print*,"Error in call to init_expmu subroutine"    
             print*,"Wrong value sysflag : ", sysflag

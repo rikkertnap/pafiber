@@ -253,6 +253,86 @@ subroutine init_guess_pafiberborn(x, xguess)
 end subroutine init_guess_pafiberborn
 
 
+subroutine init_guess_pafiberbornscf(x, xguess)
+      
+    use parameters, only : xbulk
+    use myutils, only :  newunit
+    implicit none
+  
+    real(dp), intent(inout) :: x(:)       ! volume fraction solvent iteration vector 
+    real(dp), intent(out) :: xguess(:)  ! guess fraction  solvent 
+  
+    !     ..local variables 
+    integer :: i
+    character(len=8) :: fname(5)
+    integer :: ios,unfile(5)
+    integer :: neq_bc 
+    real(dp) :: xAA,xAACa,phi
+  
+    ! .. init guess all xbulk     
+
+    do i=1,nr
+        x(i)=xbulk%sol
+        x(i+nr)=0.0_dp
+        x(i+2*nr)=0.0_dp
+        x(i+3*nr)=0.0_dp
+        x(i+4*nr)=xpa(i)
+    enddo
+
+    do i=1,18
+        x(i)=abs(1.0_dp-xpa(i)) 
+    enddo
+        
+    neq_bc=0
+    if(bcflag/="cc") then
+        neq_bc=1 
+        x(5*nr+neq_bc)=0.00_dp
+    endif        
+
+    if (infile.eq.1) then   ! infile is read in from file/stdio  
+    
+        write(fname(1),'(A7)')'xsol.in'
+        write(fname(2),'(A6)')'psi.in'
+        write(fname(3),'(A6)')'xAA.in'
+        write(fname(4),'(A8)')'xAACa.in' 
+        write(fname(5),'(A6)')'phi.in' 
+      
+        do i=1,4 ! loop files
+            open(unit=newunit(unfile(i)),file=fname(i),iostat=ios,status='old')
+            if(ios >0 ) then    
+                print*, 'file num ber =',unfile(i),' file name =',fname(i)
+                print*, 'Error opening file : iostat =', ios
+                stop
+            endif
+        enddo
+     
+        if(bcflag/="cc") read(200,*)psisurf     ! surface potential 
+        do i=1,nr
+            read(unfile(1),*)xsol(i)    ! solvent
+            read(unfile(2),*)psi(i)     ! potential 
+            read(unfile(3),*)xAA        
+            read(unfile(4),*)xAACa 
+            read(unfile(5),*)phi
+            x(i)      = xsol(i)   
+            x(i+nr)   = psi(i)   
+            x(i+2*nr) = xAA   
+            x(i+3*nr) = xAACa
+            x(i+4*nr) = phi
+        enddo
+            
+        do i=1,5
+            close(unfile(i))
+        enddo
+
+    endif
+    !     .. end init from file 
+  
+    do i=1,neqint
+        xguess(i)=x(i)
+    enddo
+
+end subroutine init_guess_pafiberbornscf
+
 !     purpose: initalize x and xguess
 !     .. copy solution of previous solution ( distance ) to create new guess
 !     .. data x=(pi,psi) and pi and psi order and split into  blocks
@@ -336,6 +416,8 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
                     call init_guess_pafiberIm(x,xguess)
                 else if(sysflag=="pafiberborn") then 
                     call init_guess_pafiberborn(x,xguess)           
+                else if(sysflag=="pafiberbornscf") then 
+                    call init_guess_pafiberbornscf(x,xguess)     
                 else     
                     print*,"make_guess: wrong value sysflag : ", sysflag
                 endif
@@ -356,7 +438,9 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
         else if(sysflag=="pafiberIm".or.sysflag=="pafibervarelec") then 
             call init_guess_pafiberIm(x,xguess)  
         else if(sysflag=="pafiberborn") then 
-            call init_guess_pafiberborn(x,xguess)                                   
+            call init_guess_pafiberborn(x,xguess)   
+        else if(sysflag=="pafiberbornscf") then 
+            call init_guess_pafiberborn(x,xguess)     
         else
             print*,"make_guess: wrong value sysflag : ", sysflag
         endif

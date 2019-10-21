@@ -300,7 +300,8 @@ contains
         integer :: i
         real(dp) :: sumpa
 
-        if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafiberborn") then !
+        if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafibervarelec".or.&
+            sysflag=="pafiberborn".or.sysflag=="pafiberbornscf") then !
             
             avfdispa=0.0_dp
             sumpa =0.0_dp
@@ -332,7 +333,8 @@ contains
         real(dp) :: sumpa
 
     
-        if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafiberborn".or.sysflag=="pafibervarelec") then !
+        if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafibervarelec".or.&
+            sysflag=="pafiberborn".or.sysflag=="pafiberbornscf") then !
             
             if(.not.isCabinding) then
                 sumpa =0.0_dp

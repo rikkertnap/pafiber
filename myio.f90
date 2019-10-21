@@ -245,7 +245,7 @@ subroutine check_value_sysflag(sysflag,info)
     character(len=15), intent(in) :: sysflag
     integer, intent(out),optional :: info
 
-    character(len=15) :: sysflagstr(7)
+    character(len=15) :: sysflagstr(8)
     integer :: i
     logical :: flag
 
@@ -258,10 +258,12 @@ subroutine check_value_sysflag(sysflag,info)
     sysflagstr(5)="pafiberIm"
     sysflagstr(6)="pafiberborn"
     sysflagstr(7)="pafibervarelec"
+    sysflagstr(8)="pafiberbornscf"
+    
 
     flag=.FALSE.
 
-    do i=1,7
+    do i=1,8
         if(sysflag==sysflagstr(i)) flag=.TRUE.
     enddo
 
@@ -468,6 +470,8 @@ subroutine output()
     else if(sysflag=="pafiberIm") then
         call output_pafiber
     else if(sysflag=="pafiberborn") then
+        call output_pafiber
+    else if(sysflag=="pafiberbornscf") then
         call output_pafiber
     else if(sysflag=="pafibervarelec") then
         call output_pafiber

@@ -339,7 +339,9 @@ contains
 
         FEtrans%sol   = FEtrans_entropy(xsol,xbulk%sol,vsol,"w")   
         FEtrans%Na    = FEtrans_entropy(xNa,xbulk%Na,vNa)
-        FEtrans%Cl    = FEtrans_entropy(xCl,xbulk%Cl,vCl)
+        FEtrans%Cl    = FEtrans_entropy(xCl,xbulk%Cl,vCl) 
+        FEtrans%Rb    = FEtrans_entropy(xRb,xbulk%Rb,vRb)
+        FEtrans%Im    = FEtrans_entropy(xIm,xbulk%Im,vIm)
         FEtrans%Ca    = FEtrans_entropy(xCa,xbulk%Ca,vCa)
         FEtrans%K     = FEtrans_entropy(xK,xbulk%K,vK)
         FEtrans%KCl   = FEtrans_entropy(xKCl,xbulk%KCl,vKCl)
@@ -353,6 +355,8 @@ contains
         FEchempot%sol   = 0.0_dp ! by construction  
         FEchempot%Na    = FEchem_pot(xNa,expmu%Na,vNa)
         FEchempot%Cl    = FEchem_pot(xCl,expmu%Cl,vCl)
+        FEchempot%Rb    = FEchem_pot(xRb,expmu%Rb,vRb)
+        FEchempot%Im    = FEchem_pot(xIm,expmu%Im,vIm)
         FEchempot%Ca    = FEchem_pot(xCa,expmu%Ca,vCa)
         FEchempot%K     = FEchem_pot(xK,expmu%K,vK) 
         FEchempot%KCl   = FEchem_pot(xKCl,expmu%KCl,vKCl)
@@ -364,13 +368,13 @@ contains
         ! .. surface chemical contribution
 
         if(bcflag=='qu') then ! quartz
-            FEchemSurfalt = (dlog(fdisS(1))+qS(1)*psiSurf)*sigmaSurf/(delta*4.0_dp*pi*lb) -2.0_dp*FEelsurf
+            FEchemSurfalt = (log(fdisS(1))+qS(1)*psiSurf)*sigmaSurf/(delta*4.0_dp*pi*lb) -2.0_dp*FEelsurf
         elseif(bcflag=="cl" ) then  ! clay        
-            FEchemSurfalt = (dlog(fdisS(1))+qS(1)*psiSurf)*sigmaSurf/(delta*4.0_dp*pi*lb) -2.0_dp*FEelsurf
+            FEchemSurfalt = (log(fdisS(1))+qS(1)*psiSurf)*sigmaSurf/(delta*4.0_dp*pi*lb) -2.0_dp*FEelsurf
         elseif(bcflag=="ca" ) then ! calcite
-            FEchemSurfalt =(dlog(fdisS(2))+dlog(fdisS(5)))*sigmaSurf/(delta*4.0_dp*pi*lb) -2.0_dp*FEelsurf
+            FEchemSurfalt =(log(fdisS(2))+dlog(fdisS(5)))*sigmaSurf/(delta*4.0_dp*pi*lb) -2.0_dp*FEelsurf
         elseif(bcflag=="ta" ) then ! taurine 
-            FEchemSurfalt= ((dlog(fdisTaR(1))+qTA(1)*psiSurf)*sigmaSurf/(delta*4.0_dp*pi*lb)) -2.0_dp*FEelsurf
+            FEchemSurfalt= ((log(fdisTaR(1))+qTA(1)*psiSurf)*sigmaSurf/(delta*4.0_dp*pi*lb)) -2.0_dp*FEelsurf
         elseif(bcflag=="cc") then  
             FEchemSurfalt=0.0_dp
         else
@@ -388,6 +392,7 @@ contains
         FEalt = FEalt+FEtrans%OHmin +FEtrans%Hplus +FEtrans%K +FEtrans%KCl
         FEalt = FEalt+FEchempot%sol +FEchempot%Na+ FEchempot%Cl +FEchempot%NaCl+FEchempot%Ca 
         FEalt = FEalt+FEchempot%OHmin +FEchempot%Hplus+ FEchempot%K +FEchempot%K+FEchempot%KCl
+        FEalt = FEalt+FEchempot%OHmin +FEchempot%Hplus
         ! be vary carefull FE = -1/2 \int dz rho_q(z) psi(z)
 
         FEalt = FEalt- FEel + FEelSurf+FEchemSurfalt
