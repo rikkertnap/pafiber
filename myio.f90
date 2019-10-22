@@ -428,7 +428,7 @@ subroutine set_value_concen(runflag,info)
     
     if (present(info)) info = 0
 
-    if(runflag=="rangepHcpp".or.runflag=="rangepHcNaCl".or.runflag=="rangepHcRbCl") then
+    if(runflag=="rangepHcpp".or.runflag=="rangepHcNaCl".or.runflag=="rangepHcRbCl".or.runflag=="rangepHcImCl") then
 
        !     .. read concentrations of cpp or NaCl or RbCl from file
         write(fname,'(A9)')'concen.in'
