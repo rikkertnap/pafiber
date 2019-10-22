@@ -1007,9 +1007,9 @@ module listfcn
 
             expEtotself(i) = Etotself*(Depsfcn(i)/epsfcn(i))  
             if(i/=1) then
-                expsqrgradpsi(i) = constqE* Depsfcn(i)*((psi(i+1)-psi(i-1))**2)             
+                expsqrgradpsi(i) = constqE * Depsfcn(i)*((psi(i+1)-psi(i-1))**2)             
             else
-                expsqrgradpsi(i) = constqE* Depsfcn(1)*((psi(2)-psi(1))**2)   
+                expsqrgradpsi(i) = constqE * Depsfcn(1)*((psi(2)-psi(1))**2)   
             endif
 
             Eself=expsqrgradpsi(i)+expEtotself(i)
@@ -1023,9 +1023,10 @@ module listfcn
                 Eself*(deltavA(3)-vCa ))    ! vpolAA(1)-vpolAA(4)),  ACa+  <=> A- + Ca++
             expdeltaGAA(i,4)=exp(-2.0_dp*(born(lbr,bornrad%AA,-1)-bornbulk%AA)-(born(lbr,bornrad%Ca,2)-bornbulk%Ca) +&     !  A2Ca  <=> 2A- +Ca++ 
                 Eself*(deltavA(4)-vCa ))    ! 2.0_dp*vpolAA(1)-vpolAA(5)
-             expdeltaGAA(i,5)= exp(-(born(lbr,bornrad%AA,-1)-bornbulk%AA)-(born(lbr,bornrad%Rb,1)-bornbulk%Rb) + &
+            expdeltaGAA(i,5)= exp(-(born(lbr,bornrad%AA,-1)-bornbulk%AA)-(born(lbr,bornrad%Rb,1)-bornbulk%Rb) + &
                 Eself*(deltavA(5)-vRb ))    ! vpolAA(1)-vpolAA(5)                    ARb  <=> A- + Rb- 
-             write(100,*)(expdeltaGAA(i,j),j=1,5)
+            !write(100,*)(expdeltaGAA(i,j),j=1,5)
+             
         enddo
 
        

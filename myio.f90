@@ -1232,7 +1232,7 @@ subroutine output_pafiber
    
     integer :: i,k     ! dummy indexes
     character(len=100) :: fnamelabel
-    character(len=20) :: rstr
+    character(len=20)  :: rstr
    
     ! .. executable statements 
 
@@ -1274,23 +1274,23 @@ subroutine output_pafiber
     fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))//".dat"
 
 
-    sysfilename='system.'//trim(fnamelabel)
-    xsolfilename='xsol.'//trim(fnamelabel)
-    xNafilename='xNaions.'//trim(fnamelabel)
-    xRbfilename='xRbions.'//trim(fnamelabel)
-    xImfilename='xImions.'//trim(fnamelabel)
-    xKfilename='xKions.'//trim(fnamelabel)
-    xCafilename='xCaions.'//trim(fnamelabel)
-    xNaClfilename='xNaClionpair.'//trim(fnamelabel)
-    xKClfilename='xKClionpair.'//trim(fnamelabel)
-    xClfilename='xClions.'//trim(fnamelabel)
+    sysfilename    ='system.'//trim(fnamelabel)
+    xsolfilename   ='xsol.'//trim(fnamelabel)
+    xNafilename    ='xNaions.'//trim(fnamelabel)
+    xRbfilename    ='xRbions.'//trim(fnamelabel)
+    xImfilename    ='xImions.'//trim(fnamelabel)
+    xKfilename     ='xKions.'//trim(fnamelabel)
+    xCafilename    ='xCaions.'//trim(fnamelabel)
+    xNaClfilename  ='xNaClionpair.'//trim(fnamelabel)
+    xKClfilename   ='xKClionpair.'//trim(fnamelabel)
+    xClfilename    ='xClions.'//trim(fnamelabel)
     potentialfilename='potential.'//trim(fnamelabel)
-    chargefilename='charge.'//trim(fnamelabel)
-    xHplusfilename='xHplus.'//trim(fnamelabel)
-    xOHminfilename='xOHmin.'//trim(fnamelabel)
+    chargefilename ='charge.'//trim(fnamelabel)
+    xHplusfilename ='xHplus.'//trim(fnamelabel)
+    xOHminfilename ='xOHmin.'//trim(fnamelabel)
     densfracionpairfilename='densityfracionpair.'//trim(fnamelabel)
-    fdispafilename='fdispa.'//trim(fnamelabel)
-    fdisAfilename='fdisA.'//trim(fnamelabel)
+    fdispafilename ='fdispa.'//trim(fnamelabel)
+    fdisAfilename  ='fdisA.'//trim(fnamelabel)
     
     !     .. opening files        
     
