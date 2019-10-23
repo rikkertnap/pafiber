@@ -297,7 +297,7 @@ subroutine init_guess_pafiberbornscf(x, xguess)
         write(fname(4),'(A8)')'xAACa.in' 
         write(fname(5),'(A6)')'phi.in' 
       
-        do i=1,4 ! loop files
+        do i=1,5 ! loop files
             open(unit=newunit(unfile(i)),file=fname(i),iostat=ios,status='old')
             if(ios >0 ) then    
                 print*, 'file num ber =',unfile(i),' file name =',fname(i)
@@ -440,7 +440,7 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
         else if(sysflag=="pafiberborn") then 
             call init_guess_pafiberborn(x,xguess)   
         else if(sysflag=="pafiberbornscf") then 
-            call init_guess_pafiberborn(x,xguess)     
+            call init_guess_pafiberbornscf(x,xguess)     
         else
             print*,"make_guess: wrong value sysflag : ", sysflag
         endif

@@ -909,8 +909,8 @@ module listfcn
        
         iter=iter+1 
 
-        ! norm=l2norm(f,neqint)
-        ! print*,'iter=', iter ,'norm=',norm
+        !norm=l2norm(f,neqint)
+        !print*,'iter=', iter ,'norm=',norm
         ! do i=1,5
         !     normpart(i)=l2norm_part(f,neqint,(i-1)*nsize+1,i*nsize)
         ! enddo
@@ -1137,8 +1137,8 @@ module listfcn
        
         iter=iter+1 
 
-        ! norm=l2norm(f,neqint)
-        ! print*,'iter=', iter ,'norm=',norm
+        norm=l2norm(f,neqint)
+        print*,'iter=', iter ,'norm=',norm
         ! do i=1,5
         !     normpart(i)=l2norm_part(f,neqint,(i-1)*nsize+1,i*nsize)
         ! enddo
