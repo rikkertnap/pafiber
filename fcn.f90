@@ -600,7 +600,7 @@ module listfcn
                     xA(1)= xHplus(i)/(expdeltaGAA(i,1)*K0AA(1)*(xsol(i)**deltavA(1)))      ! AH/A-
                     xA(2)= (xNa(i)/vNa)/(expdeltaGAA(i,2)*K0AA(2)*(xsol(i)**deltavA(2)))   ! ANa/A-
                     xA(3)= (xCa(i)/vCa)/(expdeltaGAA(i,3)*K0AA(3)*(xsol(i)**deltavA(3)))   ! ACa+/A-
-                    xA(4)= (xRb(i)/vRb)/(K0AA(5)*(xsol(i)**deltavA(5)))   ! ARb/A-
+                    xA(4)= (xRb(i)/vRb)/(expdeltaGAA(i,5)*K0AA(5)*(xsol(i)**deltavA(5)))   ! ARb/A-
 
                     sgxA=1.0_dp+xA(1)+xA(2)+xA(3)+xA(4)                                                        
                     constA=(2.0_dp*(rhoEpa(i)*vsol)*(xCa(i)/vCa))/(expdeltaGAA(i,4)*K0AA(4)*(xsol(i)**deltavA(4)))              
@@ -780,9 +780,9 @@ module listfcn
 
             expEtotself(i) = Etotself*(Depsfcn(i)/epsfcn(i))  
             if(i/=1) then
-                expsqrgradpsi(i) = constqE* Depsfcn(i)*((psi(i+1)-psi(i-1))**2)             
+                expsqrgradpsi(i) = constqE * Depsfcn(i)*((psi(i+1)-psi(i-1))**2)             
             else
-                expsqrgradpsi(i) = constqE* Depsfcn(1)*((psi(2)-psi(1))**2)   
+                expsqrgradpsi(i) = constqE * Depsfcn(1)*((psi(2)-psi(1))**2)   
             endif
 
             Eself=expsqrgradpsi(i)+expEtotself(i)
@@ -819,7 +819,7 @@ module listfcn
                     xA(1)= xHplus(i)/(expdeltaGAA(i,1)*K0AA(1)*(xsol(i)**deltavA(1)))      ! AH/A-
                     xA(2)= (xNa(i)/vNa)/(expdeltaGAA(i,2)*K0AA(2)*(xsol(i)**deltavA(2)))   ! ANa/A-
                     xA(3)= (xCa(i)/vCa)/(expdeltaGAA(i,3)*K0AA(3)*(xsol(i)**deltavA(3)))   ! ACa+/A-
-                    xA(4)= (xRb(i)/vRb)/(K0AA(5)*(xsol(i)**deltavA(5)))                    ! ARb/A-
+                    xA(4)= (xRb(i)/vRb)/(expdeltaGAA(i,5)*K0AA(5)*(xsol(i)**deltavA(5)))                    ! ARb/A-
                     
                     sgxA=1.0_dp+xA(1)+xA(2)+xA(3)+xA(4)                                                         
                     constA=(2.0_dp*(rhoEpa(i)*vsol)*(xCa(i)/vCa))/(expdeltaGAA(i,4)*K0AA(4)*(xsol(i)**deltavA(4)))                     
@@ -1046,7 +1046,7 @@ module listfcn
                     xA(1)= xHplus(i)/(expdeltaGAA(i,1)*K0AA(1)*(xsol(i)**deltavA(1)))      ! AH/A-
                     xA(2)= (xNa(i)/vNa)/(expdeltaGAA(i,2)*K0AA(2)*(xsol(i)**deltavA(2)))   ! ANa/A-
                     xA(3)= (xCa(i)/vCa)/(expdeltaGAA(i,3)*K0AA(3)*(xsol(i)**deltavA(3)))   ! ACa+/A-
-                    xA(4)= (xRb(i)/vRb)/(K0AA(5)*(xsol(i)**deltavA(5)))                    ! ARb/A-
+                    xA(4)= (xRb(i)/vRb)/(expdeltaGAA(i,5)*K0AA(5)*(xsol(i)**deltavA(5)))                    ! ARb/A-
                     
                     sgxA=1.0_dp+xA(1)+xA(2)+xA(3)+xA(4)                                                         
                     constA=(2.0_dp*(rhoEpa(i)*vsol)*(xCa(i)/vCa))/(expdeltaGAA(i,4)*K0AA(4)*(xsol(i)**deltavA(4)))                     

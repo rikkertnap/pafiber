@@ -182,7 +182,7 @@ contains
             case ("pafiberbornscf") 
                 neq = 5 * nr  + neq_bc  
             case ("pafibervarelec") 
-                neq = 3 * nr  + neq_bc                 
+                neq = 2 * nr  + neq_bc                 
             case ("bulk water") 
                 neq = 5 
             case ("bulk ligand") 

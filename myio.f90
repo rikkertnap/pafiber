@@ -1249,9 +1249,13 @@ subroutine output_pafiber
         write(rstr,'(F5.3)')cKCl
         fnamelabel=trim(fnamelabel)//"cKCl"//trim(adjustl(rstr))
     endif 
-    
-    if(cCaCl2>eps_salt) then 
-        write(rstr,'(F5.3)')cCaCl2
+
+    if(cCaCl2/=0.0_dp) then      
+        if(cCaCl2>=0.001) then 
+            write(rstr,'(F5.3)')cCaCl2
+        else
+            write(rstr,'(ES8.2E2)')cCaCl2
+        endif       
         fnamelabel=trim(fnamelabel)//"cCaCl2"//trim(adjustl(rstr))
     endif 
 

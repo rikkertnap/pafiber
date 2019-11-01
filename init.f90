@@ -412,8 +412,10 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
 
                 if(sysflag=="electnopoly".or.sysflag=="electligand".or.sysflag=="pafiber") then 
                     call init_guess_electnopoly(x,xguess)
-                else if(sysflag=="pafiberIm".or.sysflag=="pafibervarelec") then 
+                else if(sysflag=="pafiberIm") then 
                     call init_guess_pafiberIm(x,xguess)
+                else if(sysflag=="pafibervarelec") then 
+                    call init_guess_electnopoly(x,xguess)
                 else if(sysflag=="pafiberborn") then 
                     call init_guess_pafiberborn(x,xguess)           
                 else if(sysflag=="pafiberbornscf") then 
@@ -435,8 +437,10 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
 
         if(sysflag=="electnopoly".or.sysflag=="electligand".or.sysflag=="pafiber") then 
             call init_guess_electnopoly(x,xguess)   
-        else if(sysflag=="pafiberIm".or.sysflag=="pafibervarelec") then 
+        else if(sysflag=="pafiberIm") then 
             call init_guess_pafiberIm(x,xguess)  
+        else if(sysflag=="pafibervarelec") then 
+            call init_guess_electnopoly(x,xguess) 
         else if(sysflag=="pafiberborn") then 
             call init_guess_pafiberborn(x,xguess)   
         else if(sysflag=="pafiberbornscf") then 
