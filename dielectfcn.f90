@@ -11,29 +11,58 @@ module dielectric_const
     use precision_definition  
     implicit none
     
+    abstract interface
+        subroutine dielectfunct(phi,epsfcn,Depsfcn,dielectP,dielectW,n) 
+            use precision_definition
+            implicit none
+    
+            integer, intent(in)  :: n  
+            real(dp), intent(in) ::  dielectP, dielectW 
+            real(dp), intent(inout) :: epsfcn(:),Depsfcn(:)
+            real(dp), intent(in) :: phi(:)
+
+        end subroutine dielectfunct
+    end interface
+
+    procedure(dielectfunct), pointer :: dielectfcn => null()
+
+
     private                    ! default all routines in this module private 
-    public  ::  dielectfcn,born 
+    public  ::  dielectfcn,born,set_dielect_fcn
 
 contains
 
-subroutine dielectfcn(phi,epsfcn,Depsfcn,dielectP,dielectW,n) 
+
+
+subroutine set_dielect_fcn(dielect_env)
+
+        character(len=15), intent(in) :: dielect_env
+
+        select case (dielect_env)
+            case ("constant") 
+                dielectfcn=> dielectfcnConst 
+            case ("linear") 
+                dielectfcn => dielectfcnAV
+            case ("MaxwellGarnett") 
+                dielectfcn => dielectfcnMG
+            case default
+                print*,"Error in set_dielect_fcn"    
+                print*,"Wrong value dielect_env : ",dielect_env
+                stop
+        end select  
     
-    integer, intent(in) :: n
+end subroutine set_dielect_fcn
+
+
+subroutine dielectfcnConst(phi,epsfcn,Depsfcn,dielectP,dielectW,n) 
+
+    integer, intent(in)  :: n  
     real(dp), intent(in) ::  dielectP, dielectW 
     real(dp), intent(inout) :: epsfcn(:),Depsfcn(:)
-    real(dp), intent(in)  :: phi(:)
-
-    call dielectfcnAV(phi,epsfcn,Depsfcn,dielectP,dielectW,n) 
- !   call dielectfcnConst(epsfcn,Depsfcn,n) 
-
-end subroutine
-
-subroutine dielectfcnConst(epsfcn,Depsfcn,n) 
-
-    integer, intent(in)  :: n 
-    real(dp), intent(inout) :: epsfcn(:),Depsfcn(:)
- 
+    real(dp), intent(in) :: phi(:)
+    
     integer :: i  
+    
     do i=1,n  
         epsfcn(i)=  1.0d0 ! dielectric function
         Depsfcn(i)= 0.0d0 ! derivative dielectric function    
@@ -58,7 +87,8 @@ subroutine dielectfcnAV(phi,epsfcn,Depsfcn,dielectP,dielectW ,n)
    
     do i=1,n  
         epsfcn(i)= 1.0_dp-phi(i) + ratioeps * phi(i) ! dieletric function
-        Depsfcn(i)= -1.0_dp+ratioeps ! derivative dieletric function    
+        Depsfcn(i)= -1.0_dp+ratioeps                 ! derivative dieletric function    
+        print*,epsfcn(i)
     enddo
                                 
 end subroutine
@@ -70,7 +100,7 @@ subroutine dielectfcnMG(phi,epsfcn,Depsfcn,dielectP, dielectW, n)
 
     integer, intent(in) :: n
     real(dp), intent(in) ::  dielectP, dielectW 
-    real(dp) , intent(inout):: epsfcn(:),Depsfcn(:)
+    real(dp), intent(inout):: epsfcn(:),Depsfcn(:)
     real(dp), intent(in) :: phi(:)
 
     !     .. local variables

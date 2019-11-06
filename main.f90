@@ -29,6 +29,7 @@ program main
     use myio
     use myutils
     use fcnpointer
+    use dielectric_const
     
     implicit none  
     
@@ -43,7 +44,7 @@ program main
     logical :: isfirstguess 
     logical :: issolution  
 
-    character(len=lenText) :: text
+    character(len=lenText) :: text,istr
     character(len=20) :: rstr
     
     real(dp), dimension(:),  pointer :: list
@@ -59,8 +60,15 @@ program main
     text='program begins'
     call print_to_log(LogUnit,text)
 
+    call read_inputfile(info)
+    if(info/=0) then
+        write(istr,'(I3)')info
+        text="Error in input file: info = "//trim(adjustl(istr))//" : end program."
+        call print_to_log(LogUnit,text)
+        print*,text
+        stop
+    endif
 
-    call read_inputfile()
     call init_constants()
     call allocate_geometry(nsize)
     call make_geometry()            ! generate volume elements lattice 
@@ -70,6 +78,7 @@ program main
     call init_surface(bcflag)
     
     call set_fcn
+    call set_dielect_fcn(dielect_env)
 
     if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafiberborn".or. &
         sysflag=="pafibervarelec".or.sysflag=="pafiberbornscf") then 

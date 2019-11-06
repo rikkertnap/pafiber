@@ -72,6 +72,7 @@ module parameters
     real(dp) :: Temp               ! temperature in K
     real(dp) :: dielectW           ! dielectric constant of water 
     real(dp) :: dielectP           ! dielectric constant of hydrocarbons/PA
+    character(len=15) :: dielect_env ! selects dielectric function 
 
     real(dp) :: lb                 ! Bjerrum length	   
     real(dp) :: constqW            ! constant in Poisson eq dielectric constant of water 

@@ -15,7 +15,8 @@ module myio
     integer, parameter ::  myio_err_domain    = 6
     integer, parameter ::  myio_err_inputfile = 7
     integer, parameter ::  myio_err_input     = 8
-    integer, parameter ::  myio_err_bcflag    = 9 
+    integer, parameter ::  myio_err_bcflag    = 9  
+    integer, parameter ::  myio_err_dielect   = 10 
 
     ! unit number 
     integer :: un_sys,un_xpolAB,un_xpolC,un_xsol,un_xNa,un_xCl,un_xK,un_xCa,un_xNaCl,un_xKCl,un_xNO3
@@ -54,7 +55,7 @@ subroutine read_inputfile(info)
 
     ! .. local arguments
 
-    integer :: info_sys, info_bc, info_run, info_geo, info_meth, info_chaintype, info_combi
+    integer :: info_sys, info_bc, info_run, info_geo, info_meth, info_chaintype, info_combi, info_dielect
     character(len=8) :: fname
     integer :: ios,un_input  ! un = unit number    
 
@@ -177,7 +178,9 @@ subroutine read_inputfile(info)
             case ('epsIm')
                 read(buffer,*,iostat=ios) epsIm         
             case ('chiIm')
-                read(buffer,*,iostat=ios) chiIm   
+                read(buffer,*,iostat=ios) chiIm    
+            case ('dielect_env')
+                    read(buffer,*,iostat=ios) dielect_env
             case default
                 if(pos>1) then 
                     print *, 'Invalid label at line', line  ! empty lines are skipped
@@ -235,6 +238,11 @@ subroutine read_inputfile(info)
     endif
 
 
+    call check_value_dielect_env(dielect_env,info_dielect)
+    if (info_dielect == myio_err_dielect) then
+        if (present(info)) info = info_dielect
+        return
+    endif
 
 
 end subroutine read_inputfile
@@ -383,6 +391,40 @@ subroutine check_value_geometry(geometry,info)
     
 end subroutine check_value_geometry
 
+
+
+subroutine check_value_dielect_env(dielect_env,info)
+        
+
+    character(len=15), intent(in) :: dielect_env
+    integer, intent(out),optional :: info
+
+    logical :: flag
+    character(len=15) :: dielect_env_str(3) 
+    integer :: i
+
+    ! permissible values of dielect_env
+
+    dielect_env_str(1)="constant"
+    dielect_env_str(2)="linear"
+    dielect_env_str(3)="MaxwellGarnett"
+    
+    flag=.FALSE.
+
+    do i=1,3
+        if(dielect_env==dielect_env_str(i)) flag=.TRUE.
+    enddo
+        
+    if (present(info)) info = 0
+
+    if (flag.eqv. .FALSE.) then 
+        print*,"Error: value of dielect_env is not permissible"
+        print*,"dielect_env = ",dielect_env
+        if (present(info)) info = myio_err_dielect 
+        return
+    endif
+    
+end subroutine check_value_dielect_env
 
 
 subroutine check_value_method(method,info)
