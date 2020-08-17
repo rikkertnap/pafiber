@@ -45,6 +45,7 @@ module parameters
     real(dp) :: RTB
     real(dp) :: RTM 
     real(dp) :: RCl
+    real(dp) :: RBr 
     real(dp) :: RCa
     real(dp) :: RNO3
     real(dp) :: RRb
@@ -255,7 +256,10 @@ contains
         
         RNa = 0.102_dp              ! radius of Na+ in nm
         RK  = 0.138_dp              ! radius of K+ in nm
+        RBr = 0.196_dp              ! radius of Rb+ i nm 
         RCl = 0.181_dp              ! radius of Cl- in nm
+            
+        
         RCa = 0.106_dp              ! radius of Ca2+ in nm
         RRb = 0.152_dp              ! radius of Rb+ in nm 
 

@@ -88,7 +88,6 @@ subroutine dielectfcnAV(phi,epsfcn,Depsfcn,dielectP,dielectW ,n)
     do i=1,n  
         epsfcn(i)= 1.0_dp-phi(i) + ratioeps * phi(i) ! dieletric function
         Depsfcn(i)= -1.0_dp+ratioeps                 ! derivative dieletric function    
-        print*,epsfcn(i)
     enddo
                                 
 end subroutine
