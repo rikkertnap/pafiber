@@ -26,6 +26,8 @@ module field
     real(dp), dimension(:,:), allocatable :: xpp   ! volume fraction pp ligand
     real(dp), dimension(:), allocatable :: epsfcn  ! dielectric constant 
     real(dp), dimension(:), allocatable :: Depsfcn ! derivative dielectric constant
+    real(dp), dimension(:), allocatable :: rhoIm   ! derivative dielectric constant
+    
   
 contains
 
@@ -291,7 +293,7 @@ contains
     function average_charge_pa() result(avfdispa)     ! .. post : return average charge of state of polymers
 
         use volume, only : deltaG, nr
-        use globals, only : sysflag
+        use globals, only : systype
 
         implicit none 
 
@@ -300,8 +302,8 @@ contains
         integer :: i
         real(dp) :: sumpa
 
-        if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafibervarelec".or.&
-            sysflag=="pafiberborn".or.sysflag=="pafiberbornscf") then !
+        if(systype=="pafiber".or.systype=="pafiberIm".or.systype=="pafibervarelec".or.&
+            systype=="pafiberborn".or.systype=="pafiberbornscf") then !
             
             avfdispa=0.0_dp
             sumpa =0.0_dp
@@ -322,7 +324,7 @@ contains
     function average_charge_pa_Ca() result(avfdispa)     ! .. post : return average charge of state of polymers
 
         use volume, only : deltaG, nr
-        use globals, only : sysflag
+        use globals, only : systype
         use parameters, only : isCabinding
 
         implicit none 
@@ -333,8 +335,8 @@ contains
         real(dp) :: sumpa
 
     
-        if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafibervarelec".or.&
-            sysflag=="pafiberborn".or.sysflag=="pafiberbornscf") then !
+        if(systype=="pafiber".or.systype=="pafiberIm".or.systype=="pafibervarelec".or.&
+            systype=="pafiberborn".or.systype=="pafiberbornscf") then !
             
             if(.not.isCabinding) then
                 sumpa =0.0_dp

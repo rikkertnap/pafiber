@@ -80,8 +80,8 @@ program main
     call set_fcn
     call set_dielect_fcn(dielect_env)
 
-    if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafiberborn".or. &
-        sysflag=="pafibervarelec".or.sysflag=="pafiberbornscf") then 
+    if(systype=="pafiber".or.systype=="pafiberIm".or.systype=="pafiberborn".or. &
+        systype=="pafibervarelec".or.systype=="pafiberbornscf") then 
         call init_xpa_volume_dist
         call init_rhoEpa_dist
     endif   
@@ -90,17 +90,17 @@ program main
                      
     ! .. select variable with which list_array associated
     
-    if (runflag=="rangepHcpp"  .or. runflag=="rangepHcNaCl" .or. runflag=="rangepHcRbCl".or.runflag=="rangepHcImCl") then
-        call set_value_concen(runflag,info)
+    if (runtype=="rangepHcpp"  .or. runtype=="rangepHcNaCl" .or. runtype=="rangepHcRbCl".or.runtype=="rangepHcImCl") then
+        call set_value_concen(runtype,info)
         if(info/=0) then
             print*,"Error in input file: info = ",info," : end program." 
             stop
         endif
         list=>concen_array 
-        if(runflag=="rangepHcpp")   list_val => cpp    
-        if(runflag=="rangepHcNaCl") list_val => cNaCl
-        if(runflag=="rangepHcRbCl") list_val => cRbCl
-        if(runflag=="rangepHcImCl") list_val => cImCl       
+        if(runtype=="rangepHcpp")   list_val => cpp    
+        if(runtype=="rangepHcNaCl") list_val => cNaCl
+        if(runtype=="rangepHcRbCl") list_val => cRbCl
+        if(runtype=="rangepHcImCl") list_val => cImCl       
     else
         if(associated(list)) nullify(list) 
         if(associated(list_val)) nullify(list_val) 
@@ -109,7 +109,7 @@ program main
         list_val => list_first ! need to point to a valid variable
     endif    
 
-    if(runflag/="rangenr") then  
+    if(runtype/="rangenr") then  
 
         allocate(xstored(neq))
         allocate(x(neq))
@@ -167,7 +167,7 @@ program main
         deallocate(xguess)   
         deallocate(fvec)   
 
-    else  ! runflag==rangenr
+    else  ! runtype==rangenr
 
         allocate(xstored(neq))    
       

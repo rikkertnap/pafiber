@@ -170,7 +170,7 @@ contains
         neq_bc=0 
         if(bcflag/="cc") neq_bc=neq_bc+1
 
-        select case (sysflag)
+        select case (systype)
             case ("electnopoly") 
                 neq = 2 * nr  + neq_bc  
             case ("electligand") 
@@ -190,7 +190,7 @@ contains
             case ("bulk ligand") 
                 neq = 6 
             case default
-                print*,"set_size_neq: wrong value sysflag:  ",sysflag
+                print*,"set_size_neq: wrong value systype:  ",systype
                 stop
         end select  
 
@@ -271,9 +271,9 @@ contains
 
         !     .. volume
 
-        if(sysflag/="neutral") then 
+        if(systype/="neutral") then 
             vsol = 0.030_dp              ! volume water solvent molecule in (nm)^3
-        elseif(sysflag=="neutral") then 
+        elseif(systype=="neutral") then 
             vsol = 0.218_dp             ! volume hexane Mw=86.18 g/mol and rho=0.6548 g/ml  
         else 
             print*,"Error in call to init_constants subroutine"   
@@ -350,8 +350,8 @@ contains
 
 
         !  scaling of Van der Waals of Imidazolium
-        if(sysflag=="pafiberIm".or.sysflag=="pafiberborn".or.sysflag=="pafibervarelec".or.&
-            sysflag=="pafiberbornscf") then 
+        if(systype=="pafiberIm".or.systype=="pafiberborn".or.systype=="pafibervarelec".or.&
+            systype=="pafiberbornscf") then 
             epsIm= epsIm *((vIm*vsol)**2/vsol) 
             chiIm=chiIm*vIm
         else
@@ -397,7 +397,7 @@ contains
         real(dp),  dimension(:), allocatable :: x         ! volume fraction solvent iteration vector 
         real(dp),  dimension(:), allocatable :: xguess  
         real(dp) :: xNaClsalt, xKClsalt, xCaCl2salt,xRbClsalt, xImClsalt      ! volume fraction of divalent salt in bulk
-        character(len=15) :: sysflag_old
+        character(len=15) :: systype_old
 
         
         allocate(x(5))
@@ -462,8 +462,8 @@ contains
         !     .. intrinstic equilibruim constant acid        
         !     .. Kion unit 1/M= liter per mol !
 
-        if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafiberborn".or.sysflag=="pafibervarelec"&
-            .or.sysflag=="pafiberbornscf") then   ! no ion pairing
+        if(systype=="pafiber".or.systype=="pafiberIm".or.systype=="pafiberborn".or.systype=="pafibervarelec"&
+            .or.systype=="pafiberbornscf") then   ! no ion pairing
             KionNa = 0.0_dp          
             KionK  = 0.0_dp
             Ka     = 10.0_dp**(-pKa) ! experimental equilibruim constant acid 
@@ -474,8 +474,8 @@ contains
         K0ionNa = KionNa/(vsol*Na/1.0e24_dp) ! intrinstic equilibruim constant 
         
         if((KionNa.ne.0.0_dp).or.(KionK.ne.0.0_dp)) then  
-            sysflag_old=sysflag 
-            sysflag="bulk water"        ! set solver to fcnbulk
+            systype_old=systype 
+            systype="bulk water"        ! set solver to fcnbulk
             call set_size_neq()         ! number of nonlinear equations
             
             x(1)=xbulk%Na
@@ -502,7 +502,7 @@ contains
 
             ! reset of flags
             iter=0
-            sysflag=sysflag_old         ! switch solver back
+            systype=systype_old         ! switch solver back
             call set_size_neq()         ! number of non-linear  equation        
             
             xbulk%sol=1.0_dp-xbulk%Hplus-xbulk%OHmin - xbulk%Cl -xbulk%Na -xbulk%K-xbulk%NaCl-xbulk%KCl-xbulk%Ca 
@@ -532,12 +532,12 @@ contains
           
         !     .. end init electrostatic part 
         
-        if(sysflag=="pafiberIm".or.sysflag=="pafibervarelec") then 
+        if(systype=="pafiberIm".or.systype=="pafibervarelec") then 
            ! expmu%Im    = xbulk%Im/( exp(epsIm*(xbulk%Im/(vIm*vsol) )) * ( xbulk%sol**vIm))
             expmu%Im    = xbulk%Im/(xbulk%sol**vIm)
         endif  
 
-        if(sysflag=="pafiberborn".or.sysflag=="pafiberbornscf") then
+        if(systype=="pafiberborn".or.systype=="pafiberbornscf") then
 
             bornbulk%AA   = born(lb,bornrad%AA,-1)
             bornbulk%AACa = born(lb,bornrad%AACa,1)
@@ -721,7 +721,7 @@ contains
         real(dp),  dimension(:), allocatable :: x         ! volume fraction solvent iteration vector 
         real(dp),  dimension(:), allocatable :: xguess  
         integer :: i, t
-        character(len=15) :: sysflag_old
+        character(len=15) :: systype_old
         real(dp) :: Kpp(5), fppbulk(5)
         real(dp) :: xppbulk, rhoqppbulk, cppbulk, sumfpp
         real(dp) :: xNaClsalt, xKClsalt, xCaCl2salt, xTBClsalt ,xTMNO3salt            ! volume fraction of divalent salt in bulk
@@ -785,8 +785,8 @@ contains
       
         ! solver non linear eq of fcnbulkligand 
 
-        sysflag_old=sysflag 
-        sysflag="bulk ligand"       ! set sysflag 
+        systype_old=systype 
+        systype="bulk ligand"       ! set systype 
         call set_size_neq()         ! number of nonlinear equations
     
         ! .. initial guess
@@ -842,7 +842,7 @@ contains
 
         ! reset of flags
         iter=0
-        sysflag=sysflag_old         ! switch sysflag  back
+        systype=systype_old         ! switch systype  back
         call set_size_neq()         ! number of non-linear  equation        
 
         ! .. make chemical potentials 
@@ -879,29 +879,29 @@ contains
 
     subroutine init_expmu
 
-        use globals, only : sysflag, bcflag
+        use globals, only : systype, bcflag
       
-        if(sysflag=="electnopoly") then
+        if(systype=="electnopoly") then
             if(bcflag=="pp") then 
                 call init_expmu_elect_qdot()
             else
                 call init_expmu_elect()
             endif    
-        elseif(sysflag=="electligand") then
+        elseif(systype=="electligand") then
             call init_expmu_elect_ligand()   
-        elseif(sysflag=="pafiber" ) then 
+        elseif(systype=="pafiber" ) then 
             call init_expmu_elect()
-        elseif(sysflag=="pafiberIm" ) then 
+        elseif(systype=="pafiberIm" ) then 
             call init_expmu_elect()    
-        elseif(sysflag=="pafiberborn" ) then 
+        elseif(systype=="pafiberborn" ) then 
             call init_expmu_elect()  
-        elseif(sysflag=="pafibervarelec" ) then 
+        elseif(systype=="pafibervarelec" ) then 
             call init_expmu_elect()    
-        elseif(sysflag=="pafiberbornscf" ) then 
+        elseif(systype=="pafiberbornscf" ) then 
             call init_expmu_elect()          
         else
             print*,"Error in call to init_expmu subroutine"    
-            print*,"Wrong value sysflag : ", sysflag
+            print*,"Wrong value systype : ", systype
             stop        
         endif   
 

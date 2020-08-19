@@ -15,8 +15,12 @@ module globals
     integer(8)  :: neqmax     ! maximum number of non-linear equations
     integer  :: neqint        ! number of non-linear equations, integer instead of integer(8)
 
-    character(len=15) :: sysflag   ! sysflag selects fcn    
-    character(len=15) :: runflag   ! runflag
+    integer  :: nseg          ! length of ionic liquid polymer 
+    integer  :: nsegtypes     ! number of segment types 
+    integer  :: cuantas       ! number of configurations
+
+    character(len=15) :: systype   ! systype selects fcn    
+    character(len=15) :: runtype   ! runtype
     character(len=2)  :: bcflag    ! bcflag selects bc surface 
 
     integer, parameter :: AH2BH = 5

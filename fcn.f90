@@ -209,7 +209,7 @@ module listfcn
         ! .. charge regulating surface charge 
         sigmaqSurf=surface_charge(bcflag,psiSurf)
         
-        if(runflag=="rangenr") then
+        if(runtype=="rangenr") then
             psi(n+1) = psi(n)
         else 
             psi(n+1) = 0.0_dp
@@ -317,7 +317,7 @@ module listfcn
         ! .. charge regulating surface charge 
         sigmaqSurf=surface_charge(bcflag,psiSurf)
         
-        if(runflag=="rangenr") then
+        if(runtype=="rangenr") then
             psi(n+1) = psi(n)
         else 
             psi(n+1) = 0.0_dp
@@ -467,7 +467,7 @@ module listfcn
         ! .. charge regulating surface charge 
         sigmaqSurf=surface_charge(bcflag,psiSurf)
         
-        if(runflag=="rangenr") then
+        if(runtype=="rangenr") then
             psi(n+1) = psi(n)
         else 
             psi(n+1) = 0.0_dp
@@ -545,7 +545,7 @@ module listfcn
         endif 
 
 
-        if(runflag=="rangenr") then
+        if(runtype=="rangenr") then
             psi(n+1) = psi(n)
         else 
             psi(n+1) = 0.0_dp
@@ -656,7 +656,7 @@ module listfcn
         ! .. charge regulating surface charge 
         sigmaqSurf=surface_charge(bcflag,psiSurf)
         
-        if(runflag=="rangenr") then
+        if(runtype=="rangenr") then
             psi(n+1) = psi(n)
         else 
             psi(n+1) = 0.0_dp
@@ -743,7 +743,7 @@ module listfcn
             psiSurf =x(4*n+neq_bc) ! surface potential
         endif 
       
-        if(runflag=="rangenr") then
+        if(runtype=="rangenr") then
             psi(n+1) = psi(n)
         else 
             psi(n+1) = 0.0_dp
@@ -877,7 +877,7 @@ module listfcn
         ! .. charge regulating surface charge 
         sigmaqSurf=surface_charge(bcflag,psiSurf)
         
-        if(runflag=="rangenr") then
+        if(runtype=="rangenr") then
             psi(n+1) = psi(n)
         else 
             psi(n+1) = 0.0_dp
@@ -970,7 +970,7 @@ module listfcn
             psiSurf =x(4*n+neq_bc) ! surface potential
         endif 
       
-        if(runflag=="rangenr") then
+        if(runtype=="rangenr") then
             psi(n+1) = psi(n)
         else 
             psi(n+1) = 0.0_dp
@@ -1105,7 +1105,7 @@ module listfcn
         ! .. charge regulating surface charge 
         sigmaqSurf=surface_charge(bcflag,psiSurf)
         
-        if(runflag=="rangenr") then
+        if(runtype=="rangenr") then
             psi(n+1) = psi(n)
         else 
             psi(n+1) = 0.0_dp
@@ -1525,7 +1525,7 @@ module listfcn
     subroutine set_contraints(constr)
 
         use precision_definition
-        use globals, only : sysflag, neq, nsize ,bcflag 
+        use globals, only : systype, neq, nsize ,bcflag 
 
         implicit none
             
@@ -1538,7 +1538,7 @@ module listfcn
         neq_bc=0 
         if(bcflag/="cc") neq_bc=neq_bc+1
         
-        select case (sysflag)
+        select case (systype)
         case ("electnopoly")     
             do i=1,nsize
                 constr(i)=1.0_dp
@@ -1625,7 +1625,7 @@ module listfcn
         
         implicit none   
 
-        select case (sysflag)
+        select case (systype)
             case ("electnopoly") 
                 fcnptr => fcnelectNoPoly 
             case ("electligand") 
@@ -1647,7 +1647,7 @@ module listfcn
                 fcnptr => fcnpafibervarelec
             case default
                 print*,"Error in call to solver subroutine"    
-                print*,"Wrong value sysflag : ", sysflag
+                print*,"Wrong value systype : ", systype
                 stop
         end select  
     

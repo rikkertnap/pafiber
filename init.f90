@@ -33,7 +33,7 @@ subroutine init_guess_electnopoly(x, xguess)
         x(i+nr)=0.000_dp
     enddo
 
-    if(sysflag=="pafiber") then 
+    if(systype=="pafiber") then 
         do i=1,18
             x(i)=abs(1.0_dp-xpa(i))
             x(i+nr)=0.000_dp
@@ -113,7 +113,7 @@ subroutine init_guess_pafiberIm(x, xguess)
         x(i+2*nr)=rhoIm_bulk
     enddo
 
-    if(sysflag=="pafiber") then 
+    if(systype=="pafiber") then 
         do i=1,18
             x(i)=abs(1.0_dp-xpa(i))
             x(i+nr)=0.000_dp
@@ -357,7 +357,7 @@ subroutine make_guess_from_xstored(xguess,xstored)
     neq_bc=0    
     if(bcflag/="cc") neq_bc=neq_bc+1
     
-    if (sysflag=="electnopoly".or.sysflag=="electligand") then 
+    if (systype=="electnopoly".or.systype=="electligand") then 
         do i=1,nr/2
             xguess(i)=xstored(i)                    ! volume fraction solvent 
             xguess(i+nr)=xstored(i+nr+nrstep)       ! potential
@@ -371,8 +371,8 @@ subroutine make_guess_from_xstored(xguess,xstored)
             xguess(2*nr+i)=xstored(2*(nr+nrstep)+i) 
         enddo   
     else
-        print*,"Error : make_guess_from_xstored wrong sysflag"
-        print*,"sysflag",sysflag
+        print*,"Error : make_guess_from_xstored wrong systype"
+        print*,"systype",systype
         stop
     endif    
 
@@ -410,18 +410,18 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
 
             else if(isfirstguess) then       ! first guess
 
-                if(sysflag=="electnopoly".or.sysflag=="electligand".or.sysflag=="pafiber") then 
+                if(systype=="electnopoly".or.systype=="electligand".or.systype=="pafiber") then 
                     call init_guess_electnopoly(x,xguess)
-                else if(sysflag=="pafiberIm") then 
+                else if(systype=="pafiberIm") then 
                     call init_guess_pafiberIm(x,xguess)
-                else if(sysflag=="pafibervarelec") then 
+                else if(systype=="pafibervarelec") then 
                     call init_guess_electnopoly(x,xguess)
-                else if(sysflag=="pafiberborn") then 
+                else if(systype=="pafiberborn") then 
                     call init_guess_pafiberborn(x,xguess)           
-                else if(sysflag=="pafiberbornscf") then 
+                else if(systype=="pafiberbornscf") then 
                     call init_guess_pafiberbornscf(x,xguess)     
                 else     
-                    print*,"make_guess: wrong value sysflag : ", sysflag
+                    print*,"make_guess: wrong value systype : ", systype
                 endif
 
             else  
@@ -435,18 +435,18 @@ subroutine make_guess(x, xguess,isfirstguess,flagstored,xstored)
         endif 
     else if(isfirstguess) then       ! first guess
 
-        if(sysflag=="electnopoly".or.sysflag=="electligand".or.sysflag=="pafiber") then 
+        if(systype=="electnopoly".or.systype=="electligand".or.systype=="pafiber") then 
             call init_guess_electnopoly(x,xguess)   
-        else if(sysflag=="pafiberIm") then 
+        else if(systype=="pafiberIm") then 
             call init_guess_pafiberIm(x,xguess)  
-        else if(sysflag=="pafibervarelec") then 
+        else if(systype=="pafibervarelec") then 
             call init_guess_electnopoly(x,xguess) 
-        else if(sysflag=="pafiberborn") then 
+        else if(systype=="pafiberborn") then 
             call init_guess_pafiberborn(x,xguess)   
-        else if(sysflag=="pafiberbornscf") then 
+        else if(systype=="pafiberbornscf") then 
             call init_guess_pafiberbornscf(x,xguess)     
         else
-            print*,"make_guess: wrong value sysflag : ", sysflag
+            print*,"make_guess: wrong value systype : ", systype
         endif
     else      
         do i=1,neqint

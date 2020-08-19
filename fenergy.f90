@@ -80,19 +80,19 @@ contains
         use globals
     !    implicit none
     
-        if(sysflag.eq."elect") then 
+        if(systype.eq."elect") then 
             call fcnenergy_elect()
-        elseif(sysflag.eq."electdouble") then    
+        elseif(systype.eq."electdouble") then    
             call fcnenergy_elect()
-        elseif(sysflag.eq."electnopoly") then 
+        elseif(systype.eq."electnopoly") then 
             call fcnenergy_elect()
             call fcnenergy_elect_alternative()
-        elseif(sysflag.eq."neutral") then 
+        elseif(systype.eq."neutral") then 
             call fcnenergy_neutral()
 
         else
             print*,"Error in fcnenergy"
-            print*,"Wrong value sysflag : ",sysflag
+            print*,"Wrong value systype : ",systype
         endif 
     end subroutine fcnenergy
 
@@ -197,12 +197,12 @@ contains
         FEVdWC  = delta*FEVdWC*VdWepsC*vpolC*vsol/2.0_dp   
         FEVdWB  = delta*FEVdWB*VdWepsB*vpolB(3)*vsol/2.0_dp   
     
-!        if (sysflag=="elect") then 
+!        if (systype=="elect") then 
 !            FEVdW=FEVdWC
-!        elseif (sysflag=="neutral") then
+!        elseif (systype=="neutral") then
 !            FEVdW=FEVdWB
 !        else 
-!            print*,"Wrong value sysflag : ", sysflag
+!            print*,"Wrong value systype : ", systype
 !            stop    
 !        endif           
 

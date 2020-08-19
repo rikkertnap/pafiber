@@ -7,8 +7,8 @@ module myio
 
     ! return error values
 
-    integer, parameter ::  myio_err_sysflag   = 1
-    integer, parameter ::  myio_err_runflag   = 2
+    integer, parameter ::  myio_err_systype   = 1
+    integer, parameter ::  myio_err_runtype   = 2
     integer, parameter ::  myio_err_geometry  = 3
     integer, parameter ::  myio_err_method    = 4
     !integer, parameter ::  myio_err_chaintype = 5
@@ -97,10 +97,10 @@ subroutine read_inputfile(info)
             select case (label) !list-directed The CHARACTER variable is treated as an 'internal file'
             case ('method')    
                 read(buffer, *,iostat=ios) method
-            case ('sysflag')
-                read(buffer, *,iostat=ios) sysflag
+            case ('systype')
+                read(buffer, *,iostat=ios) systype
             case ('runtype')
-                read(buffer, *,iostat=ios) runflag
+                read(buffer, *,iostat=ios) runtype
             case ('bcflag')
                 read(buffer, *,iostat=ios) bcflag
             case ('error')
@@ -140,7 +140,7 @@ subroutine read_inputfile(info)
             case ('cpp')
                 read(buffer,*,iostat=ios) cpp
             case ('deltaG0ads')                                        
-                read(buffer,*,iostat=ios) deltaG0ads  ! only if sysflag=="electligand")
+                read(buffer,*,iostat=ios) deltaG0ads  ! only if systype=="electligand")
             case ('deltaG0adsSuOH ')
                 read(buffer,*,iostat=ios) deltaG0adsSuOH ! only if bcflag=="pc"
             case ('deltaG0adsSuCl')
@@ -150,11 +150,11 @@ subroutine read_inputfile(info)
             case ('nsize')
                 read(buffer,*,iostat=ios) nsize  
             case ('nrmax')
-                read(buffer,*,iostat=ios) nrmax ! only if runflag=="rangnr"    
+                read(buffer,*,iostat=ios) nrmax ! only if runtype=="rangnr"    
             case ('nrmin')
-                read(buffer,*,iostat=ios) nrmin ! only if runflag=="rangnr"    
+                read(buffer,*,iostat=ios) nrmin ! only if runtype=="rangnr"    
             case ('nrstep')
-                read(buffer,*,iostat=ios) nrstep ! only if runflag=="rangnr"    
+                read(buffer,*,iostat=ios) nrstep ! only if runtype=="rangnr"    
             case ('verboseflag')
                 read(buffer,*,iostat=ios)verboseflag 
             case ('radius')
@@ -200,20 +200,20 @@ subroutine read_inputfile(info)
           
      ! set geometry and bcflag for pa fiber
 
-    if(sysflag=="pafiber".or.sysflag=="pafiberIm") then 
+    if(systype=="pafiber".or.systype=="pafiberIm") then 
         geometry="cylindrical"
         bcflag="cc" 
     endif    
     ! .. check values of certain input parametere
 
-    call check_value_sysflag(sysflag,info_sys) 
-    if (info_sys == myio_err_sysflag) then
+    call check_value_systype(systype,info_sys) 
+    if (info_sys == myio_err_systype) then
         if (present(info)) info = info_sys
         return
     endif
 
-    call check_value_runflag(runflag,info_run) 
-    if (info_sys == myio_err_runflag) then
+    call check_value_runtype(runtype,info_run) 
+    if (info_sys == myio_err_runtype) then
         if (present(info)) info = info_run
         return
     endif
@@ -248,79 +248,79 @@ subroutine read_inputfile(info)
 end subroutine read_inputfile
  
 
-subroutine check_value_sysflag(sysflag,info)
+subroutine check_value_systype(systype,info)
 
-    character(len=15), intent(in) :: sysflag
+    character(len=15), intent(in) :: systype
     integer, intent(out),optional :: info
 
-    character(len=15) :: sysflagstr(8)
+    character(len=15) :: systypestr(8)
     integer :: i
     logical :: flag
 
-    ! permissible values of sysflag
+    ! permissible values of systype
 
-    sysflagstr(1)="bulk water"
-    sysflagstr(2)="electnopoly"
-    sysflagstr(3)="electligand"
-    sysflagstr(4)="pafiber"
-    sysflagstr(5)="pafiberIm"
-    sysflagstr(6)="pafiberborn"
-    sysflagstr(7)="pafibervarelec"
-    sysflagstr(8)="pafiberbornscf"
+    systypestr(1)="bulk water"
+    systypestr(2)="electnopoly"
+    systypestr(3)="electligand"
+    systypestr(4)="pafiber"
+    systypestr(5)="pafiberIm"
+    systypestr(6)="pafiberborn"
+    systypestr(7)="pafibervarelec"
+    systypestr(8)="pafiberbornscf"
     
 
     flag=.FALSE.
 
     do i=1,8
-        if(sysflag==sysflagstr(i)) flag=.TRUE.
+        if(systype==systypestr(i)) flag=.TRUE.
     enddo
 
     if (present(info)) info = 0
 
     if (flag.eqv. .FALSE.) then
-        print*,"Error: value of sysflag is not permissible"
-        print*,"sysflag = ",sysflag
-        if (present(info)) info = myio_err_sysflag
+        print*,"Error: value of systype is not permissible"
+        print*,"systype = ",systype
+        if (present(info)) info = myio_err_systype
         return
     end if
 
-end subroutine check_value_sysflag
+end subroutine check_value_systype
 
 
-subroutine check_value_runflag(runflag,info)
+subroutine check_value_runtype(runtype,info)
 
-    character(len=15), intent(in) :: runflag
+    character(len=15), intent(in) :: runtype
     integer, intent(out),optional :: info
 
-    character(len=15) :: runflagstr(6)
+    character(len=15) :: runtypestr(6)
     integer :: i
     logical :: flag
 
-    ! permissible values of runflag
+    ! permissible values of runtype
 
-    runflagstr(1)="rangepH"
-    runflagstr(2)="rangepHcpp"
-    runflagstr(3)="rangepHcNaCl"
-    runflagstr(4)="rangepHcRbCl"
-    runflagstr(5)="rangepHcImCl"
-    runflagstr(6)="rangenr"
+    runtypestr(1)="rangepH"
+    runtypestr(2)="rangepHcpp"
+    runtypestr(3)="rangepHcNaCl"
+    runtypestr(4)="rangepHcRbCl"
+    runtypestr(5)="rangepHcImCl"
+    runtypestr(6)="rangenr"
 
     flag=.FALSE.
 
     do i=1,6
-        if(runflag==runflagstr(i)) flag=.TRUE.
+        if(runtype==runtypestr(i)) flag=.TRUE.
     enddo
 
     if (present(info)) info = 0
 
     if (flag.eqv. .FALSE.) then
-        print*,"Error: value of runflag is not permissible"
-        print*,"runflag = ",runflag
-        if (present(info)) info = myio_err_runflag
+        print*,"Error: value of runtype is not permissible"
+        print*,"runtype = ",runtype
+        if (present(info)) info = myio_err_runtype
         return
     end if
 
-end subroutine check_value_runflag
+end subroutine check_value_runtype
 
 subroutine check_value_bcflag(bcflag,info)
 
@@ -435,7 +435,7 @@ subroutine check_value_method(method,info)
     character(len=8) :: methodstr
     logical :: flag
 
-    ! permissible values of runflag
+    ! permissible values of runtype
 
     methodstr="kinsol"
 
@@ -456,11 +456,11 @@ end subroutine check_value_method
 
 
 
-subroutine set_value_concen(runflag,info)
+subroutine set_value_concen(runtype,info)
 
     use myutils, only : newunit
 
-    character(len=15), intent(in) :: runflag
+    character(len=15), intent(in) :: runtype
     integer, intent(out),optional :: info
 
     character(len=9) :: fname
@@ -470,7 +470,7 @@ subroutine set_value_concen(runflag,info)
     
     if (present(info)) info = 0
 
-    if(runflag=="rangepHcpp".or.runflag=="rangepHcNaCl".or.runflag=="rangepHcRbCl".or.runflag=="rangepHcImCl") then
+    if(runtype=="rangepHcpp".or.runtype=="rangepHcNaCl".or.runtype=="rangepHcRbCl".or.runtype=="rangepHcImCl") then
 
        !     .. read concentrations of cpp or NaCl or RbCl from file
         write(fname,'(A9)')'concen.in'
@@ -500,27 +500,27 @@ end subroutine  set_value_concen
 
 subroutine output()
 
-    use globals, only : sysflag
+    use globals, only : systype
     implicit none
 
-    if(sysflag=="electnopoly") then
+    if(systype=="electnopoly") then
         call output_ligand
         !call output_individualcontr_fe
-    elseif(sysflag=="electligand") then
+    elseif(systype=="electligand") then
         call output_ligand
-    else if(sysflag=="pafiber") then
+    else if(systype=="pafiber") then
         call output_pafiber
-    else if(sysflag=="pafiberIm") then
+    else if(systype=="pafiberIm") then
         call output_pafiber
-    else if(sysflag=="pafiberborn") then
+    else if(systype=="pafiberborn") then
         call output_pafiber
-    else if(sysflag=="pafiberbornscf") then
+    else if(systype=="pafiberbornscf") then
         call output_pafiber
-    else if(sysflag=="pafibervarelec") then
+    else if(systype=="pafibervarelec") then
         call output_pafiber
     else
         print*,"Error in output subroutine"
-        print*,"Wrong value sysflag : ", sysflag
+        print*,"Wrong value systype : ", systype
     endif     
 
 end subroutine output
@@ -575,7 +575,7 @@ subroutine output_elect
 
     ! .. make label filenames 
 
-    if((sysflag=="electnopoly".or.sysflag=="electligand").and.&
+    if((systype=="electnopoly".or.systype=="electligand").and.&
         (bcflag=="pp".or.bcflag=="pd".or.bcflag=="pd")) then 
 
          ! filelabel for qdot only                     
@@ -611,7 +611,7 @@ subroutine output_elect
         write(rstr,'(F7.3)')pHbulk
         fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))
         ! nr variable in file names only in rangenr
-        if(runflag/="rangenr") then 
+        if(runtype/="rangenr") then 
             fnamelabel=trim(fnamelabel)//".dat"
         else 
             write(rstr,'(I4)')nr
@@ -656,14 +656,14 @@ subroutine output_elect
     open(unit=newunit(un_xsol),file=xsolfilename)
     open(unit=newunit(un_psi),file=potentialfilename)
 
-    !if(sysflag/="electnopoly") then          
+    !if(systype/="electnopoly") then          
     !    open(unit=newunit(un_xpolAB),file=xpolABfilename)
     !    open(unit=newunit(un_xpolC),file=xpolCfilename)
     !   open(unit=newunit(un_fdisA),file=densfracAfilename) 
     !    open(unit=newunit(un_fdisB),file=densfracBfilename) 
     ! endif   
 
-    if(sysflag=="electligand") open(unit=newunit(un_xpp),file=xppfilename)
+    if(systype=="electligand") open(unit=newunit(un_xpp),file=xppfilename)
       
     if(verboseflag=="yes") then    
         open(unit=newunit(un_xNa),file=xNafilename)
@@ -700,7 +700,7 @@ subroutine output_elect
    
     if(geometry=="invcylindrical") write(un_psi,*)radius,psiSurf
 
-  !  if(sysflag/="electnopoly") then 
+  !  if(systype/="electnopoly") then 
   !      do i=1,nr
   !          write(un_xpolAB,fmt4reals)rc(i),xpolAB(i),rhopolA(i),rhopolB(i)
   !          write(un_xpolC,fmt2reals)rc(i),xpolC(i)
@@ -709,7 +709,7 @@ subroutine output_elect
   !      enddo
   !  endif   
 
-    if(sysflag=="electligand") then 
+    if(systype=="electligand") then 
         do i=1,nr
             write(un_xpp,fmt6reals)rc(i),xpp(i,AH2BH),xpp(i,AHBH),xpp(i,AHB),xpp(i,ABH),xpp(i,AB)
             do t=1,5    
@@ -736,7 +736,7 @@ subroutine output_elect
 
     write(un_sys,*)'system      = planar weakpolyelectrolyte brush'
     write(un_sys,*)'version     = ',VERSION
-    write(un_sys,*)'sysflag     = ',sysflag
+    write(un_sys,*)'systype     = ',systype
     write(un_sys,*)'bcflag      = ',bcflag
     write(un_sys,*)'delta       = ',delta  
     write(un_sys,*)'vsol        = ',vsol
@@ -792,7 +792,7 @@ subroutine output_elect
     write(un_sys,*)'xbulk%Hplus = ',xbulk%Hplus
     write(un_sys,*)'xbulk%OHmin = ',xbulk%OHmin
     if(bcflag=="pp".or.bcflag=="pd".or.bcflag=="pc") write(un_sys,*)'xbulk%TB    = ',xbulk%TB
-    if(sysflag=="electligand") then
+    if(systype=="electligand") then
         cppbulk = (cpp*Na/(1.0e24_dp))
         write(un_sys,*)'xbulk%pp(AH2BH) = ',xbulk%pp(AH2BH)
         write(un_sys,*)'xbulk%pp(AHBH)  = ',xbulk%pp(AHBH)
@@ -882,13 +882,13 @@ subroutine output_elect
     close(un_sys)
     close(un_xsol)
     close(un_psi)
-    if(sysflag/="electnopoly") then
+    if(systype/="electnopoly") then
         close(un_xpolAB)   
         close(un_xpolC)
         close(un_fdisA)
         close(un_fdisB)
     endif
-    if(sysflag=="electligand") close(un_xpp)
+    if(systype=="electligand") close(un_xpp)
     if(verboseflag=="yes") then 
         close(un_xNa)   
         close(un_xK)
@@ -989,7 +989,7 @@ subroutine output_ligand
     write(rstr,'(F7.3)')pHbulk
     fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))
     ! nr variable in file names only in rangenr
-    if(runflag/="rangenr") then 
+    if(runtype/="rangenr") then 
         fnamelabel=trim(fnamelabel)//".dat"
     else 
         write(rstr,'(I4)')nr
@@ -1022,7 +1022,7 @@ subroutine output_ligand
     if(verboseflag=="yes") then  
 
         open(unit=newunit(un_xsol),file=xsolfilename)
-        if(sysflag=="electligand") open(unit=newunit(un_xpp),file=xppfilename)
+        if(systype=="electligand") open(unit=newunit(un_xpp),file=xppfilename)
         open(unit=newunit(un_xNa),file=xNafilename)
         open(unit=newunit(un_xK),file=xKfilename)
         open(unit=newunit(un_xCa),file=xCafilename)
@@ -1054,7 +1054,7 @@ subroutine output_ligand
     if(geometry=="invcylindrical") write(un_psi,*)radius,psiSurf
 
     if(verboseflag=="yes") then 
-        if(sysflag=="electligand") then 
+        if(systype=="electligand") then 
             do i=1,nr
                 write(un_xpp,fmt6reals)rc(i),xpp(i,AH2BH),xpp(i,AHBH),xpp(i,AHB),xpp(i,ABH),xpp(i,AB)
                 do t=1,5    
@@ -1080,7 +1080,7 @@ subroutine output_ligand
 
     write(un_sys,*)'system      = electrolyte solition qdot/NP'
     write(un_sys,*)'version     = ',VERSION
-    write(un_sys,*)'sysflag     = ',sysflag
+    write(un_sys,*)'systype     = ',systype
     write(un_sys,*)'bcflag      = ',bcflag
     write(un_sys,*)'delta       = ',delta   
     write(un_sys,*)'vsol        = ',vsol
@@ -1130,7 +1130,7 @@ subroutine output_ligand
         write(un_sys,*)'xbulk%TM    = ',xbulk%TM
         write(un_sys,*)'xbulk%NO3   = ',xbulk%NO3
     endif    
-    if(sysflag=="electligand") then
+    if(systype=="electligand") then
         cppbulk = (cpp*Na/(1.0e24_dp))
         write(un_sys,*)'xbulk%pp(AH2BH) = ',xbulk%pp(AH2BH)
         write(un_sys,*)'xbulk%pp(AHBH)  = ',xbulk%pp(AHBH)
@@ -1215,7 +1215,7 @@ subroutine output_ligand
     endif
     write(un_sys,*)'nsize       = ',nsize  
     write(un_sys,*)'iterations  = ',iter
-    if(runflag=="rangenr") then 
+    if(runtype=="rangenr") then 
         eta=(radius/(nr*delta))**3
         write(un_sys,*)'eta       = ',eta
     endif  
@@ -1225,7 +1225,7 @@ subroutine output_ligand
     close(un_psi)
     
     if(verboseflag=="yes") then 
-        if(sysflag=="electligand") close(un_xpp)
+        if(systype=="electligand") close(un_xpp)
         close(un_xsol)
         close(un_xNa)   
         close(un_xK)
@@ -1311,7 +1311,7 @@ subroutine output_pafiber
         fnamelabel=trim(fnamelabel)//"cImCl"//trim(adjustl(rstr))
     endif 
 
-    if(sysflag=="pafiberIm") then 
+    if(systype=="pafiberIm") then 
         write(rstr,'(F5.3)')epsIm
         fnamelabel=trim(fnamelabel)//"epsIm"//trim(adjustl(rstr))
     endif 
@@ -1406,7 +1406,7 @@ subroutine output_pafiber
 
     write(un_sys,*)'system      = pafiber'
     write(un_sys,*)'version     = ',VERSION
-    write(un_sys,*)'sysflag     = ',sysflag
+    write(un_sys,*)'systype     = ',systype
     write(un_sys,*)'bcflag      = ',bcflag
     write(un_sys,*)'delta       = ',delta  
     write(un_sys,*)'vsol        = ',vsol
@@ -1544,7 +1544,7 @@ end subroutine output_pafiber
 
 ! subroutine output_individualcontr_fe
 
-!     use globals, only : sysflag
+!     use globals, only : systype
 !     use energy
 !     use myutils, only : newunit
 !     use parameters, only : sigmaAB,cNaCl,cCaCl2,pHbulk,VdWepsB
@@ -1560,7 +1560,7 @@ end subroutine output_pafiber
 
 !    !     .. make label filename
 
-!     if(sysflag=="elect".or.sysflag=="electdouble".or.sysflag=="electnopoly") then 
+!     if(systype=="elect".or.systype=="electdouble".or.systype=="electnopoly") then 
 !         write(rstr,'(F5.3)')sigmaAB*delta 
 !         fnamelabel="sg"//trim(adjustl(rstr)) 
 !         write(rstr,'(F5.3)')cNaCl
@@ -1569,14 +1569,14 @@ end subroutine output_pafiber
 !         fnamelabel=trim(fnamelabel)//"cCaCl2"//trim(adjustl(rstr))
 !         write(rstr,'(F7.3)')pHbulk
 !         fnamelabel=trim(fnamelabel)//"pH"//trim(adjustl(rstr))//".dat"
-!     elseif(sysflag=="neutral") then 
+!     elseif(systype=="neutral") then 
 !         write(rstr,'(F5.3)')sigmaAB*delta 
 !         fnamelabel="sg"//trim(adjustl(rstr)) 
 !         write(rstr,'(F5.3)')VdWepsB
 !         fnamelabel=trim(fnamelabel)//"VdWepsB"//trim(adjustl(rstr))//".dat"
 !     else
 !         print*,"Error in output_individualcontr_fe subroutine"
-!         print*,"Wrong value sysflag : ", sysflag
+!         print*,"Wrong value systype : ", systype
 !     endif    
 
 !     fenergyfilename='energy.'//trim(fnamelabel)   
