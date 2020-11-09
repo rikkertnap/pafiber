@@ -90,13 +90,6 @@ module parameters
 
    
     !  .. equibrium constant
-
-    ! real(dp) :: K0A(4)              ! intrinsic equilibruim constant
-    ! real(dp) :: KA(4)               ! experimemtal equilibruim constant 
-    ! real(dp) :: pKA(4)              ! experimental equilibruim constant pKa= -log[Ka]
-    ! real(dp) :: K0B(4)              ! intrinsic equilibruim constant
-    ! real(dp) :: KB(4)               ! experimemtal equilibruim constant 
-    ! real(dp) :: pKB(4)              ! experimental equilibruim constant pKa= -log[Ka]
     
     real(dp) :: pKw                 ! water equilibruim constant pKw= -log[Kw] ,Kw=[H+][OH-] 
     real(dp) :: K0ionNa             ! intrinsic equilibruim constant
@@ -146,6 +139,15 @@ module parameters
     logical  :: isChargeRegularization, isCabinding
     real(dp) :: avfdispa
     real(dp) :: avfdisA(6)
+
+    ! output varaible for charge_pa_ratio_freeRb
+    integer  :: maxpalayer      ! location in layer of maximum of rhoEpa
+    integer  :: maxdeltaRblayer ! maximum of layer integrated out using epsdeltaxRb tolerance 
+    real(dp) :: epsdeltaxRb     ! tolerance = 0.0005_dp  
+    integer  :: numlDs          ! number of Deybe length to integrate out
+    real(dp) :: ratio_free_Rb,ratio_free_Rb_Debye
+   
+
     real(dp) :: epsIm ! van der Waals interaction Im 
     real(dp) :: chiIm ! Flory-Huggins parameter between PA and Im
 
@@ -198,8 +200,28 @@ contains
          
     end subroutine set_size_neq
 
-    
-    function BjerrumLenght(T)result(lb)
+         
+
+    ! computes the  Debye lenght for a given Bjerum lenght (lB in nm)  and 
+    ! Ioinic Stenght (IS in M=mol/l 
+
+
+    function DebyeLength(lB, IS) result(lD)
+
+        use mathconst
+        use physconst
+
+        real(dp), intent(in) :: lB, IS
+        real(dp) :: lD
+      
+        lD=1.0_dp/sqrt(8.0_dp*pi*lB*1.0e-9_dp*Na*IS*1.0e3_dp)
+        lD=lD/1.0e-9_dp   
+        
+    end function
+
+    ! computes the  Bjerrum lenght for a given temperature T 
+
+    function BjerrumLength(T)result(lb)
 
         use mathconst
         use physconst
@@ -210,7 +232,7 @@ contains
         lb=(elemcharge**2)/(4.0_dp*pi*dielectW*dielect0*kBoltzmann*T) ! bjerrum length in water=solvent in m
         lb=lb/1.0e-9_dp              ! bjerrum length in water in nm
     
-    end function BjerrumLenght
+    end function BjerrumLength
         
     !     purpose: initialize all constants parameter 
     !     pre: first read_inputfile has to be called   
@@ -222,9 +244,8 @@ contains
         use random
         use physconst
         
-        implicit none      
-        
-        real(dp) :: v3pp
+        real(dp) :: v3pp             ! local volume
+        real(dp) :: lD
         
         !  .. initializations of variables
  
@@ -337,10 +358,10 @@ contains
 
         ! .. other physical variables
 
-        Temp = 298.0_dp                 ! temperature in Kelvin
-        dielectW = 78.54_dp             ! dielectric constant water
+        Temp = 298.0_dp               ! temperature in Kelvin
+        dielectW = 78.54_dp           ! dielectric constant water
         dielectP =  2.0_dp
-        lb=BjerrumLenght(Temp)        ! bjerrum length in water in nm
+        lb=BjerrumLength(Temp)        ! bjerrum length in water in nm
         seed  = 435672                ! seed for random number generator
         constqW = delta*delta*4.0_dp*pi*lb/vsol ! multiplicative constant Poisson Eq. 
         constqE = 1.0_dp /( 8.0_dp *constqW)      ! factor in PDF    

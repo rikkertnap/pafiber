@@ -140,6 +140,7 @@ program main
                     totalcharge=total_charge(rhoq,sigmaqSurf)
                     avfdispa=average_charge_pa() 
                     avfdisA=average_charge_pa_Ca()
+                    call charge_pa_ratio_freeRb() 
                     call output()           ! writing of output
                     write(rstr,'(F7.3)')pH%val
                     text="solution pH="//trim(adjustl(rstr))

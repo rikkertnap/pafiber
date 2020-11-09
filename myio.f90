@@ -180,7 +180,13 @@ subroutine read_inputfile(info)
             case ('chiIm')
                 read(buffer,*,iostat=ios) chiIm    
             case ('dielect_env')
-                    read(buffer,*,iostat=ios) dielect_env
+                read(buffer,*,iostat=ios) dielect_env
+            case ('maxpalayer')
+                read(buffer,*,iostat=ios) maxpalayer
+            case ('epsdeltaxRb')
+                read(buffer,*,iostat=ios) epsdeltaxRb
+            case ('numlDs')
+                read(buffer,*,iostat=ios) numlDs  
             case default
                 if(pos>1) then 
                     print *, 'Invalid label at line', line  ! empty lines are skipped
@@ -563,10 +569,9 @@ subroutine output_elect
     !character(len=90) :: densfracBfilename
     character(len=90) :: densfracionpairfilename
 
-    integer :: i,j,k,t     ! dummy indexes
+    integer :: i,t     ! dummy indexes
     character(len=100) :: fnamelabel
     character(len=20) :: rstr
-    logical :: isopen
     real(dp) :: xppfdis(5),cppfdis(5)
     real(dp) :: cppbulk
 
@@ -1478,6 +1483,11 @@ subroutine output_pafiber
     write(un_sys,*)'epsIm       = ',epsIm
     write(un_sys,*)'avfdisA     = ',(avfdisA(i),i=1,6)
     write(un_sys,*)'pKaAA       = ',(pKaAA(i),i=1,5) 
+    write(un_sys,*)'ratio_free_Rb  = ',ratio_free_Rb
+    write(un_sys,*)'ratio_free_Rb_Debye  = ',ratio_free_Rb_Debye
+    write(un_sys,*)'maxpalayer  = ',maxpalayer
+    write(un_sys,*)'maxdeltaRblayer = ',maxdeltaRblayer
+    write(un_sys,*)'numlDs      = ',numlDs
     write(un_sys,*)'isbulkRbOH  = ',isbulkRbOH
    
     !write(un_sys,*)'q residual  = ',qres

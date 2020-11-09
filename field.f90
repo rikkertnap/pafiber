@@ -26,7 +26,8 @@ module field
     real(dp), dimension(:,:), allocatable :: xpp   ! volume fraction pp ligand
     real(dp), dimension(:), allocatable :: epsfcn  ! dielectric constant 
     real(dp), dimension(:), allocatable :: Depsfcn ! derivative dielectric constant
-  
+
+
 contains
 
     subroutine allocate_field(N)
@@ -373,6 +374,73 @@ contains
 
     end function average_charge_pa_Ca
 
+    ! computes amount of Rb number density  within maxDebye*LD distance for maximum of rhoE pa distruction
+    ! and amount of Rb numbger denisty within disntance of maximum of rhoEpa such that (xRb(i)-xbulk%Rb)/xbulk%Rb > epsdeltaxRb
+
+    subroutine  charge_pa_ratio_freeRb()     ! .. post : return average charge of state of polymers
+
+        use volume, only : deltaG, nr, delta
+        use globals, only : sysflag, nsize
+        use parameters, only : cRbCl,xbulk, vRb, vsol,DebyeLength,lB
+        use parameters, only : maxpalayer, maxdeltaRblayer, numlDs, epsdeltaxRb
+        use parameters, only : ratio_free_Rb,ratio_free_Rb_Debye
+
+        
+        integer :: i,maxlayer,range
+        real(dp) :: sumpa,deltaxRb,lD
+
+        ! maxpalayer =location of maximum  rhoEpa in unit of delta is input 
+        ! maxDeybe = number of Deybe length to 
+        lD=DebyeLength(lB,cRbCl)
+        maxlayer=int(numlDs*lD/delta)
+        
+        if(sysflag=="pafiber".or.sysflag=="pafiberIm".or.sysflag=="pafibervarelec".or.&
+            sysflag=="pafiberborn".or.sysflag=="pafiberbornscf") then !
+            
+    
+            ratio_free_Rb=0.0_dp
+
+            do i=1,maxpalayer
+                ratio_free_Rb_Debye=ratio_free_Rb_Debye+xRb(i)*deltaG(i)
+            enddo
+            ratio_free_Rb=ratio_free_Rb_Debye
+
+            ! integrate out 4 Debye length from maxpalayer
+            range=maxpalayer+1+maxlayer
+            if(range>nsize) range=nsize
+            do i=maxpalayer+1,range
+                ratio_free_Rb_Debye=ratio_free_Rb_Debye+xRb(i)*deltaG(i)
+            enddo
+
+            deltaxRb=(xRb(maxpalayer+1)-xbulk%Rb)/xbulk%Rb
+
+            i=maxpalayer        
+            do while(abs(deltaxRb)>epsdeltaxRb.and.i<nr-1)
+                i=i+1
+                deltaxRb=(xRb(i+1)-xbulk%Rb)/xbulk%Rb
+                ratio_free_Rb=ratio_free_Rb+xRb(i)*deltaG(i)
+            enddo
+            maxdeltaRblayer=i
+
+            sumpa =0.0_dp
+            do i=1,nr     
+                sumpa =sumpa+rhoEpa(i)*deltaG(i)
+            enddo
+              
+            ! normalize
+              
+            ratio_free_Rb = ratio_free_Rb/(sumpa*vRb*vsol)    
+            ratio_free_Rb_Debye= ratio_free_Rb_Debye/(sumpa*vRb*vsol)    
+            
+                
+        else
+            maxdeltaRblayer=0
+            ratio_free_Rb=0.0_dp
+        
+        endif    
+
+    end subroutine charge_pa_ratio_freeRb
+    
     
 end module field
 

@@ -715,9 +715,9 @@ module listfcn
         ! .. local variables
  
         integer  :: n                 ! n=nr 
-        integer  :: i,j,t,k1,k2,k3               ! dummy indices
+        integer  :: i,j,k1,k2,k3               ! dummy indices
         integer  :: neq_bc           
-        real(dp) :: norm, normpart(5)
+        real(dp) :: norm
         real(dp) :: xAA, xA(4), constA, sgxA, qAD
         real(dp) :: expsqrgradpsi(nsize),expdeltaGAA(nsize,5),expEtotself(nsize),Eself,Etotself
         real(dp) :: lbr
@@ -940,9 +940,9 @@ module listfcn
         ! .. local variables
  
         integer  :: n                 ! n=nr 
-        integer  :: i,j,t,k1,k2,k3,k4   ! dummy indices
+        integer  :: i,k1,k2,k3,k4   ! dummy indices
         integer  :: neq_bc           
-        real(dp) :: norm, normpart(5)
+        real(dp) :: norm
         real(dp) :: xAA, xA(4), constA, sgxA, qAD
         real(dp) :: expsqrgradpsi(nsize),expdeltaGAA(nsize,5),expEtotself(nsize),Eself,Etotself
         real(dp) :: lbr
