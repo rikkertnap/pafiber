@@ -140,8 +140,8 @@ module parameters
     real(dp) :: avfdispa
     real(dp) :: avfdisA(6)
 
-    logical  :: switchNa_with_K
-    
+    logical  :: switchRb_with_K
+
     ! output varaible for charge_pa_ratio_freeRb
     integer  :: maxpalayer      ! location in layer of maximum of rhoEpa
     integer  :: maxdeltaRblayer ! maximum of layer integrated out using epsdeltaxRb tolerance 
@@ -292,7 +292,7 @@ contains
         RNO3= 0.30_dp               ! radius of NO3- in nm values form Kieland Jacs 59:1675, 1937
         
 
-        if(switchNa_with_K)  RNa=RK ! short cut to to use K that includes binding with pa-fiber 
+        if(switchRb_with_K)  RRb=RK ! short cut to to use K that includes binding with pa-fiber 
 
         !     .. volume
 

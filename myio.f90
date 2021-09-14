@@ -74,7 +74,7 @@ subroutine read_inputfile(info)
     endif
 
 
-    switchNa_with_K =.false. ! default 
+    switchRb_with_K =.false. ! default 
 
     ios=0 
     line = 0
@@ -190,8 +190,8 @@ subroutine read_inputfile(info)
                 read(buffer,*,iostat=ios) epsdeltaxRb
             case ('numlDs')
                 read(buffer,*,iostat=ios) numlDs  
-            case ('switchNa_with_K')
-                read(buffer,*,iostat=ios) switchNa_with_K      
+            case ('switchRb_with_K')
+                read(buffer,*,iostat=ios) switchRb_with_K      
             case default
                 if(pos>1) then 
                     print *, 'Invalid label at line', line  ! empty lines are skipped
