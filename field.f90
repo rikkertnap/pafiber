@@ -399,6 +399,7 @@ contains
             
     
             ratio_free_Rb=0.0_dp
+            ratio_free_Rb_Debye=0.0_dp
 
             do i=1,maxpalayer
                 ratio_free_Rb_Debye=ratio_free_Rb_Debye+xRb(i)*deltaG(i)
