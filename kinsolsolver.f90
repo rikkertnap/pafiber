@@ -368,7 +368,7 @@ subroutine kinsol_gmres_solver(x, xguess, error, fnorm, issolution)
     real(dp) :: rout(2)           ! Kinsol additional out information
     integer  :: i                 ! dummy index 
     integer  :: ier               ! Kinsol error flag
-    integer  ::  maxniter
+    integer(8)  ::  maxniter
     real(dp) :: fnormtol, scsteptol
     real(dp) :: fscale(neq)
     real(dp) :: constr(neq)

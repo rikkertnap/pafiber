@@ -17,6 +17,8 @@ module myio
     integer, parameter ::  myio_err_input     = 8
     integer, parameter ::  myio_err_bcflag    = 9  
     integer, parameter ::  myio_err_dielect   = 10 
+    integer, parameter ::  myio_err_switch    = 11 
+
 
     ! unit number 
     integer :: un_sys,un_xpolAB,un_xpolC,un_xsol,un_xNa,un_xCl,un_xK,un_xCa,un_xNaCl,un_xKCl,un_xNO3
@@ -56,6 +58,7 @@ subroutine read_inputfile(info)
     ! .. local arguments
 
     integer :: info_sys, info_bc, info_run, info_geo, info_meth, info_chaintype, info_combi, info_dielect
+    integer :: info_switch
     character(len=8) :: fname
     integer :: ios,un_input  ! un = unit number    
 
@@ -75,7 +78,9 @@ subroutine read_inputfile(info)
 
 
     switchRb_with_K =.false. ! default 
-
+    switchRb_with_Cs =.false. ! default 
+    
+    info=0
     ios=0 
     line = 0
 
@@ -191,7 +196,9 @@ subroutine read_inputfile(info)
             case ('numlDs')
                 read(buffer,*,iostat=ios) numlDs  
             case ('switchRb_with_K')
-                read(buffer,*,iostat=ios) switchRb_with_K      
+                read(buffer,*,iostat=ios) switchRb_with_K   
+            case ('switchRb_with_Cs')
+                read(buffer,*,iostat=ios) switchRb_with_Cs     
             case default
                 if(pos>1) then 
                     print *, 'Invalid label at line', line  ! empty lines are skipped
@@ -252,6 +259,12 @@ subroutine read_inputfile(info)
     call check_value_dielect_env(dielect_env,info_dielect)
     if (info_dielect == myio_err_dielect) then
         if (present(info)) info = info_dielect
+        return
+    endif
+
+    call check_value_switch_flags(info_switch)
+    if (info_switch == myio_err_switch) then
+        if (present(info)) info = info_switch
         return
     endif
 
@@ -464,6 +477,29 @@ subroutine check_value_method(method,info)
     endif
 
 end subroutine check_value_method
+
+subroutine check_value_switch_flags(info)
+    
+    use parameters, only : switchRb_with_Cs,switchRb_with_K
+    
+    integer, intent(out),optional :: info
+ 
+    logical :: flag
+
+    flag=.TRUE.
+
+    if (switchRb_with_Cs .and. switchRb_with_K ) flag=.FALSE.
+
+    if (present(info)) info = 0
+
+    if (flag.eqv. .FALSE.) then
+        print*,"Error: value of ion switch flags both true"
+        print*,"switchRb_with_K=",switchRb_with_K," switchRb_with_K=",switchRb_with_K
+        if (present(info)) info = myio_err_switch
+        return
+    endif
+
+end subroutine check_value_switch_flags
 
 
 
@@ -1425,6 +1461,7 @@ subroutine output_pafiber
     write(un_sys,*)'vCa         = ',vCa*vsol
     write(un_sys,*)'vK          = ',vK*vsol
     write(un_sys,*)'vRb         = ',vRb*vsol
+    write(un_sys,*)'vCs         = ',vCs*vsol
     write(un_sys,*)'vIm         = ',vIm*vsol
     write(un_sys,*)'vNaCl       = ',vNaCl*vsol
     write(un_sys,*)'vKCl        = ',vKCl*vsol

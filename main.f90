@@ -186,7 +186,7 @@ program main
             allocate(xguess(neq))
 
             call make_guess(x, xguess, isfirstguess, use_xstored, xstored)
-            call solver(x, xguess, error, fnorm)
+            call solver(x, xguess, error, fnorm,isSolution)
             call output()           ! writing of output
 
             isfirstguess =.false.    

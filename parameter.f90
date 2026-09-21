@@ -27,6 +27,7 @@ module parameters
     real(dp) :: vHplus             ! volume H+
     real(dp) :: vOHmin             ! volume OH- 
     real(dp) :: vRb                ! volume Rb+ ion in units of vsol
+    real(dp) :: vCs                ! volume Cs+ ion in units of vsol    
     real(dp) :: vIm                ! volume Im+ ion in units of vsol
     real(dp) :: vNaCl              ! volume ion pair NaCl 
     real(dp) :: vKCl               ! volume ion pair KCl
@@ -49,6 +50,7 @@ module parameters
     real(dp) :: RCa
     real(dp) :: RNO3
     real(dp) :: RRb
+    real(dp) :: RCs
     real(dp) :: RIm
 
 
@@ -64,6 +66,7 @@ module parameters
     integer :: zTM              
     integer :: zNO3
     integer :: zRb
+    integer :: zCs
     integer :: zIm
 
     integer :: zpa
@@ -140,7 +143,7 @@ module parameters
     real(dp) :: avfdispa
     real(dp) :: avfdisA(6)
 
-    logical  :: switchRb_with_K
+    logical  :: switchRb_with_K, switchRb_with_Cs
 
     ! output varaible for charge_pa_ratio_freeRb
     integer  :: maxpalayer      ! location in layer of maximum of rhoEpa
@@ -281,7 +284,7 @@ contains
         RK  = 0.138_dp              ! radius of K+ in nm
         RBr = 0.196_dp              ! radius of Rb+ i nm 
         RCl = 0.181_dp              ! radius of Cl- in nm
-            
+        RCs = 0.167_dp              ! radius of Cs+ in nm 
         
         RCa = 0.106_dp              ! radius of Ca2+ in nm
         RRb = 0.152_dp              ! radius of Rb+ in nm 
@@ -291,8 +294,10 @@ contains
         RTM = 0.50_dp               ! radius of TMA+ in nm values from Wang, Nap et al in Jacs 133:2192, 2011
         RNO3= 0.30_dp               ! radius of NO3- in nm values form Kieland Jacs 59:1675, 1937
         
+        ! short cut to to use K or Cs that includes binding with pa-fiber 
 
-        if(switchRb_with_K)  RRb=RK ! short cut to to use K that includes binding with pa-fiber 
+        if(switchRb_with_K)  RRb=RK   ! short cut to to use K that includes binding with pa-fiber 
+        if(switchRb_with_Cs)  RRb=RCs 
 
         !     .. volume
 
@@ -311,6 +316,8 @@ contains
         vCl  = ((4.0_dp/3.0_dp)*pi*(RCl)**3)/vsol 
         vCa  = ((4.0_dp/3.0_dp)*pi*(RCa)**3)/vsol 
         vRb  = ((4.0_dp/3.0_dp)*pi*(RRb)**3)/vsol
+        vCs  = ((4.0_dp/3.0_dp)*pi*(RCs)**3)/vsol
+
         ! vIm  = 0.09190_dp/vsol Im= C3H4N2       
         ! .. volume Im: based molecular weight  and density of v= M/(rho Na)  
 
@@ -471,7 +478,7 @@ contains
         xKClsalt = (cKCl*Na/(1.0e24_dp))*((vK+vCl)*vsol) ! volume fraction KCl salt in mol/l
         xbulk%K = xKClsalt*vK/(vK+vCl)  
         xbulk%Cl = xbulk%Cl+xKClsalt*vCl/(vK+vCl)  
-        ! KCl in solution 
+        ! CaCl2 in solution 
         xCaCl2salt = (cCaCl2*Na/(1.0e24_dp))*((vCa+2.0_dp*vCl)*vsol) ! volume fraction CaCl2 in mol/l
         xbulk%Ca=xCaCl2salt*vCa/(vCa+2.0_dp*vCl)
         xbulk%Cl=xbulk%Cl+ xCaCl2salt*2.0_dp*vCl/(vCa+2.0_dp*vCl)
