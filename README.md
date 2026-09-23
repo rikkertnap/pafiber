@@ -42,9 +42,11 @@ See SI of  Nap et al Frontiers  2022.
 First line indicates the number of salt concentrations to be considered. Subsequent lines are the values of the salt concentrations. <br/>
 The variable "runtype" in input.in control a loop of pH and type of salt. <<br/>
 
-Example file inputNa.in uses NaCl salt. <br/>
-Example  file inputK.in uses KCL salt.  <br/>
-Note all output use label Rb but all the volume is controled with switch_Rb_with_K==.true.  
+Example file input_Na.in uses NaCl salt. <br/>
+Example  file input_K.in uses KCL salt.  <br/>
+Note to run program with KCl or CsCl use logical switch_Rb_with_K .true. or switch_Rb_with_C .true. in in input file. input.in.
+This switch the volume for Rb to K or Cs respectively. All output file still have Rb in name. <br/>
+In example folder contains a python program that computes the ion excess based on input file generated with the Fortran program.  
 
 ## Built With
 
@@ -53,7 +55,7 @@ Note all output use label Rb but all the volume is controled with switch_Rb_with
 
 ## Versioning
 
-version 1.0 09-20-2026
+version 1.3 09-23-2026
 
 ## Authors
 
